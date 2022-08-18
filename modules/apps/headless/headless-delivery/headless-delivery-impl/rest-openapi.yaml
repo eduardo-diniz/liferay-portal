@@ -2920,8 +2920,9 @@ components:
                     readOnly: true
                     type: boolean
                 messageBoardRootMessageId:
+                    # @review
                     description:
-                        The ID of the Thread's message.
+                        The ID of the thread's message.
                     format: int64
                     readOnly: true
                     type: integer
