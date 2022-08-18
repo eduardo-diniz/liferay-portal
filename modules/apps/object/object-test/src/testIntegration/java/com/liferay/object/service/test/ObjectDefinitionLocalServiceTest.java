@@ -1285,12 +1285,10 @@ public class ObjectDefinitionLocalServiceTest {
 		if (system) {
 			dbColumnName = TextFormatter.format(
 				objectDefinition.getShortName() + "Id", TextFormatter.I);
-
 			dbTableName = objectDefinition.getDBTableName();
 		}
 		else {
 			dbColumnName = objectEntryTable.objectEntryId.getName();
-
 			dbTableName = objectEntryTable.getTableName();
 		}
 
