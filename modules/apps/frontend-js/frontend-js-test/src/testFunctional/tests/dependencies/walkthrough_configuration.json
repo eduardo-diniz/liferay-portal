@@ -16,14 +16,14 @@
 			"id": "step-1",
 			"next": "/walkthrough-page-2",
 			"nodeToHighlight": "#step-1",
-			"title": "Click the button"
+			"title": "Click the Button"
 		},
 		{
 			"darkbg": true,
 			"id": "step-2",
 			"nodeToHighlight": "#step-2",
 			"previous": "/walkthrough-page-1",
-			"title": "Enter your name"
+			"title": "Enter Your Name"
 		}
 	]
 }

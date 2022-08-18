@@ -24,16 +24,16 @@ export default function App() {
 			<h2>Walkthrough Test Portlet</h2>
 
 			<p className="walkthrough-test-class">
-				This widget is used to test basic Walkthrough features are
+				This widget is used to test that basic Walkthrough features are
 				functioning as expected. Simply add whatever Walkthrough
-				elements you want to test to App.js and redeploy.
+				elements you want to App.js and redeploy.
 			</p>
 
 			<hr />
 
 			<div id="step-1">
 				<ClayButton.Group spaced>
-					<ClayButton type="submit">Click here</ClayButton>
+					<ClayButton type="submit">Click Here</ClayButton>
 				</ClayButton.Group>
 			</div>
 
@@ -43,7 +43,7 @@ export default function App() {
 
 					<ClayInput
 						id="basicInputText"
-						placeholder="Insert your name here"
+						placeholder="Insert your name here."
 						type="text"
 					/>
 				</ClayForm.Group>
