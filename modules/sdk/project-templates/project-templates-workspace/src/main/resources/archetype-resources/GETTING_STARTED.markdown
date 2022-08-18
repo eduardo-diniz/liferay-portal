@@ -150,16 +150,16 @@ Set this to true to append metadata for the current environment settings and
 timestamp. The default value is `false`.
 
 $h4 liferay.workspace.docker.local.registry.address
-Set this to the host and port of the local Docker registry. This will enable the user to interact with a Docker registry other than DockerHub, provided the user has access permissions. Ex: myregistryaddress.org:5000
+Set this to the host and port of the local Docker registry. This will enable the user to interact with a Docker registry other than DockerHub (e.g. myregistryaddress.org:5000).
 
 $h4 liferay.workspace.docker.pull.policy
 Set this to false to pull the user's local Docker cache first. The default value is true.
 
 $h4 liferay.workspace.docker.username
-To avoid conflicts with DockerHub, set this property to the registered user name on DockerHub.
+Set this property to the registered user name on DockerHub to avoid conflicts with DockerHub.
 
 $h4 liferay.workspace.docker.user.access.token
-See this page (https://docs.docker.com/docker-hub/access-tokens) on how to generate a Docker access token.
+See https://docs.docker.com/docker-hub/access-tokens on how to generate a Docker access token.
 
 $h4 liferay.workspace.ext.dir
 Set the folder that contains all Ext OSGi modules and Ext plugins. The default
