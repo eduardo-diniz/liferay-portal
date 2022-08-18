@@ -1296,10 +1296,10 @@ public class ObjectDefinitionLocalServiceTest {
 
 		ObjectFieldBuilder objectFieldBuilder = new ObjectFieldBuilder();
 
-		ListIterator<ObjectField> objectFieldIterator =
+		ListIterator<ObjectField> iterator =
 			objectFields.listIterator();
 
-		Assert.assertTrue(objectFieldIterator.hasNext());
+		Assert.assertTrue(iterator.hasNext());
 
 		_assertSystemObjectFields(
 			objectFieldBuilder.businessType(
@@ -1318,9 +1318,9 @@ public class ObjectDefinitionLocalServiceTest {
 			).name(
 				"createDate"
 			).build(),
-			objectFieldIterator.next());
+			iterator.next());
 
-		Assert.assertTrue(objectFieldIterator.hasNext());
+		Assert.assertTrue(iterator.hasNext());
 
 		_assertSystemObjectFields(
 			objectFieldBuilder.businessType(
@@ -1335,10 +1335,10 @@ public class ObjectDefinitionLocalServiceTest {
 			).name(
 				"creator"
 			).build(),
-			objectFieldIterator.next());
+			iterator.next());
 
 		if (!system) {
-			Assert.assertTrue(objectFieldIterator.hasNext());
+			Assert.assertTrue(iterator.hasNext());
 
 			_assertSystemObjectFields(
 				objectFieldBuilder.dbColumnName(
@@ -1350,10 +1350,10 @@ public class ObjectDefinitionLocalServiceTest {
 				).name(
 					"externalReferenceCode"
 				).build(),
-				objectFieldIterator.next());
+				iterator.next());
 		}
 
-		Assert.assertTrue(objectFieldIterator.hasNext());
+		Assert.assertTrue(iterator.hasNext());
 
 		_assertSystemObjectFields(
 			objectFieldBuilder.businessType(
@@ -1368,9 +1368,9 @@ public class ObjectDefinitionLocalServiceTest {
 			).name(
 				"id"
 			).build(),
-			objectFieldIterator.next());
+			iterator.next());
 
-		Assert.assertTrue(objectFieldIterator.hasNext());
+		Assert.assertTrue(iterator.hasNext());
 
 		_assertSystemObjectFields(
 			objectFieldBuilder.businessType(
@@ -1385,9 +1385,9 @@ public class ObjectDefinitionLocalServiceTest {
 			).name(
 				"modifiedDate"
 			).build(),
-			objectFieldIterator.next());
+			iterator.next());
 
-		Assert.assertTrue(objectFieldIterator.hasNext());
+		Assert.assertTrue(iterator.hasNext());
 
 		_assertSystemObjectFields(
 			objectFieldBuilder.businessType(
@@ -1402,9 +1402,9 @@ public class ObjectDefinitionLocalServiceTest {
 			).name(
 				"status"
 			).build(),
-			objectFieldIterator.next());
+			iterator.next());
 
-		Assert.assertFalse(objectFieldIterator.hasNext());
+		Assert.assertFalse(iterator.hasNext());
 	}
 
 	private void
