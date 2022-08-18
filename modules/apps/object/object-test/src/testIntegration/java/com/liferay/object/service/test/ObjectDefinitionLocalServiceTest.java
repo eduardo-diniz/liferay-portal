@@ -1132,6 +1132,22 @@ public class ObjectDefinitionLocalServiceTest {
 		_objectDefinitionLocalService.deleteObjectDefinition(objectDefinition);
 	}
 
+	private void _assertObjectField(
+			ObjectDefinition objectDefinition, String dbColumnName,
+			String dbType, String name, boolean required)
+		throws Exception {
+
+		ObjectField objectField = _objectFieldLocalService.getObjectField(
+			objectDefinition.getObjectDefinitionId(), name);
+
+		Assert.assertEquals(dbColumnName, objectField.getDBColumnName());
+		Assert.assertEquals(dbType, objectField.getDBType());
+		Assert.assertFalse(objectField.isIndexed());
+		Assert.assertFalse(objectField.isIndexedAsKeyword());
+		Assert.assertEquals("", objectField.getIndexedLanguageId());
+		Assert.assertEquals(required, objectField.isRequired());
+	}
+
 	private void _assertSystemObjectFields(
 		ObjectField expectedObjectField, ObjectField objectField) {
 
@@ -1161,22 +1177,6 @@ public class ObjectDefinitionLocalServiceTest {
 			expectedObjectField.isRequired(), objectField.isRequired());
 		Assert.assertEquals(
 			expectedObjectField.isState(), objectField.isState());
-	}
-
-	private void _assertObjectField(
-			ObjectDefinition objectDefinition, String dbColumnName,
-			String dbType, String name, boolean required)
-		throws Exception {
-
-		ObjectField objectField = _objectFieldLocalService.getObjectField(
-			objectDefinition.getObjectDefinitionId(), name);
-
-		Assert.assertEquals(dbColumnName, objectField.getDBColumnName());
-		Assert.assertEquals(dbType, objectField.getDBType());
-		Assert.assertFalse(objectField.isIndexed());
-		Assert.assertFalse(objectField.isIndexedAsKeyword());
-		Assert.assertEquals("", objectField.getIndexedLanguageId());
-		Assert.assertEquals(required, objectField.isRequired());
 	}
 
 	private boolean _hasColumn(String tableName, String columnName)
@@ -1277,6 +1277,10 @@ public class ObjectDefinitionLocalServiceTest {
 		Assert.assertEquals(
 			objectFields.toString(), system ? 5 : 6, objectFields.size());
 
+		ListIterator<ObjectField> iterator = objectFields.listIterator();
+
+		Assert.assertTrue(iterator.hasNext());
+
 		String dbColumnName = null;
 		String dbTableName = null;
 
@@ -1292,15 +1296,8 @@ public class ObjectDefinitionLocalServiceTest {
 			dbTableName = objectEntryTable.getTableName();
 		}
 
-		ObjectFieldBuilder objectFieldBuilder = new ObjectFieldBuilder();
-
-		ListIterator<ObjectField> iterator =
-			objectFields.listIterator();
-
-		Assert.assertTrue(iterator.hasNext());
-
 		_assertSystemObjectFields(
-			objectFieldBuilder.businessType(
+			new ObjectFieldBuilder().businessType(
 				ObjectFieldConstants.BUSINESS_TYPE_DATE
 			).dbColumnName(
 				objectEntryTable.createDate.getName()
@@ -1321,7 +1318,7 @@ public class ObjectDefinitionLocalServiceTest {
 		Assert.assertTrue(iterator.hasNext());
 
 		_assertSystemObjectFields(
-			objectFieldBuilder.businessType(
+			new ObjectFieldBuilder().businessType(
 				ObjectFieldConstants.BUSINESS_TYPE_TEXT
 			).dbColumnName(
 				objectEntryTable.userName.getName()
@@ -1339,7 +1336,7 @@ public class ObjectDefinitionLocalServiceTest {
 			Assert.assertTrue(iterator.hasNext());
 
 			_assertSystemObjectFields(
-				objectFieldBuilder.dbColumnName(
+				new ObjectFieldBuilder().dbColumnName(
 					objectEntryTable.externalReferenceCode.getName()
 				).labelMap(
 					LocalizedMapUtil.getLocalizedMap(
@@ -1354,7 +1351,7 @@ public class ObjectDefinitionLocalServiceTest {
 		Assert.assertTrue(iterator.hasNext());
 
 		_assertSystemObjectFields(
-			objectFieldBuilder.businessType(
+			new ObjectFieldBuilder().businessType(
 				ObjectFieldConstants.BUSINESS_TYPE_LONG_INTEGER
 			).dbColumnName(
 				dbColumnName
@@ -1371,7 +1368,7 @@ public class ObjectDefinitionLocalServiceTest {
 		Assert.assertTrue(iterator.hasNext());
 
 		_assertSystemObjectFields(
-			objectFieldBuilder.businessType(
+			new ObjectFieldBuilder().businessType(
 				ObjectFieldConstants.BUSINESS_TYPE_DATE
 			).dbColumnName(
 				objectEntryTable.modifiedDate.getName()
@@ -1388,7 +1385,7 @@ public class ObjectDefinitionLocalServiceTest {
 		Assert.assertTrue(iterator.hasNext());
 
 		_assertSystemObjectFields(
-			objectFieldBuilder.businessType(
+			new ObjectFieldBuilder().businessType(
 				ObjectFieldConstants.BUSINESS_TYPE_TEXT
 			).dbColumnName(
 				objectEntryTable.status.getName()
