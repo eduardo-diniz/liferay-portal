@@ -935,7 +935,7 @@ public class ObjectDefinitionLocalServiceTest {
 	}
 
 	@Test
-	public void testObjectDefinitionSystemFields() throws Exception {
+	public void testObjectDefinitionSystemObjectFields() throws Exception {
 		PropsUtil.addProperties(
 			UnicodePropertiesBuilder.setProperty(
 				"feature.flag.LPS-158821", "true"
@@ -951,7 +951,7 @@ public class ObjectDefinitionLocalServiceTest {
 				ObjectDefinitionConstants.STORAGE_TYPE_DEFAULT,
 				Collections.emptyList());
 
-		_testObjectDefinitionSystemFields(objectDefinition);
+		_testObjectDefinitionSystemObjectFields(objectDefinition);
 
 		_objectDefinitionLocalService.deleteObjectDefinition(objectDefinition);
 
@@ -964,7 +964,7 @@ public class ObjectDefinitionLocalServiceTest {
 				ObjectDefinitionConstants.SCOPE_COMPANY, 1,
 				Collections.<ObjectField>emptyList());
 
-		_testObjectDefinitionSystemFields(objectDefinition);
+		_testObjectDefinitionSystemObjectFields(objectDefinition);
 
 		_objectDefinitionLocalService.deleteObjectDefinition(objectDefinition);
 
@@ -1132,7 +1132,7 @@ public class ObjectDefinitionLocalServiceTest {
 		_objectDefinitionLocalService.deleteObjectDefinition(objectDefinition);
 	}
 
-	private void _assertObjectDefinitionSystemFields(
+	private void _assertObjectDefinitionSystemObjectFields(
 		ObjectField expectedObjectField, ObjectField objectField) {
 
 		Assert.assertEquals(
@@ -1263,7 +1263,7 @@ public class ObjectDefinitionLocalServiceTest {
 		}
 	}
 
-	private void _testObjectDefinitionSystemFields(
+	private void _testObjectDefinitionSystemObjectFields(
 			ObjectDefinition objectDefinition)
 		throws Exception {
 
@@ -1302,7 +1302,7 @@ public class ObjectDefinitionLocalServiceTest {
 
 		Assert.assertTrue(objectFieldIterator.hasNext());
 
-		_assertObjectDefinitionSystemFields(
+		_assertObjectDefinitionSystemObjectFields(
 			objectFieldBuilder.businessType(
 				ObjectFieldConstants.BUSINESS_TYPE_DATE
 			).dbColumnName(
@@ -1323,7 +1323,7 @@ public class ObjectDefinitionLocalServiceTest {
 
 		Assert.assertTrue(objectFieldIterator.hasNext());
 
-		_assertObjectDefinitionSystemFields(
+		_assertObjectDefinitionSystemObjectFields(
 			objectFieldBuilder.businessType(
 				ObjectFieldConstants.BUSINESS_TYPE_TEXT
 			).dbColumnName(
@@ -1341,7 +1341,7 @@ public class ObjectDefinitionLocalServiceTest {
 		if (!system) {
 			Assert.assertTrue(objectFieldIterator.hasNext());
 
-			_assertObjectDefinitionSystemFields(
+			_assertObjectDefinitionSystemObjectFields(
 				objectFieldBuilder.dbColumnName(
 					objectEntryTable.externalReferenceCode.getName()
 				).labelMap(
@@ -1356,7 +1356,7 @@ public class ObjectDefinitionLocalServiceTest {
 
 		Assert.assertTrue(objectFieldIterator.hasNext());
 
-		_assertObjectDefinitionSystemFields(
+		_assertObjectDefinitionSystemObjectFields(
 			objectFieldBuilder.businessType(
 				ObjectFieldConstants.BUSINESS_TYPE_LONG_INTEGER
 			).dbColumnName(
@@ -1373,7 +1373,7 @@ public class ObjectDefinitionLocalServiceTest {
 
 		Assert.assertTrue(objectFieldIterator.hasNext());
 
-		_assertObjectDefinitionSystemFields(
+		_assertObjectDefinitionSystemObjectFields(
 			objectFieldBuilder.businessType(
 				ObjectFieldConstants.BUSINESS_TYPE_DATE
 			).dbColumnName(
@@ -1390,7 +1390,7 @@ public class ObjectDefinitionLocalServiceTest {
 
 		Assert.assertTrue(objectFieldIterator.hasNext());
 
-		_assertObjectDefinitionSystemFields(
+		_assertObjectDefinitionSystemObjectFields(
 			objectFieldBuilder.businessType(
 				ObjectFieldConstants.BUSINESS_TYPE_TEXT
 			).dbColumnName(
