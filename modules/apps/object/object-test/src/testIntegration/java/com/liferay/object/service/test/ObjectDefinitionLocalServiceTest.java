@@ -1277,8 +1277,8 @@ public class ObjectDefinitionLocalServiceTest {
 		Assert.assertEquals(
 			objectFields.toString(), system ? 5 : 6, objectFields.size());
 
-		String dbColumnName;
-		String dbTableName;
+		String dbColumnName = null;
+		String dbTableName = null;
 
 		ObjectEntryTable objectEntryTable = ObjectEntryTable.INSTANCE;
 
