@@ -3597,7 +3597,6 @@ public class BundleSiteInitializer implements SiteInitializer {
 		String walkthroughConfigurationJSON = SiteInitializerUtil.read(
 			"/site-initializer/walkthrough/walkthrough-configuration.json",
 			_servletContext);
-
 		String walkthroughDefinitionJSON = SiteInitializerUtil.read(
 			"/site-initializer/walkthrough/walkthrough-definition.json",
 			_servletContext);
@@ -3623,7 +3622,7 @@ public class BundleSiteInitializer implements SiteInitializer {
 				"com.liferay.frontend.js.walkthrough.web.internal." +
 					"configuration.WalkthroughConfiguration",
 				HashMapDictionaryBuilder.<String, Object>put(
-					"enableWalkthrough", enabled
+					"enabled", enabled
 				).put(
 					"steps", walkthroughDefinitionJSON
 				).build());
