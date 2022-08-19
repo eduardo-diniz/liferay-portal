@@ -20,7 +20,7 @@ package com.liferay.redirect.provider;
 public interface RedirectProvider {
 
 	public Redirect getRedirect(
-		long groupId, String fullURL, String friendlyURL);
+		long groupId, String friendlyURL, String fullURL);
 
 	public interface Redirect {
 

@@ -204,7 +204,7 @@ public class RedirectProviderImplTest {
 		String friendlyURL) {
 
 		return _redirectProviderImpl.getRedirect(
-			_GROUP_ID, StringUtil.randomString(), friendlyURL);
+			_GROUP_ID, friendlyURL, StringUtil.randomString());
 	}
 
 	private void _setupPatterns(Map<Pattern, String> patterns) {

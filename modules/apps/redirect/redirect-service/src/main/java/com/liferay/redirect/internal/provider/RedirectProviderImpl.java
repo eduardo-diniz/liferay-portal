@@ -61,7 +61,7 @@ public class RedirectProviderImpl
 
 	@Override
 	public Redirect getRedirect(
-		long groupId, String fullURL, String friendlyURL) {
+		long groupId, String friendlyURL, String fullURL) {
 
 		if (friendlyURL.contains("/control_panel/manage")) {
 			return null;

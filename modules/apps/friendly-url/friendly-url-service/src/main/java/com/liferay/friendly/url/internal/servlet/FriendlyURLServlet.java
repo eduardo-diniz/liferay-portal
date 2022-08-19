@@ -147,9 +147,9 @@ public class FriendlyURLServlet extends HttpServlet {
 				RedirectProvider.Redirect redirectProviderRedirect =
 					redirectProvider.getRedirect(
 						group.getGroupId(),
+						_normalizeFriendlyURL(layoutFriendlyURL),
 						_normalizeFriendlyURL(
-							originalHttpServletRequest.getRequestURI()),
-						_normalizeFriendlyURL(layoutFriendlyURL));
+							originalHttpServletRequest.getRequestURI()));
 
 				if (redirectProviderRedirect != null) {
 					return new Redirect(
