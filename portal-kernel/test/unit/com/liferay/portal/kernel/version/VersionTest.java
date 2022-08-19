@@ -27,7 +27,6 @@ public class VersionTest {
 	@Test
 	public void testCompareEqualFinalVersions() {
 		Version version1 = Version.parseVersion("1.2.3");
-
 		Version version2 = Version.parseVersion("1.2.3");
 
 		Assert.assertTrue(version1.compareTo(version2) == 0);
@@ -36,7 +35,6 @@ public class VersionTest {
 	@Test
 	public void testCompareEqualStepVersions() {
 		Version version1 = Version.parseVersion("1.2.3.step-3");
-
 		Version version2 = Version.parseVersion("1.2.3.step-3");
 
 		Assert.assertTrue(version1.compareTo(version2) == 0);
@@ -45,7 +43,6 @@ public class VersionTest {
 	@Test
 	public void testCompareFinalToStepVersion() {
 		Version version1 = Version.parseVersion("1.2.3");
-
 		Version version2 = Version.parseVersion("1.2.3.step-2");
 
 		Assert.assertTrue(version1.compareTo(version2) > 0);
@@ -54,7 +51,6 @@ public class VersionTest {
 	@Test
 	public void testCompareSteps() {
 		Version version1 = Version.parseVersion("1.2.3.step-1");
-
 		Version version2 = Version.parseVersion("1.2.3.step-2");
 
 		Assert.assertTrue(version1.compareTo(version2) < 0);
@@ -63,7 +59,6 @@ public class VersionTest {
 	@Test
 	public void testCompareStepToFinalVersion() {
 		Version version1 = Version.parseVersion("1.2.3.step-2");
-
 		Version version2 = Version.parseVersion("1.2.3");
 
 		Assert.assertTrue(version1.compareTo(version2) < 0);
@@ -72,7 +67,6 @@ public class VersionTest {
 	@Test
 	public void testEqualFinalVersions() {
 		Version version1 = Version.parseVersion("1.2.3");
-
 		Version version2 = Version.parseVersion("1.2.3");
 
 		Assert.assertTrue(version1.equals(version2));
@@ -81,7 +75,6 @@ public class VersionTest {
 	@Test
 	public void testEqualStepVersions() {
 		Version version1 = Version.parseVersion("1.2.3.step-1");
-
 		Version version2 = Version.parseVersion("1.2.3.step-1");
 
 		Assert.assertTrue(version1.equals(version2));
@@ -90,7 +83,6 @@ public class VersionTest {
 	@Test
 	public void testNotEqualVersions() {
 		Version version1 = Version.parseVersion("1.2.3");
-
 		Version version2 = Version.parseVersion("1.2.3.step-4");
 
 		Assert.assertTrue(!version1.equals(version2));

@@ -144,7 +144,6 @@ public class Version implements Comparable<Version> {
 		int hash = HashUtil.hash(0, _major);
 
 		hash = HashUtil.hash(hash, _minor);
-
 		hash = HashUtil.hash(hash, _micro);
 
 		return HashUtil.hash(hash, _qualifier);
