@@ -158,12 +158,12 @@ public class PortalUpgradeProcessTest {
 	}
 
 	@Test
-	public void testGetRequiredSchemaVersionWhenMultipleSteps() {
+	public void testGetRequiredSchemaVersionWithMultipleSteps() {
 		UpgradeVersionTreeMap newUpgradeProcesses = new UpgradeVersionTreeMap();
 
 		UpgradeVersionTreeMap currentUpgradeProcesses =
 			ReflectionTestUtil.getAndSetFieldValue(
-				PortalUpgradeProcess.class, "_upgradeProcesses",
+				PortalUpgradeProcess.class, "_upgradeVersionTreeMap",
 				newUpgradeProcesses);
 
 		try {
@@ -187,7 +187,7 @@ public class PortalUpgradeProcessTest {
 		}
 		finally {
 			ReflectionTestUtil.setFieldValue(
-				PortalUpgradeProcess.class, "_upgradeProcesses",
+				PortalUpgradeProcess.class, "_upgradeVersionTreeMap",
 				currentUpgradeProcesses);
 		}
 	}

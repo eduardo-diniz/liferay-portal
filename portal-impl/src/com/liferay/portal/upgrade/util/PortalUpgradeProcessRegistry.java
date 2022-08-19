@@ -22,6 +22,6 @@ import com.liferay.portal.kernel.upgrade.util.UpgradeVersionTreeMap;
 public interface PortalUpgradeProcessRegistry {
 
 	public void registerUpgradeProcesses(
-		UpgradeVersionTreeMap upgradeProcesses);
+		UpgradeVersionTreeMap upgradeVersionTreeMap);
 
 }
