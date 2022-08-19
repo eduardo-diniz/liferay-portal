@@ -83,23 +83,25 @@ public class DocumentLibraryTypeContentUpgradeProcess extends UpgradeProcess {
 
 			preparedStatement1.setString(1, "%type=\"document_library\"%");
 
-			ResultSet resultSet1 = preparedStatement1.executeQuery();
+			try (ResultSet resultSet1 = preparedStatement1.executeQuery();
+				PreparedStatement preparedStatement2 =
+					AutoBatchPreparedStatementUtil.concurrentAutoBatch(
+						connection,
+						"update JournalArticle set content = ? where id_ = " +
+							"?")) {
 
-			while (resultSet1.next()) {
-				String content = resultSet1.getString(1);
-				long id = resultSet1.getLong(2);
-
-				try (PreparedStatement preparedStatement2 =
-						AutoBatchPreparedStatementUtil.concurrentAutoBatch(
-							connection,
-							"update JournalArticle set content = ? where id_ " +
-								"= ?")) {
+				while (resultSet1.next()) {
+					String content = resultSet1.getString(1);
+					long id = resultSet1.getLong(2);
 
 					preparedStatement2.setString(1, _convertContent(content));
+
 					preparedStatement2.setLong(2, id);
 
-					preparedStatement2.executeUpdate();
+					preparedStatement2.addBatch();
 				}
+
+				preparedStatement2.executeBatch();
 			}
 		}
 	}

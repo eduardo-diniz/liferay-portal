@@ -238,31 +238,33 @@ public class ContentImagesUpgradeProcess extends UpgradeProcess {
 
 			preparedStatement1.setString(1, "%type=\"image\"%");
 
-			ResultSet resultSet1 = preparedStatement1.executeQuery();
+			try (ResultSet resultSet1 = preparedStatement1.executeQuery();
+				PreparedStatement preparedStatement2 =
+					AutoBatchPreparedStatementUtil.concurrentAutoBatch(
+						connection,
+						"update JournalArticle set content = ? where id_ = " +
+							"?")) {
 
-			while (resultSet1.next()) {
-				long id = resultSet1.getLong(1);
+				while (resultSet1.next()) {
+					long id = resultSet1.getLong(1);
 
-				long resourcePrimKey = resultSet1.getLong(2);
-				long groupId = resultSet1.getLong(3);
-				long companyId = resultSet1.getLong(4);
-				long userId = resultSet1.getLong(5);
-				String content = resultSet1.getString(6);
+					long resourcePrimKey = resultSet1.getLong(2);
+					long groupId = resultSet1.getLong(3);
+					long companyId = resultSet1.getLong(4);
+					long userId = resultSet1.getLong(5);
+					String content = resultSet1.getString(6);
 
-				String newContent = _convertTypeImageElements(
-					userId, groupId, companyId, content, resourcePrimKey);
-
-				try (PreparedStatement preparedStatement2 =
-						AutoBatchPreparedStatementUtil.concurrentAutoBatch(
-							connection,
-							"update JournalArticle set content = ? where id_ " +
-								"= ?")) {
+					String newContent = _convertTypeImageElements(
+						userId, groupId, companyId, content, resourcePrimKey);
 
 					preparedStatement2.setString(1, newContent);
+
 					preparedStatement2.setLong(2, id);
 
-					preparedStatement2.executeUpdate();
+					preparedStatement2.addBatch();
 				}
+
+				preparedStatement2.executeBatch();
 			}
 		}
 	}
