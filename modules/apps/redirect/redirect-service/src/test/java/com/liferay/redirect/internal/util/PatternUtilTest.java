@@ -40,45 +40,46 @@ public class PatternUtilTest {
 
 	@Test
 	public void testAnchoredPattern() {
-		Map<Pattern, String> patterns = PatternUtil.parsePatterns(
+		Map<Pattern, String> patternStrings = PatternUtil.parse(
 			new String[] {"^xyz abc"});
 
-		Assert.assertEquals(patterns.toString(), 1, patterns.size());
-		Assert.assertEquals("^xyz", _getFistPatternString(patterns));
+		Assert.assertEquals("^xyz", _getFistPatternString(patternStrings));
+		Assert.assertEquals(
+			patternStrings.toString(), 1, patternStrings.size());
 	}
 
 	@Test
 	public void testEmptyPatternOrEmptyReplacement() {
 		Assert.assertTrue(
-			MapUtil.isEmpty(PatternUtil.parsePatterns(new String[] {"xyz"})));
+			MapUtil.isEmpty(PatternUtil.parse(new String[] {" xyz"})));
 		Assert.assertTrue(
-			MapUtil.isEmpty(PatternUtil.parsePatterns(new String[] {" xyz"})));
+			MapUtil.isEmpty(PatternUtil.parse(new String[] {"xyz "})));
 		Assert.assertTrue(
-			MapUtil.isEmpty(PatternUtil.parsePatterns(new String[] {"xyz "})));
+			MapUtil.isEmpty(PatternUtil.parse(new String[] {"xyz"})));
 	}
 
 	@Test
 	public void testEmptyPatterns() {
-		Assert.assertTrue(
-			MapUtil.isEmpty(PatternUtil.parsePatterns(new String[0])));
+		Assert.assertTrue(MapUtil.isEmpty(PatternUtil.parse(new String[0])));
 	}
 
 	@Test(expected = PatternSyntaxException.class)
 	public void testInvalidRegexPattern() {
-		PatternUtil.parsePatterns(new String[] {"*** a"});
+		PatternUtil.parse(new String[] {"*** a"});
 	}
 
 	@Test
 	public void testUnanchoredPattern() {
-		Map<Pattern, String> patterns = PatternUtil.parsePatterns(
+		Map<Pattern, String> patternStrings = PatternUtil.parse(
 			new String[] {"xyz abc"});
 
-		Assert.assertEquals(patterns.toString(), 1, patterns.size());
-		Assert.assertEquals("^xyz", _getFistPatternString(patterns));
+		Assert.assertEquals("^xyz", _getFistPatternString(patternStrings));
+		Assert.assertEquals(
+			patternStrings.toString(), 1, patternStrings.size());
 	}
 
-	private String _getFistPatternString(Map<Pattern, String> patterns) {
-		Set<Map.Entry<Pattern, String>> entries = patterns.entrySet();
+	private String _getFistPatternString(Map<Pattern, String> patternStrings) {
+		Set<Map.Entry<Pattern, String>> entries = patternStrings.entrySet();
 
 		Iterator<Map.Entry<Pattern, String>> iterator = entries.iterator();
 

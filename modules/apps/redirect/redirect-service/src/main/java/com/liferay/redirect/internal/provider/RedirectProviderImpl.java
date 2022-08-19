@@ -85,10 +85,10 @@ public class RedirectProviderImpl
 			return null;
 		}
 
-		Map<Pattern, String> patterns = _groupPatternsMap.getOrDefault(
+		Map<Pattern, String> patternStrings = _groupPatternsMap.getOrDefault(
 			groupId, Collections.emptyMap());
 
-		for (Map.Entry<Pattern, String> entry : patterns.entrySet()) {
+		for (Map.Entry<Pattern, String> entry : patternStrings.entrySet()) {
 			Pattern pattern = entry.getKey();
 
 			Matcher matcher = pattern.matcher(friendlyURL);
@@ -123,7 +123,7 @@ public class RedirectProviderImpl
 
 		_groupPatternsMap.put(
 			groupId,
-			PatternUtil.parsePatterns(redirectPatternConfiguration.patterns()));
+			PatternUtil.parse(redirectPatternConfiguration.patterns()));
 	}
 
 	protected void setGroupPatternsMap(

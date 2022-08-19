@@ -25,33 +25,30 @@ import java.util.regex.Pattern;
  */
 public class PatternUtil {
 
-	public static Map<Pattern, String> parsePatterns(String[] patterns) {
+	public static Map<Pattern, String> parse(String[] patternStrings) {
 		Map<Pattern, String> parsedPatterns = new LinkedHashMap<>();
 
-		for (String pattern : patterns) {
-			String[] patternReplacementArray = pattern.split("\\s+", 2);
+		for (String patternString : patternStrings) {
+			String[] parts = patternString.split("\\s+", 2);
 
-			if ((patternReplacementArray.length != 2) ||
-				patternReplacementArray[0].isEmpty() ||
-				patternReplacementArray[1].isEmpty()) {
+			if ((parts.length != 2) || parts[0].isEmpty() ||
+				parts[1].isEmpty()) {
 
 				continue;
 			}
 
-			parsedPatterns.put(
-				Pattern.compile(_normalizePattern(patternReplacementArray[0])),
-				patternReplacementArray[1]);
+			parsedPatterns.put(Pattern.compile(_normalize(parts[0])), parts[1]);
 		}
 
 		return parsedPatterns;
 	}
 
-	private static String _normalizePattern(String pattern) {
-		if (pattern.startsWith(StringPool.CARET)) {
-			return pattern;
+	private static String _normalize(String patternString) {
+		if (patternString.startsWith(StringPool.CARET)) {
+			return patternString;
 		}
 
-		return StringPool.CARET + pattern;
+		return StringPool.CARET + patternString;
 	}
 
 }

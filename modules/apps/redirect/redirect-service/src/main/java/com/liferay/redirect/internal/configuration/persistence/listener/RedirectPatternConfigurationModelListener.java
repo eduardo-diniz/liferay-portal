@@ -43,13 +43,13 @@ public class RedirectPatternConfigurationModelListener
 		throws ConfigurationModelListenerException {
 
 		try {
-			String[] patterns = (String[])properties.get("patterns");
+			String[] patternStrings = (String[])properties.get("patterns");
 
-			if (ArrayUtil.isEmpty(patterns)) {
+			if (ArrayUtil.isEmpty(patternStrings)) {
 				return;
 			}
 
-			PatternUtil.parsePatterns(patterns);
+			PatternUtil.parse(patternStrings);
 		}
 		catch (PatternSyntaxException patternSyntaxException) {
 			_log.error(patternSyntaxException);
