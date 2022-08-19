@@ -29,16 +29,16 @@ import java.util.TreeMap;
 public class UpgradeVersionTreeMap extends TreeMap<Version, UpgradeProcess> {
 
 	@Override
-	public UpgradeProcess put(Version key, UpgradeProcess value) {
-		_put(key, value.getUpgradeSteps());
+	public UpgradeProcess put(Version key, UpgradeProcess upgradeProcess) {
+		_put(key, upgradeProcess.getUpgradeSteps());
 
-		return value;
+		return upgradeProcess;
 	}
 
-	public void put(Version key, UpgradeProcess... values) {
+	public void put(Version key, UpgradeProcess... upgradeProcesses) {
 		List<UpgradeStep> upgradeStepList = new ArrayList<>();
 
-		for (UpgradeProcess upgradeProcess : values) {
+		for (UpgradeProcess upgradeProcess : upgradeProcesses) {
 			Collections.addAll(
 				upgradeStepList, upgradeProcess.getUpgradeSteps());
 		}
@@ -46,9 +46,9 @@ public class UpgradeVersionTreeMap extends TreeMap<Version, UpgradeProcess> {
 		_put(key, upgradeStepList.toArray(new UpgradeStep[0]));
 	}
 
-	private void _put(Version key, UpgradeStep... values) {
-		for (int i = 0; i < (values.length - 1); i++) {
-			UpgradeStep upgradeStep = values[i];
+	private void _put(Version key, UpgradeStep... upgradeProcesses) {
+		for (int i = 0; i < (upgradeProcesses.length - 1); i++) {
+			UpgradeStep upgradeStep = upgradeProcesses[i];
 
 			Version stepVersion = new Version(
 				key.getMajor(), key.getMinor(), key.getMicro(),
@@ -60,7 +60,9 @@ public class UpgradeVersionTreeMap extends TreeMap<Version, UpgradeProcess> {
 		Version finalVersion = new Version(
 			key.getMajor(), key.getMinor(), key.getMicro());
 
-		super.put(finalVersion, (UpgradeProcess)values[values.length - 1]);
+		super.put(
+			finalVersion,
+			(UpgradeProcess)upgradeProcesses[upgradeProcesses.length - 1]);
 	}
 
 }
