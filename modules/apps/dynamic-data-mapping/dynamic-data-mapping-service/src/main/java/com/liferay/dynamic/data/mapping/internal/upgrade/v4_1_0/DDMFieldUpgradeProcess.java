@@ -531,9 +531,9 @@ public class DDMFieldUpgradeProcess extends UpgradeProcess {
 
 		List<DDMFormFieldValue> newDDMFormFieldValues = new ArrayList<>();
 
-		String type = null;
-
 		for (DDMFormFieldValue ddmFormFieldValue : ddmFormFieldValues) {
+			String type = null;
+
 			try {
 				type = ddmFormFieldValue.getType();
 			}
