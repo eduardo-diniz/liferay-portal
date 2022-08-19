@@ -43,11 +43,11 @@ public class XMLDTDVersionCheck extends BaseFileCheck {
 		return content;
 	}
 
-	protected String getLpVersion() {
+	protected String getLPVersion() {
 		return _releaseProperties.getProperty("lp.version");
 	}
 
-	protected String getLpVersionDTD() {
+	protected String getLPVersionDTD() {
 		return _releaseProperties.getProperty("lp.version.dtd");
 	}
 
@@ -64,13 +64,13 @@ public class XMLDTDVersionCheck extends BaseFileCheck {
 			return content;
 		}
 
-		String lpVersion = getLpVersion();
+		String lpVersion = getLPVersion();
 
 		if (lpVersion == null) {
 			return content;
 		}
 
-		String lpVersionDTD = getLpVersionDTD();
+		String lpVersionDTD = getLPVersionDTD();
 
 		if (lpVersionDTD == null) {
 			return content;

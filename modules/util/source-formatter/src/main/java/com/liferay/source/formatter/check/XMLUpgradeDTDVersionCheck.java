@@ -42,7 +42,7 @@ public class XMLUpgradeDTDVersionCheck extends XMLDTDVersionCheck {
 	}
 
 	@Override
-	protected String getLpVersion() {
+	protected String getLPVersion() {
 		String[] upgradeToVersionParts = StringUtil.split(
 			_upgradeToVersion, StringPool.PERIOD);
 
@@ -55,7 +55,7 @@ public class XMLUpgradeDTDVersionCheck extends XMLDTDVersionCheck {
 	}
 
 	@Override
-	protected String getLpVersionDTD() {
+	protected String getLPVersionDTD() {
 		String[] upgradeToVersionParts = StringUtil.split(
 			_upgradeToVersion, StringPool.PERIOD);
 
