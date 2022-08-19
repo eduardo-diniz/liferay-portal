@@ -208,7 +208,7 @@ public class RedirectProviderImplTest {
 	}
 
 	private void _setupPatterns(Map<Pattern, String> patterns) {
-		_redirectProviderImpl.setGroupPatternsMap(
+		_redirectProviderImpl.setGroupPatternStrings(
 			HashMapBuilder.put(
 				_GROUP_ID, patterns
 			).build());
