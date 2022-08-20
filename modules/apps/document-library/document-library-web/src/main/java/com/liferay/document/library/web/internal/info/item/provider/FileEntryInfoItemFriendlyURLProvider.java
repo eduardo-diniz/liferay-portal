@@ -59,8 +59,7 @@ public class FileEntryInfoItemFriendlyURLProvider
 
 		if ((groupId != GroupConstants.DEFAULT_LIVE_GROUP_ID) &&
 			(groupId != mainFriendlyURLEntry.getGroupId()) &&
-			_isFriendlyURLDuplicateInGroup(
-				groupId, mainFriendlyURLEntry.getUrlTitle())) {
+			_hasFriendlyURL(groupId, mainFriendlyURLEntry.getUrlTitle())) {
 
 			return String.valueOf(fileEntry.getFileEntryId());
 		}
@@ -103,9 +102,7 @@ public class FileEntryInfoItemFriendlyURLProvider
 		return themeDisplay.getScopeGroupId();
 	}
 
-	private boolean _isFriendlyURLDuplicateInGroup(
-		long groupId, String friendlyURL) {
-
+	private boolean _hasFriendlyURL(long groupId, String friendlyURL) {
 		FriendlyURLEntry friendlyURLEntry =
 			_friendlyURLEntryLocalService.fetchFriendlyURLEntry(
 				groupId, FileEntry.class, friendlyURL);
