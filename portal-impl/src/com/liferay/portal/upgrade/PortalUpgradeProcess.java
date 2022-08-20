@@ -26,7 +26,6 @@ import com.liferay.portal.kernel.util.ClassUtil;
 import com.liferay.portal.kernel.util.ReleaseInfo;
 import com.liferay.portal.kernel.version.Version;
 import com.liferay.portal.upgrade.util.PortalUpgradeProcessRegistry;
-import com.liferay.portal.upgrade.v7_1_x.PortalUpgradeProcessRegistryImpl;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -233,6 +232,17 @@ public class PortalUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
+	private static void _registerUpgradeProcesses(
+		PortalUpgradeProcessRegistry... portalUpgradeProcessRegistries) {
+
+		for (PortalUpgradeProcessRegistry portalUpgradeProcessRegistry :
+				portalUpgradeProcessRegistries) {
+
+			portalUpgradeProcessRegistry.registerUpgradeProcesses(
+				_upgradeVersionTreeMap);
+		}
+	}
+
 	private void _initializeRelease(Connection connection) throws Exception {
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"update Release_ set schemaVersion = ?, buildNumber = ? " +
@@ -248,15 +258,6 @@ public class PortalUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
-	private static final Class<?>[] _PORTAL_UPGRADE_PROCESS_REGISTRIES = {
-		PortalUpgradeProcessRegistryImpl.class,
-		com.liferay.portal.upgrade.v7_2_x.PortalUpgradeProcessRegistryImpl.
-			class,
-		com.liferay.portal.upgrade.v7_3_x.PortalUpgradeProcessRegistryImpl.
-			class,
-		com.liferay.portal.upgrade.v7_4_x.PortalUpgradeProcessRegistryImpl.class
-	};
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		PortalUpgradeProcess.class);
 
@@ -269,21 +270,15 @@ public class PortalUpgradeProcess extends UpgradeProcess {
 		};
 
 	static {
-		try {
-			for (Class<?> portalUpgradeProcessRegistry :
-					_PORTAL_UPGRADE_PROCESS_REGISTRIES) {
-
-				PortalUpgradeProcessRegistry portalUpgradeProcessRegistry =
-					(PortalUpgradeProcessRegistry)
-						portalUpgradeProcessRegistry.newInstance();
-
-				portalUpgradeProcessRegistry.registerUpgradeProcesses(
-					_upgradeVersionTreeMap);
-			}
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new ExceptionInInitializerError(reflectiveOperationException);
-		}
+		_registerUpgradeProcesses(
+			new com.liferay.portal.upgrade.v7_1_x.
+				PortalUpgradeProcessRegistryImpl(),
+			new com.liferay.portal.upgrade.v7_2_x.
+				PortalUpgradeProcessRegistryImpl(),
+			new com.liferay.portal.upgrade.v7_3_x.
+				PortalUpgradeProcessRegistryImpl(),
+			new com.liferay.portal.upgrade.v7_4_x.
+				PortalUpgradeProcessRegistryImpl());
 	}
 
 }
