@@ -92,7 +92,7 @@ public class PortalImplUnitTest {
 
 		Map<String, String[]> params = _createMapParams();
 
-		ActionRequest actionRequest = _createActionRequestMock(params);
+		ActionRequest actionRequest = _createActionRequest(params);
 
 		MockedStatic<PortalUtil> portalUtilMock = Mockito.mockStatic(
 			PortalUtil.class);
@@ -115,14 +115,14 @@ public class PortalImplUnitTest {
 		params.put("password1", new String[] {"abc_123"});
 		params.put("password2", new String[] {"def_456"});
 
-		ActionRequest actionRequestMock = _createActionRequestMock(params);
+		ActionRequest actionRequest = _createActionRequest(params);
 
 		MockedStatic<PortalUtil> portalUtilMock = Mockito.mockStatic(
 			PortalUtil.class);
 
 		ActionResponse actionResponse = _createActionResponse(portalUtilMock);
 
-		_portalImpl.copyRequestParameters(actionRequestMock, actionResponse);
+		_portalImpl.copyRequestParameters(actionRequest, actionResponse);
 
 		portalUtilMock.close();
 
@@ -800,21 +800,21 @@ public class PortalImplUnitTest {
 			portletMode, new MockPortletPreferences(), 4000L);
 	}
 
-	private ActionRequest _createActionRequestMock(
+	private ActionRequest _createActionRequest(
 		Map<String, String[]> params) {
 
-		ActionRequest actionRequestMock = Mockito.mock(ActionRequest.class);
+		ActionRequest actionRequest = Mockito.mock(ActionRequest.class);
 
 		RenderParameters renderParameters = new RenderParametersImpl(
 			params, null, StringPool.BLANK);
 
 		Mockito.when(
-			actionRequestMock.getRenderParameters()
+			actionRequest.getRenderParameters()
 		).thenReturn(
 			renderParameters
 		);
 
-		return actionRequestMock;
+		return actionRequest;
 	}
 
 	private ActionResponse _createActionResponse(
