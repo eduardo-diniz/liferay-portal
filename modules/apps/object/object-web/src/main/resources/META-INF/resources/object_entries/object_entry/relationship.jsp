@@ -21,7 +21,7 @@ String backURL = ParamUtil.getString(request, "backURL", String.valueOf(renderRe
 
 ObjectEntryDisplayContext objectEntryDisplayContext = (ObjectEntryDisplayContext)request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT);
 
-ObjectDefinition objectDefinition = objectEntryDisplayContext.getObjectDefinition2();
+ObjectDefinition objectDefinition2 = objectEntryDisplayContext.getObjectDefinition2();
 ObjectEntry objectEntry = objectEntryDisplayContext.getObjectEntry();
 ObjectLayoutTab objectLayoutTab = objectEntryDisplayContext.getObjectLayoutTab();
 
@@ -39,7 +39,7 @@ portletDisplay.setURLBack(backURL);
 	<aui:input name="objectRelationshipPrimaryKey2" type="hidden" value="" />
 
 	<c:choose>
-		<c:when test="<%= objectDefinition.isSystem() %>">
+		<c:when test="<%= objectDefinition2.isSystem() %>">
 			<frontend-data-set:classic-display
 				contextParams="<%= objectEntryDisplayContext.getRelationshipContextParams() %>"
 				creationMenu="<%= objectEntryDisplayContext.getRelatedModelCreationMenu() %>"
