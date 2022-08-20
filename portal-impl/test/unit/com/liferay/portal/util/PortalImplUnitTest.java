@@ -820,7 +820,7 @@ public class PortalImplUnitTest {
 	}
 
 	private ActionResponse _createActionResponse(
-			MockedStatic<PortalUtil> portalUtilMock)
+			MockedStatic<PortalUtil> portalUtilMockStatic)
 		throws PortletException {
 
 		HttpServletResponse httpServletResponse =
@@ -832,7 +832,7 @@ public class PortalImplUnitTest {
 		layoutTypePortletFactoryUtil.setLayoutTypePortletFactory(
 			new LayoutTypePortletFactoryImpl());
 
-		portalUtilMock.when(
+		portalUtilMockStatic.when(
 			() -> PortalUtil.updateWindowState(
 				Mockito.anyString(), Mockito.any(UserImpl.class),
 				Mockito.any(LayoutImpl.class), Mockito.any(WindowState.class),
