@@ -117,7 +117,7 @@ const dataColumn: any = {
 			currentValue: 25,
 
 			goals: 20,
-	}
+		}	
 		,
 	
 		oct:
@@ -175,27 +175,33 @@ const chart=  {
 
 const achieved = Object.values(dataColumn.yearly).map((item: any) => item.currentValue)
 const goals = Object.values(dataColumn.yearly).map((item: any) => item.goals)
+const goalss = Object.values(dataColumn.yearly).map((item: any) => "$ " + item.goals)
+console.log(goalss);
 
 
-const teste: any = {
+const dataChart: any = {
 
 	data:{
 
 		columns: [
 			
-			["goal", ...goals ],
-			["exceeded",  ...achieved]
+			["goals", ...goals ],
+			["achieved",  ...achieved]
 		],
 		groups: [
 			[
-				'goal',
-				'exceeded',
+				'goals',
+				'achieved',
 				
 			]
 		],
 		
 	}
 }
+
+
+
+
 const labelColumns = [
 	'Jan 2022',
 	'Feb 2022',
@@ -308,6 +314,11 @@ const ProductPerformance = () => {
 					},
 					y: {
 						show: true,
+						tick: {
+							format: function(x:any) {return '$ ' + x}
+
+
+							}
 
 					},
 				}}
@@ -322,8 +333,8 @@ const ProductPerformance = () => {
 				}}
 				data={{
 					
-					columns:teste.data.columns,
-                    groups: teste.data.groups,
+					columns:dataChart.data.columns,
+                    groups: dataChart.data.groups,
 					type: chart.data.type,
 					labels: {						
 						colors: '#272898',
