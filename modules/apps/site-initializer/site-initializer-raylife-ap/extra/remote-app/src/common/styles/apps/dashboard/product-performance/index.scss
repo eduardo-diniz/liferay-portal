@@ -21,3 +21,31 @@
 		border-right: 1px solid hsl(209, 36%, 85%);
 	}
 }
+
+	.bb-legend-item-event{
+		cursor: default;
+	}
+
+	.bb{
+		g{
+			margin-top: 30px;
+		}
+	}
+
+	div.quadrado {
+		line-height:0;
+		width:0;
+		height:0;
+		border-style: solid;
+		border-color: #f00 ;
+		border-width: 10px 10px 10px;
+		}
+
+	div.legend{
+		display: flex;
+		justify-content: end;
+		padding-top: 20px;
+		
+
+
+	}

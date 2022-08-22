@@ -17,6 +17,8 @@ import ClayChart from '@clayui/charts';
 import {ClaySelect} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
 import classNames from 'classnames';
+import { dragDisable } from 'd3-drag';
+import { NONAME } from 'dns';
 import React, {useState} from 'react';
 
 import Header from '../../../common/components/header';
@@ -63,60 +65,75 @@ const dataColumn: any = {
 		
 	},
 	
-	
 	yearly: {
 		jan:{
-			currentValue: 100,
+			currentValue: 300,
 			goals: 200,
+			exceeded: 300
 			}	
 		,
 		feb:{
 			currentValue: 25,
 			goals: 210,
+			exceeded: 300
+
 		},
 			
 		mar:{
 			
 			currentValue: 25,
 			goals: 250,
+			exceeded: 300
+
 		}
 			,
 		apr:{
 			
 			currentValue: 25,
 			goals: 320,
+			exceeded: 300
+
 		}
 			,
 		may:{
 			
 			currentValue: 25,
 			goals: 200,
+			exceeded: 300
+
 		}
 			,
 		jun:
 		{
 			currentValue: 25,
 			goals: 120,
+			exceeded: 300
+
 		}
 			,
 		jul:
 		{
 			currentValue: 25,
 			goals: 320,
+			exceeded: 300
+
 		}
 			,
 		aug:
 		{
 			currentValue: 25,
 			goals: 220,
+			exceeded: 300
+
 		}
 			,
 		sep:
 		
 		{  
 			currentValue: 25,
-
 			goals: 20,
+			exceeded: 300
+
 		}	
 		,
 	
@@ -124,18 +141,24 @@ const dataColumn: any = {
 		{
 			currentValue: 25,
 			goals: 320,
+			exceeded: 300
+
 		}
 			,
 		nov:
 		{
 			currentValue: 25,
 			goals: 420,
+			exceeded: 300
+
 		}
 			,
 		dec:
 		{
 			currentValue: 25,
 			goals: 210,
+			exceeded: 300
+
 		}
 			,
 
@@ -162,21 +185,12 @@ const chart=  {
 		],
 		type: "bar", 
 		},
-	grid:{
-		y: {
-			lines: [
-			{
-				value: 0
-			}
-			]
-			}
-		},
+
 };
 
 const achieved = Object.values(dataColumn.yearly).map((item: any) => item.currentValue)
 const goals = Object.values(dataColumn.yearly).map((item: any) => item.goals)
-const goalss = Object.values(dataColumn.yearly).map((item: any) => "$ " + item.goals)
-console.log(goalss);
+const exceeded = Object.values(dataColumn.yearly).map((item: any) => item.exceeded)
 
 
 const dataChart: any = {
@@ -185,13 +199,15 @@ const dataChart: any = {
 
 		columns: [
 			
+			["achieved",  ...achieved],
 			["goals", ...goals ],
-			["achieved",  ...achieved]
+			["exceeded", ...exceeded ],
 		],
 		groups: [
 			[
 				'goals',
 				'achieved',
+				'exceeded',
 				
 			]
 		],
@@ -221,14 +237,14 @@ const labelColumns = [
 const BarChartPerformancee: BarChartPerformanceTypes  = {
     colors:[],
 	dataColumns:[],
-	height : 300,
+	height : 338,
     groups : [''],
 	labelColumns:[],
-	showLegend : true,
+	showLegend : false,
 	showTooltip : true,
 	titleTotal : true,
 	totalSum : 0,
-	width : 450,
+	width : 700,
 }
 
 
@@ -292,30 +308,31 @@ const ProductPerformance = () => {
 
 				<div className="p-5 overflow-auto" > 
 
-						{/* <ClayChart
-							data={{
-							columns: chart.data.columns,
-							groups: chart.data.groups,
-							type: chart.data.type,
-							}}
-						/> */}
+			
 				
 				<ClayChart
-			
-
-				
-						
+					
 				axis={{
 					x: {
 						type: 'category',
 						show: true,
-						categories: [...labelColumns]
+						categories: [...labelColumns],
+						position:{x: 30},
+
+						tick:{
+
+							position:{x: 30},
+							
+
+					},
+						
 
 					},
 					y: {
+						
 						show: true,
 						tick: {
-							format: function(x:any) {return '$ ' + x}
+							format: function(x:any) {return '$' + x}
 
 
 							}
@@ -329,35 +346,68 @@ const ProductPerformance = () => {
 					width: {
 						data: 20,
 					},
+					
+
 
 				}}
 				data={{
-					
 					columns:dataChart.data.columns,
                     groups: dataChart.data.groups,
 					type: chart.data.type,
-					labels: {						
-						colors: '#272898',
-						position: {
-							y: -10,
-						},
 
-					},
+					colors: colors,
+				
 				}}
+
+
+
+				grid={{
+					y: {
+
+						lines: [
+							{
+								value: 150,
+								text: "Label 50 for y"
+							},
+				
+							]
+						}
+					}}
 				
 				legend={{
-					show: BarChartPerformancee.showLegend,
+					show: false,
+					item: {
+						onclick: (id: any) => {return false},
+						onover: (id: any) =>  {return false},
+						onout: (id: any) =>  {return false},
+
+					},
+					label:{
+
+						position:{y: + 30},
+						
+					},
+					position:{y: -30},
+
+
 				}}
 				size={{
 					height: BarChartPerformancee.height,
 					width: BarChartPerformancee.width
 				}}
 				tooltip={{
-					show: BarChartPerformancee.showTooltip,
+					show: false,
 				}}
-			/>
+				
+				/>	
+					
+					<div className='legend'>
+					goals
+					achieved
+					exceededs
 					</div>
 
+					</div>
 
 				</div>
 			</div>
