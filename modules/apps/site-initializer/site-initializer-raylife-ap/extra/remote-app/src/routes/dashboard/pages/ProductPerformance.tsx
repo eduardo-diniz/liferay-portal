@@ -418,14 +418,8 @@ const ProductPerformance = () => {
 
 
 				grid={{
-					y: {
+					x: {
 						show: true,
-						lines: [
-							{
-								value: 150,
-								position: "start",
-							},
-							]
 						}
 					}}
 				
@@ -453,17 +447,23 @@ const ProductPerformance = () => {
 				tooltip={{
 					show: false,
 				}}
-				
 				/>	
 					
 					<div className='legend'>
-					goals
-					achieved
-					exceededs
+						<div className="legend-goals">
+							<div className="square-goals"></div>
+							<h6>Goals</h6>
+						</div>
+						<div className="legend-achieved">
+							<div className="square-ach"></div>
+							<h6>Achieved</h6>
+						</div>
+						<div className="legend-exceeded">
+							<div className="square-exc"></div>
+							<h6>Exceeded</h6>
+						</div>
 					</div>
-
 					</div>
-
 				</div>
 			</div>
 	);

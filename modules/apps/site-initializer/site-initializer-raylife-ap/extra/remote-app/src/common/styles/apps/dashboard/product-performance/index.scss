@@ -56,23 +56,62 @@ $product-performance-border-config: 1px solid hsl(209, 36%, 85%);
 		cursor: default;
 	}
 
-	.bb{
-		g{
-			margin-top: 30px;
-		}
-	}
-
-	div.quadrado {
-		line-height:0;
-		width:0;
-		height:0;
-		border-style: solid;
-		border-color: #f00 ;
-		border-width: 10px 10px 10px;
-		}
-
-	div.legend{
+	.legend{
 		display: flex;
 		justify-content: end;
 		padding-top: 20px;
+		.legend-goals{
+			display: flex;
+			margin-right: 8px;
+			align-items: center;
+			.square-goals{
+				line-height:0;
+				width:0;
+				height:0;
+				border-style: solid;
+				border-color: #DCF1FD ;
+				border-width: 5px;
+				margin-right: 8px;
+				justify-content: center;
+			}
+			h6{
+				margin: 0;
+			}
+		}
+		.legend-achieved{
+			display: flex;
+			margin-right: 8px;
+			align-items: center;
+			.square-ach{
+				line-height:0;
+				width:0;
+				height:0;
+				border-style: solid;
+				border-color: #55C2FF ;
+				border-width: 5px;
+				margin-right: 8px;
+				justify-content: center;
+			}
+			h6{
+				margin: 0;
+			}
+		}
+		.legend-exceeded{
+			display: flex;
+			margin-right: 5px;
+			align-items: center;
+			.square-exc{
+				line-height:0;
+				width:0;
+				height:0;
+				border-style: solid;
+				border-color: #FFD76E ;
+				border-width: 5px;
+				margin-right: 8px;
+				justify-content: center;
+			}
+			h6{
+				margin: 0;
+			}
+		}
 	}
