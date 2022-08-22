@@ -17,14 +17,13 @@ import ClayChart from '@clayui/charts';
 import {ClaySelect} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
 import classNames from 'classnames';
-import {useEffect, useState} from 'react';
-import { start } from 'repl';
-import { Z_FIXED } from 'zlib';
+import {useEffect, useRef, useState} from 'react';
 
 import Header from '../../../common/components/header';
 import ProductList, {
 	ProductCell,
 } from '../../../common/components/product-list';
+import dataColumn from './DataProductPerformance';
 
 const PRODUCT_SALES_GOAL = [
 	{
@@ -59,14 +58,43 @@ const PRODUCT_SALES_GOAL = [
 	},
 ];
 
-const TIME_PERIODS = ['YTD', '3 MO', '6 MO'];
+const PERIOD = {
+	SIX_MONTH: '2',
+	THREE_MONTH: '1',
+	YTD: '3',
+};
+
+
+const TIME_PERIODS = [
+	{
+		label: '3 MO',
+		padding: 30,
+		value: PERIOD.THREE_MONTH,
+		width: 20,
+		
+	},
+	{
+		label: '6 MO',
+		padding: 100,
+		value: PERIOD.SIX_MONTH,
+		width: 50,
+
+
+	},
+	{
+		label: 'YTD',
+		padding: 130,
+		value: PERIOD.YTD,
+		width: 120,
+	},
+];
 
 
 type BarChartPerformanceTypes = {
     colors: string[],
 	dataColumns: string[],
-	height: number,
     groups: string[],
+	height: number,
 	labelColumns: string[],
 	showLegend: boolean,
 	showTooltip: boolean,
@@ -75,197 +103,38 @@ type BarChartPerformanceTypes = {
 	width: number,
 }
 
-const colors:string[] = [
-    '#DCF1FD',
-    '#55C2FF',
-    '#FFD76E',
-];
 
-const dataColumn: any = {
-	threeMonths: {
 
-		
-	},
 
-	sixMonths: {
 
-		
-	},
-	
-	yearly: {
-		jan:{
-			currentValue: 300,
-			goals: 200,
-			exceeded: 300
-			}	
-		,
-		feb:{
-			currentValue: 25,
-			goals: 210,
-			exceeded: 300
-
-		},
-			
-		mar:{
-			
-			currentValue: 25,
-			goals: 250,
-			exceeded: 300
-
-		}
-			,
-		apr:{
-			
-			currentValue: 25,
-			goals: 320,
-			exceeded: 300
-
-		}
-			,
-		may:{
-			
-			currentValue: 25,
-			goals: 200,
-			exceeded: 300
-
-		}
-			,
-		jun:
-		{
-			currentValue: 25,
-			goals: 120,
-			exceeded: 300
-
-		}
-			,
-		jul:
-		{
-			currentValue: 25,
-			goals: 320,
-			exceeded: 300
-
-		}
-			,
-		aug:
-		{
-			currentValue: 25,
-			goals: 220,
-			exceeded: 300
-
-		}
-			,
-		sep:
-		
-		{  
-			currentValue: 25,
-			goals: 20,
-			exceeded: 300
-
-		}	
-		,
-	
-		oct:
-		{
-			currentValue: 25,
-			goals: 320,
-			exceeded: 300
-
-		}
-			,
-		nov:
-		{
-			currentValue: 25,
-			goals: 420,
-			exceeded: 300
-
-		}
-			,
-		dec:
-		{
-			currentValue: 25,
-			goals: 210,
-			exceeded: 300
-
-		}
-			,
-
-	}	,
-
-	
+const colors: {[keys:string]:{}} = {
+	achieved: '#55C2FF',
+	exceeded: '#FFD76E',
+	goals:'#DCF1FD'
 }
+const date = new Date();
+const actualMonth = date.getMonth();
+
+const yearly = Object.values(dataColumn.yearly).filter((month: any) => month.index <= actualMonth)
+
+const three = Object.values(dataColumn.yearly).filter((month: any) => month.index < (actualMonth + 1) && month.index > (actualMonth -3))
+
+const six = Object.values(dataColumn.yearly).filter((month: any) => month.index < (actualMonth + 1) && month.index > (actualMonth -6))
 
 
+const labelFilterYearly = Object.values(dataColumn.yearly).filter((label: any) =>  label.index <= actualMonth).map((label:any) => label.label);
 
-const chart=  {
-	data: {
-		columns: [
-		["goal", 200, 200, 200, 400, 150, 250],
-		["exceeded", 30, 100, 100, 200, 150, 50],
-		["achieved", 230, 200, 200, 300, 250, 250]
-		], 
-		groups: [
-			[
-				'goal',
-				'exceeded',
-				'achieved'
-			]
-		],
-		type: "bar", 
-		},
+const labelFilterThree = Object.values(dataColumn.yearly).filter((label: any) => label.index < (actualMonth + 1) && label.index > (actualMonth -3)).map((label:any) => label.label);
 
-};
+const labelFilterSix = Object.values(dataColumn.yearly).filter((label: any) => label.index < (actualMonth + 1) && label.index > (actualMonth -6)).map((label:any) => label.label);
 
-const achieved = Object.values(dataColumn.yearly).map((item: any) => item.currentValue)
-const goals = Object.values(dataColumn.yearly).map((item: any) => item.goals)
-const exceeded = Object.values(dataColumn.yearly).map((item: any) => item.exceeded)
-
-
-const dataChart: any = {
-
-	data:{
-
-		columns: [
-			
-			["achieved",  ...achieved],
-			["goals", ...goals ],
-			["exceeded", ...exceeded ],
-		],
-		groups: [
-			[
-				'goals',
-				'achieved',
-				'exceeded',
-				
-			]
-		],
-		
-	}
-}
-
-
-
-
-const labelColumns = [
-	'Jan 2022',
-	'Feb 2022',
-	'Mar 2022',
-	'Apr 2022',
-	'May 2022',
-	'Jun 2022',
-	'Jul 2022',
-	'Ago 2022',
-	'Sep 2022',
-	'Oct 2022',
-	'Nov 2022',
-	'Dec 2022',
-];
-
+// eslint-disable-next-line no-console
 
 const BarChartPerformancee: BarChartPerformanceTypes  = {
     colors:[],
 	dataColumns:[],
-	height : 338,
     groups : [''],
+	height : 338,
 	labelColumns:[],
 	showLegend : false,
 	showTooltip : true,
@@ -275,13 +144,72 @@ const BarChartPerformancee: BarChartPerformanceTypes  = {
 }
 
 
+
 const ProductPerformance = () => {
 	const [products, setProducts] = useState<ProductCell[]>([]);
-	const [timePeriod, setTimePeriod] = useState(TIME_PERIODS[0]);
+	const [timePeriod, setTimePeriod] = useState(PERIOD.THREE_MONTH);
+	const [filt, setFilt] = useState<any>(yearly);
+	const [labe] = useState<any>();
+	const [width, setWidht] = useState<any>();
+
+	const labelRef = useRef<any>();
+
+	
+
+	const achieved = filt.map((item: any) =>  item.achieved > item.goals ? item.goals: item.achieved)
+
+	const exceeded = filt.map((item: any) => item.achieved > item.goals ? item.achieved - item.goals : NaN)
+
+	const goals = filt.map((item:any) => item.goals < 0 || item.goals < item.achieved ? NaN : item.goals)
+
+	const dataChart: any = {
+
+		data:{
+	
+			columns: 
+				
+			[
+				['achieved', ...achieved],
+				['exceeded', ...exceeded],
+				['goals', ...goals]
+			]
+			,
+			groups: [
+				['achieved','exceeded'], [ 'achieved', 'goals',]
+			],
+	
+
+		}
+	}
 
 	useEffect(() => {
 		setProducts(PRODUCT_SALES_GOAL);
-	}, []);
+
+	// eslint-disable-next-line no-console
+	console.log(labelRef.current)
+
+		if(timePeriod === PERIOD.SIX_MONTH){
+
+			setFilt(six)
+			setWidht(10)
+			labelRef.current.categories(labelFilterSix)
+		}
+
+		if(timePeriod === PERIOD.THREE_MONTH){
+
+			setFilt(three)
+			setWidht(60)	
+			labelRef.current.categories(labelFilterThree)
+		}
+
+		if(timePeriod === PERIOD.YTD){
+			
+			setWidht(20)
+			setFilt(yearly)
+			labelRef.current.categories(labelFilterYearly)
+		}
+
+	}, [timePeriod]);
 
 	const isFilterAllActive = (product: ProductCell) => !product.active;
 	const findActiveProduct = products.find((product) => product.active)
@@ -338,12 +266,11 @@ const ProductPerformance = () => {
 									className="mr-1"
 									symbol="angle-right-small"
 								/>
-
 								<span className="font-weight-bolder">{`${findActiveProduct}`}</span>
 							</>
 						)}
 					</p>
-
+					
 					<ClaySelect
 						className="product-performance-select"
 						onChange={({target}) => {
@@ -355,117 +282,138 @@ const ProductPerformance = () => {
 						{TIME_PERIODS.map((timePeriod, index) => (
 							<ClaySelect.Option
 								key={index}
-								label={timePeriod}
-								value={timePeriod}
+								label={timePeriod.label}
+								value={timePeriod.value}
 							/>
 						))}
 					</ClaySelect>
 				</div>
-
-				<div className="p-5 overflow-auto" > 
-
-			
 				
-				<ClayChart
-					
-				axis={{
-					x: {
-						type: 'category',
-						show: true,
-						categories: [...labelColumns],
-						position:{x: 30},
+				<div className="overflow-auto px-2 py-5" style={{width: '500'}} > 
 
-						tick:{
-							position:{x: 30},
+					<ClayChart
+						axis={{
+							x: {
+								categories: labe,
+								height: 85,
+								label: {
+									position:"outer-center",
+									text: "Period (Month)",
+									},	
+								padding: {
+									left: 0,
+									right:0.5,
 							
+								},		
+									position:{x: 30},
+									show: true,
+									type: 'category',
+									width:100,
+							
+								},
+							y: {
+								fixed: true,
+								height: 80,
+								label: {
+									position: "outer-middle",
+									text: "Dollar ($)",
+									},		
+									padding: {
+									left: 20,
+									right: 20,
+									
+								
+								},	
+								show: true,
+								tick: {
+									format(x:any) {return '$' + x},
+									stepSize: 50,
+								},
+								width:100,
+								},
+							}}
 
-					},
-						
-
-					},
-					y: {
-						fixed: true,
-						show: true,
-						tick: {
-							stepSize: 200,
-							format: function(x:any) {return '$' + x}
-
-
-							}
-
-					},
-				}}
-				bar={{
-					radius: {
-						ratio: 0.2,
-					},
-					width: {
-						data: 20,
-					},
-					
-
-
-				}}
-				data={{
-					columns:dataChart.data.columns,
-                    groups: dataChart.data.groups,
-					type: chart.data.type,
-
-					colors: colors,
-				
-				}}
-
-
-
-				grid={{
-					y: {
-						show: true,
-						lines: [
-							{
-								value: 150,
-								position: "start",
-							},
-							]
+						bar={{
+							margin: 2,
+							padding: 1,
+							width,
 						}
-					}}
-				
-				legend={{
-					show: false,
-					item: {
-						onclick: (id: any) => {return false},
-						onover: (id: any) =>  {return false},
-						onout: (id: any) =>  {return false},
+						}
 
-					},
-					label:{
-
-						position:{y: + 30},
 						
-					},
-					position:{y: -30},
+						data={{
+							colors,
+							columns:dataChart.data.columns,
+							groups: dataChart.data.groups,					
+							order: { function ()  {Object.values(dataColumn.yearly).map((item: any) => item.achieved > item.goals ? 'asc' : 'desc ')}},
+							type: 'bar',
+							
+						}}
 
+						grid={{
+							x: {
+								show: true,
+								},
+								y: {
+									show: true,
+									}
+							}}
+							
+						legend={{
+							inset: {
+								anchor: "botton-right" , // top-left, top-right, bottom-left, bottom-right
+								step: 1,
+								x: 35,
+								y: 0,
+								
+							},
+							item: {
+								onclick: () => {return false},
+								onout: () =>  {return false},
+								onover: () =>  {return false},
+							},
 
-				}}
-				size={{
-					height: BarChartPerformancee.height,
-					width: BarChartPerformancee.width
-				}}
-				tooltip={{
-					show: false,
-				}}
-				
-				/>	
+							position: "inset",  // bottom, right, inset
+							show: false,
+						}}
+						
+						padding = {{
+							right: 30,
+						
+						}}
+						ref={labelRef}
+
+						size={{
+							height: BarChartPerformancee.height,
+							width: BarChartPerformancee.width
+						}}
+						tooltip={{
+							show: true,
+						}}
+					/>	
 					
 					<div className='legend'>
-					goals
-					achieved
-					exceededs
-					</div>
+						<div className="legend-goals">
+							<div className="square-goals"></div>
 
-					</div>
+							<h6>Goals</h6>
+						</div>
 
+						<div className="legend-achieved">
+							<div className="square-ach"></div>
+
+							<h6>Achieved</h6>
+						</div>
+						
+						<div className="legend-exceeded">
+							<div className="square-exc"></div>
+
+							<h6>Exceeded</h6>
+						</div>
+					</div>
 				</div>
 			</div>
+		</div>
 	);
 };
 
