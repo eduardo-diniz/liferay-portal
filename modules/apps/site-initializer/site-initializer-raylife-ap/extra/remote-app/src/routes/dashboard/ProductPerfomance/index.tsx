@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
@@ -28,12 +29,10 @@ import {
 	currentDateString,
 	december,
 	january,
+	threeMonthsAgoDate,
 } from '../../../common/utils/dateFormatter';
-import {dataColumn} from './DataProductPerfomance';
 import {
 	BarChartPerformanceTypes,
-	DataChart,
-	MonthProperties,
 	Policy,
 	ProductListType,
 	SalesGoal,
@@ -85,90 +84,230 @@ const colors: {[keys: string]: {}} = {
 	goals: '#DCF1FD',
 };
 
-const date = new Date();
-const actualMonth = date.getMonth();
-
-const filterYearly = Object.values(dataColumn).filter(
-	(month: MonthProperties) => month.index <= actualMonth
-);
-
-const filterSix = Object.values(dataColumn).filter(
-	(month: MonthProperties) =>
-		month.index < actualMonth + 1 && month.index > actualMonth - 6
-);
-
-const filterThree = Object.values(dataColumn).filter(
-	(month: MonthProperties) =>
-		month.index < actualMonth + 1 && month.index > actualMonth - 3
-);
-
-const setLabelYearly = Object.values(dataColumn)
-	.filter((label: MonthProperties) => label.index <= actualMonth)
-	.map((label: MonthProperties) => label.label);
-
-const setLabelSix = Object.values(dataColumn)
-	.filter(
-		(label: MonthProperties) =>
-			label.index < actualMonth + 1 && label.index > actualMonth - 6
-	)
-	.map((label: MonthProperties) => label.label);
-
-const setLabelThree = Object.values(dataColumn)
-	.filter(
-		(label: MonthProperties) =>
-			label.index < actualMonth + 1 && label.index > actualMonth - 3
-	)
-	.map((label: MonthProperties) => label.label);
-
 const paddingValue = 100;
 
 const ProductPerformance = () => {
 	const [products, setProducts] = useState<ProductCell[]>([]);
-	const [timePeriod, setTimePeriod] = useState(PERIOD.THREE_MONTH);
-	const [filt, setFilt] = useState<MonthProperties[]>(filterYearly);
+	const [timePeriod, setTimePeriod] = useState(PERIOD.YTD);
 	const [labelAxisX] = useState<[]>();
 	const ref = useRef<any>();
+	const date = new Date();
+	const actualMonth = date.getMonth();
 
-	const achieved = filt.map((item: MonthProperties) =>
-		item.achieved > item.goals ? item.goals : item.achieved
+	const [threeSales, setThreeSales] = useState<any>([]);
+	const [threeGoals, setThreeGoals] = useState<any>([]);
+	const [sixSales, setSixSales] = useState<any>([]);
+	const [sixGoals, setSixGoals] = useState<any>([]);
+	const [yearSales, setYearSales] = useState<any>([]);
+	const [yearGoals, setYearGoals] = useState<any>([]);
+
+	// const [three, setThree] = useState<[]>();
+	// const [six, setSix] = useState<[]>();
+	// const [yearly, setYearly] = useState<[]>();
+
+	// const exceeded = filt.map((item: MonthProperties) =>
+	// 	item.achieved > item.goals ? item.achieved - item.goals : NaN
+	// );
+	// const goals = loadData]((item: MonthProperties) =>
+	// 	item.goals < 0 || item.goals < item.achieved ? NaN : item.goals
+
+	function subtraiaArrays(a1: any, a2: any) {
+		return a1.map((value: number, index: number) => value - a2[index]);
+	}
+
+	const threeMonthsSales = [10, 20, 30];
+
+	const threeMonthsGoals = [30, 20, 40];
+
+	const sixMonthsSales = [10, 20, 30];
+
+	const sixMonthsGoals = [30, 20, 40];
+
+	const salesFilterForThreeMonths = subtraiaArrays(
+		threeMonthsGoals,
+		threeMonthsSales
 	);
 
-	const exceeded = filt.map((item: MonthProperties) =>
-		item.achieved > item.goals ? item.achieved - item.goals : NaN
-	);
-	const goals = filt.map((item: MonthProperties) =>
-		item.goals < 0 || item.goals < item.achieved ? NaN : item.goals
+	const salesFilterForSixMonths = subtraiaArrays(
+		sixMonthsGoals,
+		sixMonthsSales
 	);
 
-	const dataChart: DataChart = {
-		data: {
-			columns: [
-				['achieved', ...achieved],
-				['exceeded', ...exceeded],
-				['goals', ...goals],
-			],
-			groups: [
-				['achieved', 'exceeded'],
-				['achieved', 'goals'],
-			],
-		},
+	console.log('salesFilterForThreeMonths', salesFilterForThreeMonths);
+
+	console.log('salesFilterForSixMonths', salesFilterForSixMonths);
+
+	const policySales = [
+		400,
+		50,
+		100,
+		200,
+		435,
+		450,
+		540,
+		560,
+		180,
+		240,
+		230,
+		211,
+	];
+
+	const goal = [300, 250, 180, 300, 335, 250, 440, 660, 440, 140, 230, 210];
+
+	// const achievedd = () => {
+	// 	achi.map((item: any) =>
+	// 		achi[item] > goal[item]
+	// 			? achieved.push(goal[item])
+	// 			: achieved.push(achi[item])
+	// 	);
+	// };
+
+	// const exceededFilt = () => {
+	// 	for (let i = 0; i < goal.length; i++) {
+	// 		achi[i] > goal[i]
+	// 			? exceeded.push(achi[i] - goal[i])
+	// 			: exceeded.push(NaN);
+	// 	}
+	// };
+
+	// exceededFilt();
+
+	// const goalsFilt = () => {
+	// 	for (let i = 0; i < achieved.length; i++) {
+	// 		goal[i] < achi[i] ? goals.push(NaN) : goals.push(goal[i] - achi[i]);
+	// 	}
+	// };
+
+	// goalsFilt();
+
+	const getThreeMonthsSales = () => {
+		for (let i = 0; i < goal.length; i++) {
+			if (i < actualMonth + 1 && i > actualMonth - 3) {
+				threeSales.push(policySales[i]);
+			}
+		}
+
+		return setThreeSales(threeSales);
 	};
 
-	const defineFilt = (timePeriod: string) => {
-		if (timePeriod === PERIOD.SIX_MONTH) {
-			setFilt(filterSix);
-			ref.current.categories(setLabelSix);
+	const getThreeMonthsGoals = () => {
+		for (let i = 0; i < policySales.length; i++) {
+			if (i < actualMonth + 1 && i > actualMonth - 3) {
+				threeGoals.push(goal[i]);
+			}
 		}
-		if (timePeriod === PERIOD.THREE_MONTH) {
-			setFilt(filterThree);
-			ref.current.categories(setLabelThree);
+
+		return setThreeGoals(threeGoals);
+	};
+
+	const getSixMonthsSales = () => {
+		for (let i = 0; i < goal.length; i++) {
+			if (i < actualMonth + 1 && i > actualMonth - 6) {
+				sixSales.push(goal[i]);
+			}
 		}
-		if (timePeriod === PERIOD.YTD) {
-			setFilt(filterYearly);
-			ref.current.categories(setLabelYearly);
-		} else {
-			timePeriod = PERIOD.YTD;
+
+		return setSixSales(sixSales);
+	};
+
+	const getSixMonthsGoals = () => {
+		for (let i = 0; i < goal.length; i++) {
+			if (i < actualMonth + 1 && i > actualMonth - 6) {
+				sixGoals.push(policySales[i]);
+			}
 		}
+
+		return setSixGoals(sixGoals);
+	};
+
+	const getYearlyMonthsSales = () => {
+		for (let i = 0; i < goal.length; i++) {
+			if (i <= actualMonth) {
+				yearSales.push(goal[i]);
+			}
+		}
+
+		return setYearSales(yearSales);
+	};
+
+	const getYearlyMonthsGoals = () => {
+		for (let i = 0; i < goal.length; i++) {
+			if (i <= actualMonth) {
+				yearGoals.push(policySales[i]);
+			}
+		}
+
+		return setYearGoals(yearGoals);
+	};
+
+	const loadData = [
+		{
+			achieved: ['achieved', ...threeSales],
+			dataGroups: ['goals', 'achieved', 'exceeded', 'goals'],
+			exceeded: ['exceeded', 0, 0, 0],
+			goals: ['goals', ...threeGoals],
+			label: ['Ago 2022', 'Jul 2022', 'Jun 2022'],
+			period: 2,
+			periodDate: 'Period',
+		},
+		{
+			achieved: ['achieved', ...sixSales],
+			dataGroups: ['goals', 'achieved'],
+			exceeded: [0, 0, 0, 0, 0, 0],
+			goals: ['goals', ...sixGoals],
+			label: [
+				'Set 2022',
+				'Agst 2022',
+				'Jul 2022',
+				'Jun 2022',
+				'Mai 222',
+				'Abr 2022',
+			],
+			period: 1,
+			periodDate: 'Period',
+		},
+		{
+			achieved: ['achieved', ...yearSales],
+			dataGroups: ['goals', 'achieved'],
+			exceeded: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+			goals: ['goals', ...yearGoals],
+			label: [
+				'Set 2022',
+				'Agost 2022',
+				'Jul 2022',
+				'Jun 2022',
+				'maio 222',
+				'abril 2022',
+				'Mar 2022',
+				'feb 222',
+				'jan 2022',
+			],
+			period: 0,
+			periodDate: 'Period',
+		},
+	];
+
+	const getData = () => {
+		return loadData.filter((data) => data.period === Number(timePeriod));
+	};
+
+	console.log(getData()[0]?.achieved);
+
+	const dataChart = {
+		colors,
+		columns: [getData()[0]?.achieved, getData()[0]?.goals],
+		groups: [
+			['goals', 'exceeded'],
+			['achieved', 'goals'],
+		],
+		order: {
+			function() {
+				loadData.map((month: any) =>
+					month.achieved > month.goals ? 'asc' : 'desc '
+				);
+			},
+		},
+		type: 'bar',
 	};
 
 	const productsBaseSetup = async () => {
@@ -246,8 +385,40 @@ const ProductPerformance = () => {
 	useEffect(() => {
 		productsBaseSetup();
 
-		defineFilt(timePeriod);
-	}, [timePeriod]);
+		getThreeMonthsSales();
+		getThreeMonthsGoals();
+		getSixMonthsSales();
+		getSixMonthsGoals();
+		getYearlyMonthsSales();
+		getYearlyMonthsGoals();
+
+		// getSixMonthsSales();
+		// getSixMonthsGoals();
+		// getYearlyMonthsSales();
+		// getYearlyMonthsGoals();
+
+		getSalesGoal(
+			currentDateString[0],
+			currentDateString[1],
+			threeMonthsAgoDate[0],
+			threeMonthsAgoDate[1]
+		).then((results: any) => {
+			// const lastThreeMonthsGoalsResult = results?.data?.items;
+
+			console.log('salesGoalMeta', results.data.items);
+		});
+
+		getPoliciesForSalesGoal(
+			currentDateString[0],
+			currentDateString[1],
+			threeMonthsAgoDate[0],
+			threeMonthsAgoDate[1]
+		).then((results: any) => {
+			console.log('vendas', results.data.items);
+		});
+
+		ref.current.categories(getData()[0]?.label);
+	}, []);
 
 	const handleProductFilterToggle = (
 		productExternalReferenceCode: string
@@ -318,6 +489,7 @@ const ProductPerformance = () => {
 						className="product-performance-select"
 						onChange={({target}) => {
 							setTimePeriod(target.value);
+							console.log(timePeriod);
 						}}
 						sizing="sm"
 						value={timePeriod}
@@ -362,7 +534,7 @@ const ProductPerformance = () => {
 									format(x: string) {
 										return '$' + x;
 									},
-									stepSize: 50,
+									stepSize: 100,
 								},
 								width: 100,
 							},
@@ -370,23 +542,7 @@ const ProductPerformance = () => {
 						bar={{
 							width: 20,
 						}}
-						data={{
-							colors,
-							columns: dataChart.data.columns,
-							groups: dataChart.data.groups,
-							order: {
-								function() {
-									Object.values(
-										dataColumn
-									).map((item: MonthProperties) =>
-										item.achieved > item.goals
-											? 'asc'
-											: 'desc '
-									);
-								},
-							},
-							type: 'bar',
-						}}
+						data={dataChart}
 						grid={{
 							x: {
 								show: true,
