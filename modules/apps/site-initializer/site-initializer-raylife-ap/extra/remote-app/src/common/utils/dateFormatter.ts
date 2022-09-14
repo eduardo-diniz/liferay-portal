@@ -35,6 +35,14 @@ export const december = '12';
 export const arrayOfMonthsWith30Days = [3, 5, 8, 10];
 export const arrayOfMonthsWith31Days = [0, 2, 4, 6, 7, 9, 11];
 
+export const threeMonthsAgoDate = convertDateToString(
+	new Date(new Date().setMonth(threeMonthsAgo))
+).split('-');
+
+export const sixMonthsAgoDate = convertDateToString(
+	new Date(new Date().setMonth(sixMonthsAgo))
+).split('-');
+
 export default function formatDate(date: Date, withSlash = false) {
 	const newDate = date.toISOString().substring(0, 10).split('-');
 

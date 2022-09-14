@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 /**
  * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
@@ -75,19 +74,15 @@ const sixMonthsLabel = [
 	CONSTANTS.MONTHS_ABREVIATIONS[d.getMonth()],
 ];
 
-let YearToDateLabelReverse: string[] = [];
-
-const YearToDateLabel: string[] = [];
+const yearToDateLabel: string[] = [];
 
 for (let i = 0; i <= d.getMonth(); i++) {
-	YearToDateLabel.push(
+	yearToDateLabel.push(
 		CONSTANTS.MONTHS_ABREVIATIONS[d.getMonth() - i] + ' ' + d.getFullYear()
 	);
 }
 
-YearToDateLabelReverse = YearToDateLabel.reverse();
-
-console.log('YearToDateLabelReverse', YearToDateLabelReverse);
+yearToDateLabel.reverse();
 
 const BarChartPerformancee: BarChartPerformanceTypes = {
 	colors: [],
@@ -134,7 +129,6 @@ const paddingValue = 100;
 const ProductPerformance = () => {
 	const [products, setProducts] = useState<ProductCell[]>([]);
 	const [timePeriod, setTimePeriod] = useState('0');
-	const [_labelAxisX] = useState<string[]>(['']);
 	const ref = useRef<any>();
 	const [isLoading, setIsLoading] = useState(false);
 	const [threeMonthsSalesData, setThreeMonthsSalesData] = useState<any>([]);
@@ -143,7 +137,7 @@ const ProductPerformance = () => {
 	const [sixMonthsGoalsData, setSixMonthsGoalsData] = useState<any>([]);
 	const [yearToDateSales, setYearToDateSales] = useState<any>([]);
 	const [yearToDateGoals, setYearToDateGoals] = useState<any>([]);
-	let compare = '';
+	let categoryLabelTooltip = '';
 
 	function populateSales(policiesResult: any, policiesArray: any) {
 		policiesResult.forEach((policy: any) => {
@@ -373,7 +367,7 @@ const ProductPerformance = () => {
 				'goals',
 				...getGoalsValues(yearToDateGoals, yearToDateSales),
 			],
-			label: YearToDateLabel,
+			label: yearToDateLabel,
 			period: 0,
 			periodDate: 'Period',
 		},
@@ -474,7 +468,6 @@ const ProductPerformance = () => {
 	};
 
 	const lengthExceeded = getData()[0]?.exceeded.length - 1;
-	console.log('lengthExceeded', lengthExceeded);
 
 	useEffect(() => {
 		productsBaseSetup();
@@ -547,7 +540,6 @@ const ProductPerformance = () => {
 
 			if (lengthExceeded === 6) {
 				setIsLoading(true);
-				console.log('entrou 6 meses');
 
 				if (isLoading === true) {
 					ref.current.categories(getData()[0]?.label);
@@ -584,7 +576,6 @@ const ProductPerformance = () => {
 				setThreeMonthsSalesData(lastThreeMonthsSalesResult);
 			});
 			if (lengthExceeded === 3) {
-				console.log('entrou 3neses');
 				setIsLoading(true);
 				if (isLoading === true) {
 					ref.current.categories(getData()[0]?.label);
@@ -593,7 +584,6 @@ const ProductPerformance = () => {
 		}
 	}, [lengthExceeded, isLoading, timePeriod]);
 
-	console.log(isLoading);
 	const handleProductFilterToggle = (
 		productExternalReferenceCode: string
 	) => {
@@ -742,10 +732,10 @@ const ProductPerformance = () => {
 							}}
 							tooltip={{
 								format: {
-									name(legend: any) {
-										compare = legend;
+									name(categoryLabel: any) {
+										categoryLabelTooltip = categoryLabel;
 
-										return legend;
+										return categoryLabel;
 									},
 
 									value(
@@ -754,7 +744,7 @@ const ProductPerformance = () => {
 										_index: any,
 										x: any
 									) {
-										return compare === 'goals'
+										return categoryLabelTooltip === 'goals'
 											? yearToDateGoals[x]
 											: value;
 									},

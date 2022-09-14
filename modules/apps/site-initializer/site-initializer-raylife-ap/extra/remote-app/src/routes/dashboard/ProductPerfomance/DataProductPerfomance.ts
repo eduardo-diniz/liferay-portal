@@ -69,7 +69,7 @@ export const dataColumn: FilterMonth = {
 		exceeded: 0,
 		goals: 200,
 		index: 7,
-		label: 'Ago 2022',
+		label: 'Aug 2022',
 	},
 	8: {
 		achieved: 30,
