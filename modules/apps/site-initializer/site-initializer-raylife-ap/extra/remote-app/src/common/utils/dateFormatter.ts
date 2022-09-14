@@ -41,6 +41,10 @@ export const threeMonthsAgoDate = convertDateToString(
 	new Date(new Date().setMonth(threeMonthsAgo))
 ).split('-');
 
+export const sixMonthsAgoDate = convertDateToString(
+	new Date(new Date().setMonth(sixMonthsAgo))
+).split('-');
+
 export default function formatDate(date: Date, withSlash = false) {
 	const newDate = date.toISOString().substring(0, 10).split('-');
 
