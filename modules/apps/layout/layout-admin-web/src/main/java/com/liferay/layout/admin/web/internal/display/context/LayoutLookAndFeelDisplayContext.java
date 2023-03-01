@@ -129,10 +129,8 @@ public class LayoutLookAndFeelDisplayContext {
 			"globalCSSCETSelectorURL",
 			() -> PortletURLBuilder.create(
 				_layoutsAdminDisplayContext.getCETItemSelectorURL(
-					"selectGlobalCSSCETs",
+					true, "selectGlobalCSSCETs",
 					ClientExtensionEntryConstants.TYPE_GLOBAL_CSS)
-			).setParameter(
-				"multipleSelection", true
 			).buildString()
 		).put(
 			"selectGlobalCSSCETsEventName", "selectGlobalCSSCETs"
@@ -151,10 +149,8 @@ public class LayoutLookAndFeelDisplayContext {
 			"globalJSCETSelectorURL",
 			() -> PortletURLBuilder.create(
 				_layoutsAdminDisplayContext.getCETItemSelectorURL(
-					"selectGlobalJSCETs",
+					true, "selectGlobalJSCETs",
 					ClientExtensionEntryConstants.TYPE_GLOBAL_JS)
-			).setParameter(
-				"multipleSelection", true
 			).buildString()
 		).put(
 			"selectGlobalJSCETsEventName", "selectGlobalJSCETs"
@@ -358,7 +354,7 @@ public class LayoutLookAndFeelDisplayContext {
 			"themeSpritemapCETSelectorURL",
 			() -> PortletURLBuilder.create(
 				_layoutsAdminDisplayContext.getCETItemSelectorURL(
-					"selectThemeSpritemapCET",
+					false, "selectThemeSpritemapCET",
 					ClientExtensionEntryConstants.TYPE_THEME_SPRITEMAP)
 			).buildString()
 		).build();

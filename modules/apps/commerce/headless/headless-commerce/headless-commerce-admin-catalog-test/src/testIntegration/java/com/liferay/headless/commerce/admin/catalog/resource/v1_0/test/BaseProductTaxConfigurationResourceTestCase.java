@@ -54,6 +54,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -312,10 +313,18 @@ public abstract class BaseProductTaxConfigurationResourceTestCase {
 
 		ProductTaxConfiguration getProductTaxConfiguration =
 			productTaxConfigurationResource.getProductIdTaxConfiguration(
-				postProductTaxConfiguration.getId());
+				testGetProductIdTaxConfiguration_getId(
+					postProductTaxConfiguration));
 
 		assertEquals(postProductTaxConfiguration, getProductTaxConfiguration);
 		assertValid(getProductTaxConfiguration);
+	}
+
+	protected Long testGetProductIdTaxConfiguration_getId(
+			ProductTaxConfiguration productTaxConfiguration)
+		throws Exception {
+
+		return productTaxConfiguration.getId();
 	}
 
 	protected ProductTaxConfiguration
@@ -343,12 +352,20 @@ public abstract class BaseProductTaxConfigurationResourceTestCase {
 									{
 										put(
 											"id",
-											productTaxConfiguration.getId());
+											testGraphQLGetProductIdTaxConfiguration_getId(
+												productTaxConfiguration));
 									}
 								},
 								getGraphQLFields())),
 						"JSONObject/data",
 						"Object/productIdTaxConfiguration"))));
+	}
+
+	protected Long testGraphQLGetProductIdTaxConfiguration_getId(
+			ProductTaxConfiguration productTaxConfiguration)
+		throws Exception {
+
+		return productTaxConfiguration.getId();
 	}
 
 	@Test
@@ -516,6 +533,12 @@ public abstract class BaseProductTaxConfigurationResourceTestCase {
 	}
 
 	protected void assertValid(Page<ProductTaxConfiguration> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<ProductTaxConfiguration> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<ProductTaxConfiguration> productTaxConfigurations =
@@ -531,6 +554,20 @@ public abstract class BaseProductTaxConfigurationResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -697,6 +734,10 @@ public abstract class BaseProductTaxConfigurationResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

@@ -58,6 +58,7 @@ import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
 import com.liferay.friendly.url.exception.NoSuchFriendlyURLEntryLocalizationException;
 import com.liferay.friendly.url.model.FriendlyURLEntry;
 import com.liferay.friendly.url.model.FriendlyURLEntryLocalization;
+import com.liferay.friendly.url.model.FriendlyURLEntryLocalizationTable;
 import com.liferay.friendly.url.service.FriendlyURLEntryLocalService;
 import com.liferay.journal.configuration.JournalGroupServiceConfiguration;
 import com.liferay.journal.configuration.JournalServiceConfiguration;
@@ -764,6 +765,12 @@ public class JournalArticleLocalServiceImpl
 		Date displayDate = _portal.getDate(
 			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
 			displayDateMinute, user.getTimeZone(), null);
+
+		if ((displayDateMonth == displayDateDay) &&
+			(displayDateDay == displayDateYear) && (displayDateYear == 0)) {
+
+			displayDate = null;
+		}
 
 		Date expirationDate = null;
 		Date reviewDate = null;
@@ -3279,6 +3286,27 @@ public class JournalArticleLocalServiceImpl
 		}
 
 		return articles.get(0);
+	}
+
+	@Override
+	public List<Long> getGroupIdsByUrlTitle(long companyId, String urlTitle) {
+		return journalArticlePersistence.dslQuery(
+			DSLQueryFactoryUtil.selectDistinct(
+				FriendlyURLEntryLocalizationTable.INSTANCE.groupId
+			).from(
+				FriendlyURLEntryLocalizationTable.INSTANCE
+			).where(
+				FriendlyURLEntryLocalizationTable.INSTANCE.companyId.eq(
+					companyId
+				).and(
+					FriendlyURLEntryLocalizationTable.INSTANCE.classNameId.eq(
+						_portal.getClassNameId(JournalArticle.class.getName())
+					).and(
+						FriendlyURLEntryLocalizationTable.INSTANCE.urlTitle.eq(
+							urlTitle)
+					)
+				)
+			));
 	}
 
 	@Override
@@ -6308,6 +6336,13 @@ public class JournalArticleLocalServiceImpl
 
 		JournalArticle article = getArticle(groupId, articleId);
 
+		if ((article.getClassNameId() > 0) &&
+			(displayDateMonth == displayDateDay) &&
+			(displayDateDay == displayDateYear) && (displayDateYear == 0)) {
+
+			displayDate = null;
+		}
+
 		serviceContext.validateModifiedDate(
 			article, ArticleVersionException.class);
 
@@ -7235,8 +7270,8 @@ public class JournalArticleLocalServiceImpl
 				serviceContext.setScopeGroupId(article.getGroupId());
 
 				journalArticleLocalService.updateStatus(
-					userId, article, WorkflowConstants.STATUS_APPROVED, null,
-					serviceContext, new HashMap<>());
+					userId, article.getId(), WorkflowConstants.STATUS_APPROVED,
+					new HashMap<>(), serviceContext);
 			});
 		actionableDynamicQuery.setTransactionConfig(
 			DefaultActionableDynamicQuery.REQUIRES_NEW_TRANSACTION_CONFIG);

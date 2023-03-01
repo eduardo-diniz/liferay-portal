@@ -15,7 +15,6 @@
 package com.liferay.fragment.internal.renderer;
 
 import com.liferay.document.library.kernel.service.DLAppLocalService;
-import com.liferay.fragment.constants.FragmentEntryLinkConstants;
 import com.liferay.fragment.contributor.FragmentCollectionContributorRegistry;
 import com.liferay.fragment.input.template.parser.FragmentEntryInputTemplateNodeContextHelper;
 import com.liferay.fragment.input.template.parser.InputTemplateNode;
@@ -27,7 +26,6 @@ import com.liferay.fragment.processor.PortletRegistry;
 import com.liferay.fragment.renderer.FragmentRenderer;
 import com.liferay.fragment.renderer.FragmentRendererContext;
 import com.liferay.fragment.renderer.constants.FragmentRendererConstants;
-import com.liferay.fragment.service.FragmentEntryLinkLocalService;
 import com.liferay.fragment.service.FragmentEntryLocalService;
 import com.liferay.fragment.util.configuration.FragmentEntryConfigurationParser;
 import com.liferay.info.form.InfoForm;
@@ -55,7 +53,6 @@ import com.liferay.portal.kernel.util.WebKeys;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -130,9 +127,7 @@ public class FragmentEntryFragmentRenderer implements FragmentRenderer {
 	}
 
 	private FragmentEntryLink _getFragmentEntryLink(
-			FragmentRendererContext fragmentRendererContext,
-			PortalCache<String, String> portalCache)
-		throws PortalException {
+		FragmentRendererContext fragmentRendererContext) {
 
 		FragmentEntryLink fragmentEntryLink =
 			fragmentRendererContext.getFragmentEntryLink();
@@ -140,43 +135,12 @@ public class FragmentEntryFragmentRenderer implements FragmentRenderer {
 		FragmentEntry fragmentEntry = _getContributedFragmentEntry(
 			fragmentEntryLink);
 
-		if (fragmentEntry == null) {
-			return fragmentEntryLink;
+		if (fragmentEntry != null) {
+			fragmentEntryLink.setCss(fragmentEntry.getCss());
+			fragmentEntryLink.setHtml(fragmentEntry.getHtml());
+			fragmentEntryLink.setJs(fragmentEntry.getJs());
+			fragmentEntryLink.setType(fragmentEntry.getType());
 		}
-
-		if (fragmentEntryLink.getLastPropagationDate() == null) {
-			String processedEditableValues =
-				_fragmentEntryLinkLocalService.getProcessedEditableValues(
-					fragmentEntryLink);
-
-			if (!Objects.equals(
-					processedEditableValues,
-					fragmentEntryLink.getEditableValues())) {
-
-				fragmentEntryLink.setEditableValues(processedEditableValues);
-			}
-
-			fragmentEntryLink.setLastPropagationDate(new Date());
-
-			fragmentEntryLink =
-				_fragmentEntryLinkLocalService.updateFragmentEntryLink(
-					fragmentEntryLink);
-
-			StringBundler sb = new StringBundler(5);
-
-			sb.append(fragmentEntryLink.getFragmentEntryLinkId());
-			sb.append(StringPool.DASH);
-			sb.append(fragmentRendererContext.getLocale());
-			sb.append(StringPool.DASH);
-			sb.append(fragmentEntryLink.getSegmentsExperienceId());
-
-			portalCache.remove(sb.toString());
-		}
-
-		fragmentEntryLink.setCss(fragmentEntry.getCss());
-		fragmentEntryLink.setHtml(fragmentEntry.getHtml());
-		fragmentEntryLink.setJs(fragmentEntry.getJs());
-		fragmentEntryLink.setType(fragmentEntry.getType());
 
 		return fragmentEntryLink;
 	}
@@ -226,9 +190,7 @@ public class FragmentEntryFragmentRenderer implements FragmentRenderer {
 		FragmentRendererContext fragmentRendererContext) {
 
 		if (fragmentEntryLink.isTypeInput() ||
-			!Objects.equals(
-				fragmentRendererContext.getMode(),
-				FragmentEntryLinkConstants.VIEW) ||
+			!fragmentRendererContext.isViewMode() ||
 			(fragmentRendererContext.getPreviewClassPK() > 0) ||
 			!fragmentRendererContext.isUseCachedContent()) {
 
@@ -287,12 +249,8 @@ public class FragmentEntryFragmentRenderer implements FragmentRenderer {
 			fragmentRendererContext.getFragmentEntryLink();
 
 		if (Validator.isNotNull(css)) {
-			if (Objects.equals(
-					fragmentRendererContext.getMode(),
-					FragmentEntryLinkConstants.EDIT) ||
-				Objects.equals(
-					fragmentRendererContext.getMode(),
-					FragmentEntryLinkConstants.INDEX)) {
+			if (fragmentRendererContext.isEditMode() ||
+				fragmentRendererContext.isIndexMode()) {
 
 				sb.append("<style>");
 				sb.append(css);
@@ -387,20 +345,20 @@ public class FragmentEntryFragmentRenderer implements FragmentRenderer {
 				FragmentEntryLink.class.getName());
 
 		FragmentEntryLink fragmentEntryLink = _getFragmentEntryLink(
-			fragmentRendererContext, portalCache);
+			fragmentRendererContext);
 
-		StringBundler sb = new StringBundler(5);
+		StringBundler portalCacheKeySB = new StringBundler(5);
 
-		sb.append(fragmentEntryLink.getFragmentEntryLinkId());
-		sb.append(StringPool.DASH);
-		sb.append(fragmentRendererContext.getLocale());
-		sb.append(StringPool.DASH);
-		sb.append(fragmentEntryLink.getSegmentsExperienceId());
+		portalCacheKeySB.append(fragmentEntryLink.getFragmentEntryLinkId());
+		portalCacheKeySB.append(StringPool.DASH);
+		portalCacheKeySB.append(fragmentRendererContext.getLocale());
+		portalCacheKeySB.append(StringPool.DASH);
+		portalCacheKeySB.append(fragmentEntryLink.getSegmentsExperienceId());
 
 		String content = StringPool.BLANK;
 
 		if (_isCacheable(fragmentEntryLink, fragmentRendererContext)) {
-			content = portalCache.get(sb.toString());
+			content = portalCache.get(portalCacheKeySB.toString());
 
 			if (Validator.isNotNull(content)) {
 				return content;
@@ -447,10 +405,7 @@ public class FragmentEntryFragmentRenderer implements FragmentRenderer {
 				fragmentEntryLink, defaultFragmentEntryProcessorContext);
 		}
 
-		if (Objects.equals(
-				defaultFragmentEntryProcessorContext.getMode(),
-				FragmentEntryLinkConstants.EDIT)) {
-
+		if (defaultFragmentEntryProcessorContext.isEditMode()) {
 			html = _writePortletPaths(
 				fragmentEntryLink, html, httpServletRequest,
 				httpServletResponse);
@@ -471,7 +426,7 @@ public class FragmentEntryFragmentRenderer implements FragmentRenderer {
 			html, httpServletRequest);
 
 		if (_isCacheable(fragmentEntryLink, fragmentRendererContext)) {
-			portalCache.put(sb.toString(), content);
+			portalCache.put(portalCacheKeySB.toString(), content);
 		}
 
 		return content;
@@ -503,9 +458,6 @@ public class FragmentEntryFragmentRenderer implements FragmentRenderer {
 
 	@Reference
 	private FragmentEntryConfigurationParser _fragmentEntryConfigurationParser;
-
-	@Reference
-	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
 
 	@Reference
 	private FragmentEntryLocalService _fragmentEntryLocalService;

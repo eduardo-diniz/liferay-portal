@@ -32,14 +32,20 @@ export default function SearchResultsPanel({filteredTabs, loading = false}) {
 						{tab.label}
 					</div>
 
-					{tab.collections.map((collection, index) => (
-						<TabCollection
-							collection={collection}
-							initialOpen
-							isSearchResult
-							key={index}
-						/>
-					))}
+					<ul
+						aria-orientation="vertical"
+						className="list-unstyled"
+						role="menubar"
+					>
+						{tab.collections.map((collection, index) => (
+							<TabCollection
+								collection={collection}
+								initialOpen
+								isSearchResult
+								key={index}
+							/>
+						))}
+					</ul>
 				</div>
 			))}
 		</div>

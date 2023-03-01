@@ -25,6 +25,7 @@ export default function getDTOFromMDFRequestActivity(
 
 	return {
 		...activityDescription,
+		activityStatus: mdfRequestActivity.activityStatus,
 		...mdfRequestActivity,
 		externalReferenceCodeSF,
 		leadFollowUpStrategies: activityDescription.leadFollowUpStrategies?.join(

@@ -368,7 +368,10 @@ public abstract class BaseProductOptionResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantProductOption),
 				(List<ProductOption>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetProductByExternalReferenceCodeProductOptionsPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		ProductOption productOption1 =
@@ -389,11 +392,24 @@ public abstract class BaseProductOptionResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(productOption1, productOption2),
 			(List<ProductOption>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetProductByExternalReferenceCodeProductOptionsPage_getExpectedActions(
+				externalReferenceCode));
 
 		productOptionResource.deleteProductOption(productOption1.getId());
 
 		productOptionResource.deleteProductOption(productOption2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetProductByExternalReferenceCodeProductOptionsPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -655,7 +671,10 @@ public abstract class BaseProductOptionResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantProductOption),
 				(List<ProductOption>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetProductIdProductOptionsPage_getExpectedActions(
+					irrelevantId));
 		}
 
 		ProductOption productOption1 =
@@ -674,11 +693,21 @@ public abstract class BaseProductOptionResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(productOption1, productOption2),
 			(List<ProductOption>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page, testGetProductIdProductOptionsPage_getExpectedActions(id));
 
 		productOptionResource.deleteProductOption(productOption1.getId());
 
 		productOptionResource.deleteProductOption(productOption2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetProductIdProductOptionsPage_getExpectedActions(Long id)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -1084,6 +1113,12 @@ public abstract class BaseProductOptionResourceTestCase {
 	}
 
 	protected void assertValid(Page<ProductOption> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<ProductOption> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<ProductOption> productOptions = page.getItems();
@@ -1098,6 +1133,20 @@ public abstract class BaseProductOptionResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1360,6 +1409,10 @@ public abstract class BaseProductOptionResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

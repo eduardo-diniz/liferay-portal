@@ -222,7 +222,16 @@ public abstract class BaseUserNotificationResourceTestCase {
 			userNotification1, (List<UserNotification>)page.getItems());
 		assertContains(
 			userNotification2, (List<UserNotification>)page.getItems());
-		assertValid(page);
+		assertValid(page, testGetMyUserNotificationsPage_getExpectedActions());
+	}
+
+	protected Map<String, Map>
+			testGetMyUserNotificationsPage_getExpectedActions()
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -553,7 +562,10 @@ public abstract class BaseUserNotificationResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantUserNotification),
 				(List<UserNotification>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetUserAccountUserNotificationsPage_getExpectedActions(
+					irrelevantUserAccountId));
 		}
 
 		UserNotification userNotification1 =
@@ -572,7 +584,20 @@ public abstract class BaseUserNotificationResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(userNotification1, userNotification2),
 			(List<UserNotification>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetUserAccountUserNotificationsPage_getExpectedActions(
+				userAccountId));
+	}
+
+	protected Map<String, Map>
+			testGetUserAccountUserNotificationsPage_getExpectedActions(
+				Long userAccountId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -1163,6 +1188,12 @@ public abstract class BaseUserNotificationResourceTestCase {
 	}
 
 	protected void assertValid(Page<UserNotification> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<UserNotification> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<UserNotification> userNotifications =
@@ -1178,6 +1209,20 @@ public abstract class BaseUserNotificationResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1374,6 +1419,10 @@ public abstract class BaseUserNotificationResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

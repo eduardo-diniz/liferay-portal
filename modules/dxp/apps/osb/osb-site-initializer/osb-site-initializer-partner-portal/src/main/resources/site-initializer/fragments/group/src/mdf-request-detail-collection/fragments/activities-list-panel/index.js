@@ -151,6 +151,25 @@ const TypeActivityKey = {
 	MISCELLANEOUS_MARKETING: 'prmtact004',
 };
 
+const ActivityStatus = {
+	ACTIVE: 'active',
+	APPROVED: 'approved',
+	CLAIMED: 'claimed',
+	EXPIRED: 'expired',
+	UNCLAIMED: 'unclaimed',
+};
+
+const activityStatusClassName = {
+	[ActivityStatus.ACTIVE]: 'label label-tonal-success ml-2',
+	[ActivityStatus.APPROVED]: 'label label-tonal-success ml-2',
+	[ActivityStatus.EXPIRED]: 'label label-tonal-danger ml-2',
+};
+
+const activityClaimStatusClassName = {
+	[ActivityStatus.CLAIMED]: 'ml-3 label label-tonal-info ml-2',
+	[ActivityStatus.UNCLAIMED]: 'ml-3 label label-tonal-danger ml-2',
+};
+
 const CampaignActivityTable = ({mdfRequestActivity}) => {
 	const fieldsByTypeActivity = {
 		[TypeActivityKey.DIGITAL_MARKETING]: getDigitalMarketFields(
@@ -164,6 +183,8 @@ const CampaignActivityTable = ({mdfRequestActivity}) => {
 			mdfRequestActivity
 		),
 	};
+
+	const options = {timeZone: 'UTC'};
 
 	return (
 		<Table
@@ -186,7 +207,8 @@ const CampaignActivityTable = ({mdfRequestActivity}) => {
 					value: new Date(
 						mdfRequestActivity.startDate
 					).toLocaleDateString(
-						Liferay.ThemeDisplay.getBCP47LanguageId()
+						Liferay.ThemeDisplay.getBCP47LanguageId(),
+						options
 					),
 				},
 				{
@@ -194,7 +216,8 @@ const CampaignActivityTable = ({mdfRequestActivity}) => {
 					value: new Date(
 						mdfRequestActivity.endDate
 					).toLocaleDateString(
-						Liferay.ThemeDisplay.getBCP47LanguageId()
+						Liferay.ThemeDisplay.getBCP47LanguageId(),
+						options
 					),
 				},
 			]}
@@ -257,28 +280,80 @@ const RangeDate = ({endDate, startDate}) => (
 	</div>
 );
 
-const Panel = ({children, mdfRequestActivity}) => (
-	<ClayPanel
-		className="border-brand-primary-lighten-4"
-		collapsable
-		displayTitle={
-			<ClayPanel.Title className="py-2 text-dark">
-				<RangeDate
-					endDate={mdfRequestActivity.endDate}
-					startDate={mdfRequestActivity.startDate}
-				/>
+const Panel = ({children, mdfRequestActivity}) => {
+	const ActivityClaimStatus = mdfRequestActivity.actToMDFClmActs
+		.map((mdfClaimActivity) => {
+			return (
+				mdfClaimActivity.r_mdfClmToMDFClmActs_c_mdfClaim.mdfClaimStatus
+					.key !== 'draft'
+			);
+		})
+		.includes(true);
 
-				<h4 className="mb-1">
-					{mdfRequestActivity.name} ({mdfRequestActivity.id})
-				</h4>
-			</ClayPanel.Title>
-		}
-		showCollapseIcon
-		spritemap
-	>
-		<ClayPanel.Body>{children}</ClayPanel.Body>
-	</ClayPanel>
-);
+	const daysLeftToClaim = Math.ceil(
+		(new Date(mdfRequestActivity.endDate) - new Date()) / (1000 * 3600 * 24)
+	);
+
+	return (
+		<ClayPanel
+			className="border-brand-primary-lighten-4"
+			collapsable
+			displayTitle={
+				<ClayPanel.Title className="py-2 text-dark">
+					<RangeDate
+						endDate={mdfRequestActivity.endDate}
+						startDate={mdfRequestActivity.startDate}
+					/>
+
+					<h4 className="mb-1">
+						{mdfRequestActivity.name} ({mdfRequestActivity.id})
+					</h4>
+
+					<div className="align-items-center d-sm-flex mb-1 text-neutral-7 text-weight-semi-bold">
+						<p className="mb-0">
+							Claim Status:
+							<div
+								className={
+									activityClaimStatusClassName[
+										ActivityClaimStatus
+											? 'claimed'
+											: 'unclaimed'
+									]
+								}
+							>
+								{ActivityClaimStatus ? 'Claimed' : 'Unclaimed'}
+							</div>
+						</p>
+					</div>
+
+					<div className="align-items-center d-sm-flex mb-1 text-neutral-7 text-weight-semi-bold">
+						<p className="mb-0">
+							Activity Status:
+							<div
+								className={
+									activityStatusClassName[
+										mdfRequestActivity.activityStatus.key
+									]
+								}
+							>
+								{mdfRequestActivity.activityStatus.name}
+							</div>
+						</p>
+
+						<div className="font-weight-light ml-sm-2">
+							{daysLeftToClaim > 0 &&
+								`${daysLeftToClaim} days left to claim`}
+						</div>
+					</div>
+				</ClayPanel.Title>
+			}
+			showCollapseIcon
+			spritemap
+		>
+			<ClayPanel.Body>{children}</ClayPanel.Body>
+		</ClayPanel>
+	);
+};
 
 export default function () {
 	const [activities, setActivities] = useState();
@@ -298,7 +373,7 @@ export default function () {
 		const getActivities = async () => {
 			// eslint-disable-next-line @liferay/portal/no-global-fetch
 			const response = await fetch(
-				`/o/c/mdfrequests/${mdfRequestId}/mdfReqToActs?nestedFields=actToBgts`,
+				`/o/c/mdfrequests/${mdfRequestId}/mdfReqToActs?nestedFields=actToBgts,actToMDFClmActs,r_mdfClmToMDFClmActs_c_mdfClaimId&nestedFieldsDepth=3`,
 				{
 					headers: {
 						'accept': 'application/json',

@@ -56,6 +56,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -227,7 +228,10 @@ public abstract class BaseDSEnvelopeResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantDSEnvelope),
 				(List<DSEnvelope>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetSiteDSEnvelopesPage_getExpectedActions(
+					irrelevantSiteId));
 		}
 
 		DSEnvelope dsEnvelope1 = testGetSiteDSEnvelopesPage_addDSEnvelope(
@@ -244,7 +248,26 @@ public abstract class BaseDSEnvelopeResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(dsEnvelope1, dsEnvelope2),
 			(List<DSEnvelope>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page, testGetSiteDSEnvelopesPage_getExpectedActions(siteId));
+	}
+
+	protected Map<String, Map> testGetSiteDSEnvelopesPage_getExpectedActions(
+			Long siteId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/digital-signature-rest/v1.0/sites/{siteId}/ds-envelopes/batch".
+				replace("{siteId}", String.valueOf(siteId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	@Test
@@ -335,10 +358,17 @@ public abstract class BaseDSEnvelopeResourceTestCase {
 		DSEnvelope postDSEnvelope = testGetSiteDSEnvelope_addDSEnvelope();
 
 		DSEnvelope getDSEnvelope = dsEnvelopeResource.getSiteDSEnvelope(
-			postDSEnvelope.getSiteId(), postDSEnvelope.getId());
+			testGetSiteDSEnvelope_getSiteId(postDSEnvelope),
+			postDSEnvelope.getId());
 
 		assertEquals(postDSEnvelope, getDSEnvelope);
 		assertValid(getDSEnvelope);
+	}
+
+	protected Long testGetSiteDSEnvelope_getSiteId(DSEnvelope dsEnvelope)
+		throws Exception {
+
+		return dsEnvelope.getSiteId();
 	}
 
 	protected DSEnvelope testGetSiteDSEnvelope_addDSEnvelope()
@@ -364,8 +394,10 @@ public abstract class BaseDSEnvelopeResourceTestCase {
 									{
 										put(
 											"siteKey",
-											"\"" + dsEnvelope.getSiteId() +
-												"\"");
+											"\"" +
+												testGraphQLGetSiteDSEnvelope_getSiteId(
+													dsEnvelope) + "\"");
+
 										put(
 											"dsEnvelopeId",
 											"\"" + dsEnvelope.getId() + "\"");
@@ -373,6 +405,12 @@ public abstract class BaseDSEnvelopeResourceTestCase {
 								},
 								getGraphQLFields())),
 						"JSONObject/data", "Object/dSEnvelope"))));
+	}
+
+	protected Long testGraphQLGetSiteDSEnvelope_getSiteId(DSEnvelope dsEnvelope)
+		throws Exception {
+
+		return dsEnvelope.getSiteId();
 	}
 
 	@Test
@@ -664,6 +702,12 @@ public abstract class BaseDSEnvelopeResourceTestCase {
 	}
 
 	protected void assertValid(Page<DSEnvelope> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<DSEnvelope> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<DSEnvelope> dsEnvelopes = page.getItems();
@@ -678,6 +722,20 @@ public abstract class BaseDSEnvelopeResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -921,6 +979,10 @@ public abstract class BaseDSEnvelopeResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

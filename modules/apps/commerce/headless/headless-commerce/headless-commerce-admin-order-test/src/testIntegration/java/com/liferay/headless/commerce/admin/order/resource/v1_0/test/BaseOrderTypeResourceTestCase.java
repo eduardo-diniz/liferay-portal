@@ -307,11 +307,19 @@ public abstract class BaseOrderTypeResourceTestCase {
 
 		assertContains(orderType1, (List<OrderType>)page.getItems());
 		assertContains(orderType2, (List<OrderType>)page.getItems());
-		assertValid(page);
+		assertValid(page, testGetOrderTypesPage_getExpectedActions());
 
 		orderTypeResource.deleteOrderType(orderType1.getId());
 
 		orderTypeResource.deleteOrderType(orderType2.getId());
+	}
+
+	protected Map<String, Map> testGetOrderTypesPage_getExpectedActions()
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -1205,6 +1213,12 @@ public abstract class BaseOrderTypeResourceTestCase {
 	}
 
 	protected void assertValid(Page<OrderType> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<OrderType> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<OrderType> orderTypes = page.getItems();
@@ -1219,6 +1233,20 @@ public abstract class BaseOrderTypeResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1493,6 +1521,10 @@ public abstract class BaseOrderTypeResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

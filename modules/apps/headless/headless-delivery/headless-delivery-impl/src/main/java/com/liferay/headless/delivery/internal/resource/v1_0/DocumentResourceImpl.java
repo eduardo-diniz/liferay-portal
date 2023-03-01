@@ -58,6 +58,7 @@ import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.events.ServicePreAction;
 import com.liferay.portal.events.ThemeServicePreAction;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
@@ -101,7 +102,6 @@ import com.liferay.ratings.kernel.service.RatingsEntryLocalService;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Supplier;
 
 import javax.servlet.http.HttpServletRequest;
@@ -121,6 +121,7 @@ import org.osgi.service.component.annotations.ServiceScope;
 	properties = "OSGI-INF/liferay/rest/v1_0/document.properties",
 	scope = ServiceScope.PROTOTYPE, service = DocumentResource.class
 )
+@CTAware
 public class DocumentResourceImpl extends BaseDocumentResourceImpl {
 
 	@Override
@@ -226,6 +227,12 @@ public class DocumentResourceImpl extends BaseDocumentResourceImpl {
 				addAction(
 					ActionKeys.ADD_DOCUMENT, folder.getFolderId(),
 					"postDocumentFolderDocument", folder.getUserId(),
+					DLConstants.RESOURCE_NAME, folder.getGroupId())
+			).put(
+				"createBatch",
+				addAction(
+					ActionKeys.ADD_DOCUMENT, folder.getFolderId(),
+					"postDocumentFolderDocumentBatch", folder.getUserId(),
 					DLConstants.RESOURCE_NAME, folder.getGroupId())
 			).put(
 				"get",
@@ -336,15 +343,15 @@ public class DocumentResourceImpl extends BaseDocumentResourceImpl {
 
 		FileEntry existingFileEntry = _dlAppService.getFileEntry(documentId);
 
-		BinaryFile binaryFile = Optional.ofNullable(
-			multipartBody.getBinaryFile("file")
-		).orElse(
-			new BinaryFile(
+		BinaryFile binaryFile = multipartBody.getBinaryFile("file");
+
+		if (binaryFile == null) {
+			binaryFile = new BinaryFile(
 				existingFileEntry.getMimeType(),
 				existingFileEntry.getFileName(),
 				existingFileEntry.getContentStream(),
-				existingFileEntry.getSize())
-		);
+				existingFileEntry.getSize());
+		}
 
 		Document document = multipartBody.getValueAsNullableInstance(
 			"document", Document.class);

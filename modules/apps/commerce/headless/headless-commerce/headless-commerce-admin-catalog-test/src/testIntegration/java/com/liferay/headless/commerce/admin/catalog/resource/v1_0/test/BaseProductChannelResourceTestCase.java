@@ -56,6 +56,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -364,7 +365,10 @@ public abstract class BaseProductChannelResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantProductChannel),
 				(List<ProductChannel>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetProductByExternalReferenceCodeProductChannelsPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		ProductChannel productChannel1 =
@@ -385,11 +389,24 @@ public abstract class BaseProductChannelResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(productChannel1, productChannel2),
 			(List<ProductChannel>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetProductByExternalReferenceCodeProductChannelsPage_getExpectedActions(
+				externalReferenceCode));
 
 		productChannelResource.deleteProductChannel(productChannel1.getId());
 
 		productChannelResource.deleteProductChannel(productChannel2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetProductByExternalReferenceCodeProductChannelsPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -494,7 +511,10 @@ public abstract class BaseProductChannelResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantProductChannel),
 				(List<ProductChannel>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetProductIdProductChannelsPage_getExpectedActions(
+					irrelevantId));
 		}
 
 		ProductChannel productChannel1 =
@@ -513,11 +533,21 @@ public abstract class BaseProductChannelResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(productChannel1, productChannel2),
 			(List<ProductChannel>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page, testGetProductIdProductChannelsPage_getExpectedActions(id));
 
 		productChannelResource.deleteProductChannel(productChannel1.getId());
 
 		productChannelResource.deleteProductChannel(productChannel2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetProductIdProductChannelsPage_getExpectedActions(Long id)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -729,6 +759,12 @@ public abstract class BaseProductChannelResourceTestCase {
 	}
 
 	protected void assertValid(Page<ProductChannel> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<ProductChannel> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<ProductChannel> productChannels = page.getItems();
@@ -743,6 +779,20 @@ public abstract class BaseProductChannelResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -938,6 +988,10 @@ public abstract class BaseProductChannelResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

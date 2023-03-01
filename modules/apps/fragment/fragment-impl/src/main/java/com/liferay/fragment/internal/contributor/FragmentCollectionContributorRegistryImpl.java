@@ -19,6 +19,7 @@ import com.liferay.fragment.contributor.FragmentCollectionContributor;
 import com.liferay.fragment.contributor.FragmentCollectionContributorRegistry;
 import com.liferay.fragment.model.FragmentComposition;
 import com.liferay.fragment.model.FragmentEntry;
+import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.fragment.processor.FragmentEntryProcessorRegistry;
 import com.liferay.fragment.service.FragmentEntryLinkLocalService;
 import com.liferay.fragment.validator.FragmentEntryValidator;
@@ -217,6 +218,22 @@ public class FragmentCollectionContributorRegistryImpl
 	@Reference
 	protected FragmentEntryValidator fragmentEntryValidator;
 
+	private void _updateFragmentEntryLinks(FragmentEntry fragmentEntry) {
+		List<FragmentEntryLink> fragmentEntryLinks =
+			_fragmentEntryLinkLocalService.getFragmentEntryLinks(
+				fragmentEntry.getFragmentEntryKey());
+
+		for (FragmentEntryLink fragmentEntryLink : fragmentEntryLinks) {
+			try {
+				_fragmentEntryLinkLocalService.updateLatestChanges(
+					fragmentEntry, fragmentEntryLink);
+			}
+			catch (PortalException portalException) {
+				_log.error(portalException);
+			}
+		}
+	}
+
 	private boolean _validateFragmentEntry(FragmentEntry fragmentEntry) {
 		try {
 			fragmentEntryValidator.validateConfiguration(
@@ -303,12 +320,7 @@ public class FragmentCollectionContributorRegistryImpl
 					fragmentEntries.put(
 						fragmentEntry.getFragmentEntryKey(), fragmentEntry);
 
-					_fragmentEntryLinkLocalService.
-						updateFragmentEntryLinksByRendererKey(
-							fragmentEntry.getFragmentEntryKey(),
-							fragmentEntry.getConfiguration(),
-							fragmentEntry.getCss(), fragmentEntry.getHtml(),
-							fragmentEntry.getJs(), fragmentEntry.getType());
+					_updateFragmentEntryLinks(fragmentEntry);
 				}
 			}
 

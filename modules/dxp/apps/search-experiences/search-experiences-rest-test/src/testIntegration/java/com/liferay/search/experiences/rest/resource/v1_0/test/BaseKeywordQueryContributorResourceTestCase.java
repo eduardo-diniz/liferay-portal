@@ -55,6 +55,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -224,7 +225,17 @@ public abstract class BaseKeywordQueryContributorResourceTestCase {
 		assertContains(
 			keywordQueryContributor2,
 			(List<KeywordQueryContributor>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page, testGetKeywordQueryContributorsPage_getExpectedActions());
+	}
+
+	protected Map<String, Map>
+			testGetKeywordQueryContributorsPage_getExpectedActions()
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	protected KeywordQueryContributor
@@ -352,6 +363,12 @@ public abstract class BaseKeywordQueryContributorResourceTestCase {
 	}
 
 	protected void assertValid(Page<KeywordQueryContributor> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<KeywordQueryContributor> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<KeywordQueryContributor> keywordQueryContributors =
@@ -367,6 +384,20 @@ public abstract class BaseKeywordQueryContributorResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -511,6 +542,10 @@ public abstract class BaseKeywordQueryContributorResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

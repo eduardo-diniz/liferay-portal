@@ -453,11 +453,19 @@ public abstract class BaseCatalogResourceTestCase {
 
 		assertContains(catalog1, (List<Catalog>)page.getItems());
 		assertContains(catalog2, (List<Catalog>)page.getItems());
-		assertValid(page);
+		assertValid(page, testGetCatalogsPage_getExpectedActions());
 
 		catalogResource.deleteCatalog(catalog1.getId());
 
 		catalogResource.deleteCatalog(catalog2.getId());
+	}
+
+	protected Map<String, Map> testGetCatalogsPage_getExpectedActions()
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -772,10 +780,20 @@ public abstract class BaseCatalogResourceTestCase {
 
 		Catalog getCatalog =
 			catalogResource.getProductByExternalReferenceCodeCatalog(
-				postCatalog.getExternalReferenceCode(), Pagination.of(1, 2));
+				testGetProductByExternalReferenceCodeCatalog_getExternalReferenceCode(
+					postCatalog),
+				Pagination.of(1, 2));
 
 		assertEquals(postCatalog, getCatalog);
 		assertValid(getCatalog);
+	}
+
+	protected String
+			testGetProductByExternalReferenceCodeCatalog_getExternalReferenceCode(
+				Catalog catalog)
+		throws Exception {
+
+		return catalog.getExternalReferenceCode();
 	}
 
 	protected Catalog testGetProductByExternalReferenceCodeCatalog_addCatalog()
@@ -805,14 +823,21 @@ public abstract class BaseCatalogResourceTestCase {
 										put(
 											"externalReferenceCode",
 											"\"" +
-												catalog.
-													getExternalReferenceCode() +
-														"\"");
+												testGraphQLGetProductByExternalReferenceCodeCatalog_getExternalReferenceCode(
+													catalog) + "\"");
 									}
 								},
 								getGraphQLFields())),
 						"JSONObject/data",
 						"Object/productByExternalReferenceCodeCatalog"))));
+	}
+
+	protected String
+			testGraphQLGetProductByExternalReferenceCodeCatalog_getExternalReferenceCode(
+				Catalog catalog)
+		throws Exception {
+
+		return catalog.getExternalReferenceCode();
 	}
 
 	@Test
@@ -852,10 +877,16 @@ public abstract class BaseCatalogResourceTestCase {
 		Catalog postCatalog = testGetProductIdCatalog_addCatalog();
 
 		Catalog getCatalog = catalogResource.getProductIdCatalog(
-			postCatalog.getId(), Pagination.of(1, 2));
+			testGetProductIdCatalog_getId(postCatalog), Pagination.of(1, 2));
 
 		assertEquals(postCatalog, getCatalog);
 		assertValid(getCatalog);
+	}
+
+	protected Long testGetProductIdCatalog_getId(Catalog catalog)
+		throws Exception {
+
+		return catalog.getId();
 	}
 
 	protected Catalog testGetProductIdCatalog_addCatalog() throws Exception {
@@ -877,11 +908,20 @@ public abstract class BaseCatalogResourceTestCase {
 								"productIdCatalog",
 								new HashMap<String, Object>() {
 									{
-										put("id", catalog.getId());
+										put(
+											"id",
+											testGraphQLGetProductIdCatalog_getId(
+												catalog));
 									}
 								},
 								getGraphQLFields())),
 						"JSONObject/data", "Object/productIdCatalog"))));
+	}
+
+	protected Long testGraphQLGetProductIdCatalog_getId(Catalog catalog)
+		throws Exception {
+
+		return catalog.getId();
 	}
 
 	@Test
@@ -1051,6 +1091,12 @@ public abstract class BaseCatalogResourceTestCase {
 	}
 
 	protected void assertValid(Page<Catalog> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<Catalog> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<Catalog> catalogs = page.getItems();
@@ -1065,6 +1111,20 @@ public abstract class BaseCatalogResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1269,6 +1329,10 @@ public abstract class BaseCatalogResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

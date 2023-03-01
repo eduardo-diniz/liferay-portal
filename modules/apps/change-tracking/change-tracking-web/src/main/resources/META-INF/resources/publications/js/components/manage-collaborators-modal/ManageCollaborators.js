@@ -281,7 +281,7 @@ const ManageCollaborators = ({
 		emailValidationInProgressRef.current = false;
 	};
 
-	const showNotification = (message, error) => {
+	const showNotification = (message, error, reset) => {
 		const parentOpenToast = getOpener().Liferay.Util.openToast;
 
 		const openToastParams = {message};
@@ -294,7 +294,10 @@ const ManageCollaborators = ({
 		collaboratorsRefetch();
 		onClose();
 		parentOpenToast(openToastParams);
-		resetForm();
+
+		if (reset) {
+			resetForm();
+		}
 	};
 
 	const handleSubmit = (event) => {
@@ -387,7 +390,11 @@ const ManageCollaborators = ({
 			});
 
 			showNotification(
-				'Selected Users have been associated with the template'
+				Liferay.Language.get(
+					'selected-users-have-been-associated-with-the-template'
+				),
+				false,
+				false
 			);
 		}
 		else {
@@ -411,15 +418,15 @@ const ManageCollaborators = ({
 				.then((response) => response.json())
 				.then(({errorMessage, successMessage}) => {
 					if (errorMessage) {
-						showNotification(errorMessage, true);
+						showNotification(errorMessage, true, true);
 
 						return;
 					}
 
-					showNotification(successMessage);
+					showNotification(successMessage, false, true);
 				})
 				.catch((error) => {
-					showNotification(error.message, true);
+					showNotification(error.message, true, true);
 				});
 		}
 	};
@@ -712,7 +719,7 @@ const ManageCollaborators = ({
 				displayType="primary"
 				type="submit"
 			>
-				{!Object.keys(updatedRoles).length
+				{!Object.keys(updatedRoles).length && !isPublicationTemplate
 					? Liferay.Language.get('send')
 					: Liferay.Language.get('save')}
 			</ClayButton>

@@ -54,6 +54,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -225,7 +226,10 @@ public abstract class BaseDataDefinitionFieldLinkResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantDataDefinitionFieldLink),
 				(List<DataDefinitionFieldLink>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetDataDefinitionDataDefinitionFieldLinksPage_getExpectedActions(
+					irrelevantDataDefinitionId));
 		}
 
 		DataDefinitionFieldLink dataDefinitionFieldLink1 =
@@ -246,7 +250,20 @@ public abstract class BaseDataDefinitionFieldLinkResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(dataDefinitionFieldLink1, dataDefinitionFieldLink2),
 			(List<DataDefinitionFieldLink>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetDataDefinitionDataDefinitionFieldLinksPage_getExpectedActions(
+				dataDefinitionId));
+	}
+
+	protected Map<String, Map>
+			testGetDataDefinitionDataDefinitionFieldLinksPage_getExpectedActions(
+				Long dataDefinitionId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	protected DataDefinitionFieldLink
@@ -401,6 +418,12 @@ public abstract class BaseDataDefinitionFieldLinkResourceTestCase {
 	}
 
 	protected void assertValid(Page<DataDefinitionFieldLink> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<DataDefinitionFieldLink> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<DataDefinitionFieldLink> dataDefinitionFieldLinks =
@@ -416,6 +439,20 @@ public abstract class BaseDataDefinitionFieldLinkResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -582,6 +619,10 @@ public abstract class BaseDataDefinitionFieldLinkResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

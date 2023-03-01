@@ -205,8 +205,6 @@ public class DLFolderIndexerIndexedFieldsTest extends BaseDLIndexerTestCase {
 			Arrays.asList(
 				StringUtil.split(dlFolder.getTreePath(), CharPool.SLASH)));
 
-		treePathValues.remove(String.valueOf(dlFolder.getFolderId()));
-
 		if (treePathValues.size() == 1) {
 			map.put(Field.TREE_PATH, treePathValues.get(0));
 		}

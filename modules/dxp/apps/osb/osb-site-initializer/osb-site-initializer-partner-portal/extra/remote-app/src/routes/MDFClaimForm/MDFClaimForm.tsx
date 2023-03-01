@@ -31,6 +31,7 @@ const getInitialFormValues = (
 	totalrequestedAmount?: number
 ): MDFClaim => ({
 	activities: activitiesDTO?.map((activity) => ({
+		activityStatus: activity.activityStatus,
 		budgets: activity.actToBgts?.map((budget) => ({
 			expenseName: budget.expense.name,
 			id: budget.id,
@@ -38,6 +39,14 @@ const getInitialFormValues = (
 			requestAmount: budget.cost,
 			selected: false,
 		})),
+		claimed: activity.actToMDFClmActs
+			?.map((mdfClaimActivity) => {
+				return (
+					mdfClaimActivity?.r_mdfClmToMDFClmActs_c_mdfClaim
+						?.mdfClaimStatus.key !== 'draft'
+				);
+			})
+			.includes(true),
 		id: activity.id,
 		metrics: '',
 		name: activity.name,

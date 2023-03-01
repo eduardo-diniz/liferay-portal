@@ -79,7 +79,9 @@ export function BasicInfo({
 		AggregationFilters[]
 	>([]);
 
-	const [creationLanguageId2, setCreationLanguageId2] = useState<Locale>();
+	const [creationLanguageId2, setCreationLanguageId2] = useState<
+		Liferay.Language.Locale
+	>();
 
 	const disableFieldFormBase = !!(
 		isApproved ||
@@ -109,7 +111,9 @@ export function BasicInfo({
 				/>
 
 				<ObjectFieldFormBase
-					creationLanguageId2={creationLanguageId2 as Locale}
+					creationLanguageId2={
+						creationLanguageId2 as Liferay.Language.Locale
+					}
 					disabled={disableFieldFormBase}
 					editingField
 					errors={errors}

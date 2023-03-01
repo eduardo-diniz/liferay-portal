@@ -239,7 +239,10 @@ public abstract class BaseObjectFieldResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantObjectField),
 				(List<ObjectField>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		ObjectField objectField1 =
@@ -261,11 +264,24 @@ public abstract class BaseObjectFieldResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(objectField1, objectField2),
 			(List<ObjectField>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_getExpectedActions(
+				externalReferenceCode));
 
 		objectFieldResource.deleteObjectField(objectField1.getId());
 
 		objectFieldResource.deleteObjectField(objectField2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -652,7 +668,10 @@ public abstract class BaseObjectFieldResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantObjectField),
 				(List<ObjectField>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetObjectDefinitionObjectFieldsPage_getExpectedActions(
+					irrelevantObjectDefinitionId));
 		}
 
 		ObjectField objectField1 =
@@ -671,11 +690,35 @@ public abstract class BaseObjectFieldResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(objectField1, objectField2),
 			(List<ObjectField>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetObjectDefinitionObjectFieldsPage_getExpectedActions(
+				objectDefinitionId));
 
 		objectFieldResource.deleteObjectField(objectField1.getId());
 
 		objectFieldResource.deleteObjectField(objectField2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetObjectDefinitionObjectFieldsPage_getExpectedActions(
+				Long objectDefinitionId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/object-admin/v1.0/object-definitions/{objectDefinitionId}/object-fields/batch".
+				replace(
+					"{objectDefinitionId}",
+					String.valueOf(objectDefinitionId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	@Test
@@ -1449,6 +1492,12 @@ public abstract class BaseObjectFieldResourceTestCase {
 	}
 
 	protected void assertValid(Page<ObjectField> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<ObjectField> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<ObjectField> objectFields = page.getItems();
@@ -1463,6 +1512,20 @@ public abstract class BaseObjectFieldResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1807,6 +1870,10 @@ public abstract class BaseObjectFieldResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

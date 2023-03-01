@@ -54,6 +54,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -209,7 +210,10 @@ public abstract class BaseRoleResourceTestCase {
 
 			assertEquals(
 				Arrays.asList(irrelevantRole), (List<Role>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetProcessRolesPage_getExpectedActions(
+					irrelevantProcessId));
 		}
 
 		Role role1 = testGetProcessRolesPage_addRole(processId, randomRole());
@@ -222,7 +226,17 @@ public abstract class BaseRoleResourceTestCase {
 
 		assertEqualsIgnoringOrder(
 			Arrays.asList(role1, role2), (List<Role>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page, testGetProcessRolesPage_getExpectedActions(processId));
+	}
+
+	protected Map<String, Map> testGetProcessRolesPage_getExpectedActions(
+			Long processId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	protected Role testGetProcessRolesPage_addRole(Long processId, Role role)
@@ -333,6 +347,12 @@ public abstract class BaseRoleResourceTestCase {
 	}
 
 	protected void assertValid(Page<Role> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<Role> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<Role> roles = page.getItems();
@@ -347,6 +367,20 @@ public abstract class BaseRoleResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -491,6 +525,10 @@ public abstract class BaseRoleResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

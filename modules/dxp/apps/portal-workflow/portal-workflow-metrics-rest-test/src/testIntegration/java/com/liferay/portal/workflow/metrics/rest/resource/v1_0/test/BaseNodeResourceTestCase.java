@@ -54,6 +54,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -217,7 +218,10 @@ public abstract class BaseNodeResourceTestCase {
 
 			assertEquals(
 				Arrays.asList(irrelevantNode), (List<Node>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetProcessNodesPage_getExpectedActions(
+					irrelevantProcessId));
 		}
 
 		Node node1 = testGetProcessNodesPage_addNode(processId, randomNode());
@@ -230,7 +234,26 @@ public abstract class BaseNodeResourceTestCase {
 
 		assertEqualsIgnoringOrder(
 			Arrays.asList(node1, node2), (List<Node>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page, testGetProcessNodesPage_getExpectedActions(processId));
+	}
+
+	protected Map<String, Map> testGetProcessNodesPage_getExpectedActions(
+			Long processId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/portal-workflow-metrics/v1.0/processes/{processId}/nodes/batch".
+				replace("{processId}", String.valueOf(processId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	protected Node testGetProcessNodesPage_addNode(Long processId, Node node)
@@ -273,7 +296,13 @@ public abstract class BaseNodeResourceTestCase {
 		assertHttpResponseStatusCode(
 			204,
 			nodeResource.deleteProcessNodeHttpResponse(
-				node.getProcessId(), node.getId()));
+				testDeleteProcessNode_getProcessId(node), node.getId()));
+	}
+
+	protected Long testDeleteProcessNode_getProcessId(Node node)
+		throws Exception {
+
+		return node.getProcessId();
 	}
 
 	protected Node testDeleteProcessNode_addNode() throws Exception {
@@ -427,6 +456,12 @@ public abstract class BaseNodeResourceTestCase {
 	}
 
 	protected void assertValid(Page<Node> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<Node> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<Node> nodes = page.getItems();
@@ -441,6 +476,20 @@ public abstract class BaseNodeResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -661,6 +710,10 @@ public abstract class BaseNodeResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

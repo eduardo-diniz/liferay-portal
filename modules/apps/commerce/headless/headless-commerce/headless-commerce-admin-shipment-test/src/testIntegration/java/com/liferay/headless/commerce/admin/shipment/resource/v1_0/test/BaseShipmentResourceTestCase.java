@@ -225,11 +225,19 @@ public abstract class BaseShipmentResourceTestCase {
 
 		assertContains(shipment1, (List<Shipment>)page.getItems());
 		assertContains(shipment2, (List<Shipment>)page.getItems());
-		assertValid(page);
+		assertValid(page, testGetShipmentsPage_getExpectedActions());
 
 		shipmentResource.deleteShipment(shipment1.getId());
 
 		shipmentResource.deleteShipment(shipment2.getId());
+	}
+
+	protected Map<String, Map> testGetShipmentsPage_getExpectedActions()
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -1251,6 +1259,12 @@ public abstract class BaseShipmentResourceTestCase {
 	}
 
 	protected void assertValid(Page<Shipment> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<Shipment> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<Shipment> shipments = page.getItems();
@@ -1265,6 +1279,20 @@ public abstract class BaseShipmentResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1610,6 +1638,10 @@ public abstract class BaseShipmentResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

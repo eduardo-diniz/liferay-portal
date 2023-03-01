@@ -55,7 +55,7 @@ const getEntityUrlAndNormalizer = (
 	url: getResource(ids, search),
 });
 
-const useBreadcrumb = (entities: Entity[]) => {
+const useBreadcrumb = (entities: Entity[], {active}: {active: boolean}) => {
 	const inputRef = useRef<HTMLInputElement>(null);
 
 	const [breadCrumb, setBreadCrumb] = useState<BreadCrumb[]>([]);
@@ -73,6 +73,7 @@ const useBreadcrumb = (entities: Entity[]) => {
 	);
 
 	const {data} = useFetch<APIResponse<any>>(url, {
+		swrConfig: {stopFetching: !active},
 		transformData: transformer,
 	});
 
@@ -125,7 +126,7 @@ const defaultEntities: Entity[] = [
 			`/projects?filter=${SearchBuilder.contains(
 				'name',
 				search
-			)}&pageSize=1000`,
+			)}&pageSize=100`,
 		name: i18n.translate('project'),
 	},
 	{
@@ -136,7 +137,7 @@ const defaultEntities: Entity[] = [
 			`/routines?filter=${SearchBuilder.eq(
 				'projectId',
 				projectId
-			)} and ${SearchBuilder.contains('name', search)}&pageSize=1000`,
+			)} and ${SearchBuilder.contains('name', search)}&pageSize=50`,
 		name: i18n.translate('routine'),
 	},
 	{
@@ -147,7 +148,7 @@ const defaultEntities: Entity[] = [
 			`/builds?filter=${SearchBuilder.eq(
 				'routineId',
 				routineId
-			)} and ${SearchBuilder.contains('name', search)}&pageSize=1000`,
+			)} and ${SearchBuilder.contains('name', search)}&pageSize=100`,
 		name: i18n.translate('build'),
 	},
 	{
@@ -158,7 +159,7 @@ const defaultEntities: Entity[] = [
 			`/caseresults?filter=${SearchBuilder.eq(
 				'buildId',
 				buildId
-			)}&nestedFields=case,r_runToCaseResult_c_runId&pageSize=1000`,
+			)}&nestedFields=case,r_runToCaseResult_c_runId&pageSize=20&fields=r_caseToCaseResult_c_case,id,run`,
 		name: i18n.translate('case-result'),
 		transformer: (response: APIResponse<TestrayCaseResult>) => {
 			const transformedResponse = testrayCaseResultImpl.transformDataFromList(

@@ -73,7 +73,7 @@
 </tr>
 <tr>
 	<td>RELATED_ASSETS_TABLE_REMOVE_LINK</td>
-	<td>//tr[contains(.,'${key_assetTitle}')]//a</td>
+	<td>//tr[contains(.,'${key_assetTitle}')]//button[contains(@aria-label,'Remove')]</td>
 	<td></td>
 </tr>
 <tr>

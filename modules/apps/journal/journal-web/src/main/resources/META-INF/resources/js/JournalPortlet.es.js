@@ -32,6 +32,7 @@ export default function _JournalPortlet({
 	classNameId,
 	contentTitle,
 	defaultLanguageId: initialDefaultLanguageId,
+	displayDate,
 	hasSavePermission,
 	namespace,
 }) {
@@ -76,10 +77,18 @@ export default function _JournalPortlet({
 	const editingDefaultValues = classNameId && classNameId !== '0';
 
 	if (editingDefaultValues) {
-		const resetInput = (inputName) => {
+		const getInput = (inputName) => {
 			const input = document.getElementById(`${namespace}${inputName}`);
 
-			if (input) {
+			if (input && !displayDate) {
+				input.value = '';
+			}
+		};
+
+		const resetInput = (inputName) => {
+			const input = getInput(inputName);
+
+			if (input && !displayDate) {
 				input.value = '';
 			}
 		};
@@ -92,6 +101,18 @@ export default function _JournalPortlet({
 		resetInput('displayDateMonth');
 		resetInput('displayDateTime');
 		resetInput('displayDateYear');
+
+		const displayDateInput = getInput('displayDate');
+
+		if (displayDateInput) {
+			displayDateInput.addEventListener('change', (event) => {
+				if (!event.target.value) {
+					getInput('displayDateDay').value = '';
+					getInput('displayDateMonth').value = '';
+					getInput('displayDateYear').value = '';
+				}
+			});
+		}
 	}
 
 	const handleContextualSidebarButton = () => {

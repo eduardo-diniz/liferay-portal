@@ -15,6 +15,7 @@
 package com.liferay.object.rest.internal.resource.v1_0.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.object.constants.ObjectDefinitionConstants;
 import com.liferay.object.constants.ObjectRelationshipConstants;
 import com.liferay.object.field.util.ObjectFieldUtil;
 import com.liferay.object.model.ObjectDefinition;
@@ -40,12 +41,16 @@ import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.portal.util.PropsUtil;
 
 import java.util.Collections;
+
+import javax.ws.rs.NotSupportedException;
 
 import org.hamcrest.CoreMatchers;
 
@@ -117,21 +122,38 @@ public class ObjectEntryResourceTest {
 
 		_objectEntry2 = ObjectEntryTestUtil.addObjectEntry(
 			_objectDefinition2, _OBJECT_FIELD_NAME_2, _OBJECT_FIELD_VALUE_2);
+
+		_siteScopedObjectDefinition1 =
+			ObjectDefinitionTestUtil.publishObjectDefinition(
+				Collections.singletonList(
+					ObjectFieldUtil.createObjectField(
+						"Text", "String", true, true, null,
+						RandomTestUtil.randomString(), _OBJECT_FIELD_NAME_1,
+						false)),
+				ObjectDefinitionConstants.SCOPE_SITE);
+
+		_siteScopedObjectEntry1 = ObjectEntryTestUtil.addObjectEntry(
+			_siteScopedObjectDefinition1, _OBJECT_FIELD_NAME_1,
+			_OBJECT_FIELD_VALUE_1);
 	}
 
 	@After
 	public void tearDown() throws Exception {
-		_objectRelationshipLocalService.deleteObjectRelationship(
-			_objectRelationship);
+		if (_objectRelationship != null) {
+			_objectRelationshipLocalService.deleteObjectRelationship(
+				_objectRelationship);
+		}
 
 		_objectDefinitionLocalService.deleteObjectDefinition(
 			_objectDefinition1);
 		_objectDefinitionLocalService.deleteObjectDefinition(
 			_objectDefinition2);
+		_objectDefinitionLocalService.deleteObjectDefinition(
+			_siteScopedObjectDefinition1);
 	}
 
 	@Test
-	public void testFilterByRelatedObjectDefinitionSystemObjectField()
+	public void testFilterObjectEntriesByRelatedObjectEntries()
 		throws Exception {
 
 		PropsUtil.addProperties(
@@ -139,20 +161,7 @@ public class ObjectEntryResourceTest {
 				"feature.flag.LPS-154672", "true"
 			).build());
 
-		_objectRelationship = _addObjectRelationshipAndRelateObjectsEntries(
-			ObjectRelationshipConstants.TYPE_MANY_TO_MANY);
-
-		_testFilterByRelatedObjectDefinitionSystemObjectField(
-			_objectRelationship);
-
-		_objectRelationshipLocalService.deleteObjectRelationship(
-			_objectRelationship);
-
-		_objectRelationship = _addObjectRelationshipAndRelateObjectsEntries(
-			ObjectRelationshipConstants.TYPE_ONE_TO_MANY);
-
-		_testFilterByRelatedObjectDefinitionSystemObjectField(
-			_objectRelationship);
+		_testFilterObjectEntriesByRelatedObjectEntries();
 
 		PropsUtil.addProperties(
 			UnicodePropertiesBuilder.setProperty(
@@ -267,6 +276,39 @@ public class ObjectEntryResourceTest {
 			UnicodePropertiesBuilder.setProperty(
 				"feature.flag.LPS-161364", "false"
 			).build());
+	}
+
+	@Test
+	public void testGetScopeScopeKeyObjectEntriesPage() throws Exception {
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"com.liferay.portal.vulcan.internal.jaxrs.exception.mapper." +
+					"WebApplicationExceptionMapper",
+				LoggerTestUtil.ERROR)) {
+
+			JSONObject jsonObject = HTTPTestUtil.invoke(
+				null,
+				_siteScopedObjectDefinition1.getRESTContextPath() + "/scopes/" +
+					RandomTestUtil.randomLong(),
+				Http.Method.GET);
+
+			Assert.assertEquals("NOT_FOUND", jsonObject.getString("status"));
+		}
+
+		JSONObject jsonObject = HTTPTestUtil.invoke(
+			null,
+			_siteScopedObjectDefinition1.getRESTContextPath() + "/scopes/" +
+				TestPropsValues.getGroupId(),
+			Http.Method.GET);
+
+		JSONArray itemsJSONArray = jsonObject.getJSONArray("items");
+
+		Assert.assertEquals(1, itemsJSONArray.length());
+
+		JSONObject itemJSONObject = itemsJSONArray.getJSONObject(0);
+
+		Assert.assertEquals(
+			itemJSONObject.getLong("id"),
+			_siteScopedObjectEntry1.getObjectEntryId());
 	}
 
 	@Test
@@ -522,27 +564,141 @@ public class ObjectEntryResourceTest {
 	}
 
 	private void _testFilterByRelatedObjectDefinitionSystemObjectField(
+			FilterOperator filterOperator,
 			ObjectRelationship objectRelationship)
 		throws Exception {
 
 		_testFilterByRelatedObjectDefinitionSystemObjectField(
-			_OBJECT_FIELD_NAME_1, _OBJECT_FIELD_VALUE_1, _objectDefinition1,
-			objectRelationship, _objectEntry2.getObjectEntryId());
+			_OBJECT_FIELD_NAME_1, _OBJECT_FIELD_VALUE_1, filterOperator,
+			_objectDefinition1, objectRelationship,
+			_objectEntry2.getObjectEntryId());
+
 		_testFilterByRelatedObjectDefinitionSystemObjectField(
-			_OBJECT_FIELD_NAME_2, _OBJECT_FIELD_VALUE_2, _objectDefinition2,
-			objectRelationship, _objectEntry1.getObjectEntryId());
+			_OBJECT_FIELD_NAME_2, _OBJECT_FIELD_VALUE_2, filterOperator,
+			_objectDefinition2, objectRelationship,
+			_objectEntry1.getObjectEntryId());
 	}
 
 	private void _testFilterByRelatedObjectDefinitionSystemObjectField(
 			String expectedObjectFieldName, String expectedObjectFieldValue,
-			ObjectDefinition objectDefinition,
+			FilterOperator filterOperator, ObjectDefinition objectDefinition,
 			ObjectRelationship objectRelationship, long relatedObjectEntryId)
 		throws Exception {
 
 		String endpoint = StringBundler.concat(
 			objectDefinition.getRESTContextPath(), "?filter=",
-			objectRelationship.getName(), "/id%20eq%20'",
-			String.valueOf(relatedObjectEntryId), StringPool.APOSTROPHE);
+			objectRelationship.getName(), "/id%20", filterOperator.getValue(),
+			"%20'", String.valueOf(relatedObjectEntryId),
+			StringPool.APOSTROPHE);
+
+		_testFilterObjectEntriesByRelatedObjectEntriesUsingAFilterOperator(
+			endpoint, expectedObjectFieldName, expectedObjectFieldValue);
+	}
+
+	private void _testFilterObjectEntriesByRelatedObjectEntries()
+		throws Exception {
+
+		_objectRelationship = _addObjectRelationshipAndRelateObjectsEntries(
+			ObjectRelationshipConstants.TYPE_MANY_TO_MANY);
+
+		for (FilterOperator filterOperator : FilterOperator.values()) {
+			_testFilterObjectEntriesByRelatedObjectEntriesInBothSidesOfRelationship(
+				_objectRelationship, filterOperator);
+		}
+
+		_objectRelationshipLocalService.deleteObjectRelationship(
+			_objectRelationship);
+
+		_objectRelationship = _addObjectRelationshipAndRelateObjectsEntries(
+			ObjectRelationshipConstants.TYPE_ONE_TO_MANY);
+
+		for (FilterOperator filterOperator : FilterOperator.values()) {
+			_testFilterObjectEntriesByRelatedObjectEntriesInBothSidesOfRelationship(
+				_objectRelationship, filterOperator);
+		}
+	}
+
+	private void
+			_testFilterObjectEntriesByRelatedObjectEntriesInBothSidesOfRelationship(
+				ObjectRelationship objectRelationship,
+				FilterOperator filterOperator)
+		throws Exception {
+
+		_testFilterObjectEntriesByRelatedObjectEntriesUsingAFilterOperator(
+			_OBJECT_FIELD_NAME_1, _OBJECT_FIELD_VALUE_1, filterOperator,
+			_objectDefinition1, objectRelationship, _OBJECT_FIELD_NAME_2,
+			_OBJECT_FIELD_VALUE_2);
+		_testFilterObjectEntriesByRelatedObjectEntriesUsingAFilterOperator(
+			_OBJECT_FIELD_NAME_2, _OBJECT_FIELD_VALUE_2, filterOperator,
+			_objectDefinition2, objectRelationship, _OBJECT_FIELD_NAME_1,
+			_OBJECT_FIELD_VALUE_1);
+	}
+
+	private void
+			_testFilterObjectEntriesByRelatedObjectEntriesUsingAFilterOperator(
+				String expectedObjectFieldName, String expectedObjectFieldValue,
+				FilterOperator filterOperator,
+				ObjectDefinition objectDefinition,
+				ObjectRelationship objectRelationship,
+				String relatedObjectFieldName, String relatedObjectFieldValue)
+		throws Exception {
+
+		String endpoint = objectDefinition.getRESTContextPath() + "?filter=";
+
+		if (filterOperator == FilterOperator.CONTAINS) {
+			endpoint = endpoint.concat(
+				StringBundler.concat(
+					filterOperator.getValue(), StringPool.OPEN_PARENTHESIS,
+					objectRelationship.getName(), StringPool.SLASH,
+					relatedObjectFieldName, StringPool.COMMA,
+					StringPool.APOSTROPHE,
+					relatedObjectFieldValue.substring(1, 2),
+					StringPool.APOSTROPHE, StringPool.CLOSE_PARENTHESIS));
+		}
+		else if (filterOperator == FilterOperator.EQ) {
+			_testFilterByRelatedObjectDefinitionSystemObjectField(
+				filterOperator, objectRelationship);
+
+			endpoint = endpoint.concat(
+				StringBundler.concat(
+					objectRelationship.getName(), StringPool.SLASH,
+					relatedObjectFieldName, "%20", filterOperator.getValue(),
+					"%20'", relatedObjectFieldValue, StringPool.APOSTROPHE));
+		}
+		else if (filterOperator == FilterOperator.IN) {
+			endpoint = endpoint.concat(
+				StringBundler.concat(
+					objectRelationship.getName(), StringPool.SLASH,
+					relatedObjectFieldName, "%20", filterOperator.getValue(),
+					"%20('", RandomTestUtil.randomString(),
+					StringPool.APOSTROPHE, StringPool.COMMA,
+					StringPool.APOSTROPHE, relatedObjectFieldValue,
+					StringPool.APOSTROPHE, StringPool.CLOSE_PARENTHESIS));
+		}
+		else if (filterOperator == FilterOperator.STARTS_WITH) {
+			endpoint = endpoint.concat(
+				StringBundler.concat(
+					filterOperator.getValue(), StringPool.OPEN_PARENTHESIS,
+					objectRelationship.getName(), StringPool.SLASH,
+					relatedObjectFieldName, StringPool.COMMA,
+					StringPool.APOSTROPHE,
+					relatedObjectFieldValue.substring(0, 1),
+					StringPool.APOSTROPHE, StringPool.CLOSE_PARENTHESIS));
+		}
+		else {
+			throw new NotSupportedException(
+				"Filter " + filterOperator.name() + " is not supported");
+		}
+
+		_testFilterObjectEntriesByRelatedObjectEntriesUsingAFilterOperator(
+			endpoint, expectedObjectFieldName, expectedObjectFieldValue);
+	}
+
+	private void
+			_testFilterObjectEntriesByRelatedObjectEntriesUsingAFilterOperator(
+				String endpoint, String expectedObjectFieldName,
+				String expectedObjectFieldValue)
+		throws Exception {
 
 		JSONObject jsonObject = HTTPTestUtil.invoke(
 			null, endpoint, Http.Method.GET);
@@ -617,5 +773,24 @@ public class ObjectEntryResourceTest {
 
 	@Inject
 	private ObjectRelationshipLocalService _objectRelationshipLocalService;
+
+	private ObjectDefinition _siteScopedObjectDefinition1;
+	private ObjectEntry _siteScopedObjectEntry1;
+
+	private enum FilterOperator {
+
+		CONTAINS("contains"), EQ("eq"), IN("in"), STARTS_WITH("startswith");
+
+		public String getValue() {
+			return _value;
+		}
+
+		private FilterOperator(String value) {
+			_value = value;
+		}
+
+		private final String _value;
+
+	}
 
 }

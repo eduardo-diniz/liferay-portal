@@ -96,7 +96,7 @@ public interface LayoutUtilityPageEntryLocalService
 	public LayoutUtilityPageEntry copyLayoutUtilityPageEntry(
 			long userId, long groupId, long layoutUtilityPageEntryId,
 			ServiceContext serviceContext)
-		throws PortalException;
+		throws Exception;
 
 	/**
 	 * Creates a new layout utility page entry with the primary key. Does not add the layout utility page entry to the database.
@@ -242,6 +242,9 @@ public interface LayoutUtilityPageEntryLocalService
 	public LayoutUtilityPageEntry
 		fetchLayoutUtilityPageEntryByExternalReferenceCode(
 			String externalReferenceCode, long groupId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public LayoutUtilityPageEntry fetchLayoutUtilityPageEntryByPlid(long plid);
 
 	/**
 	 * Returns the layout utility page entry matching the UUID and group.

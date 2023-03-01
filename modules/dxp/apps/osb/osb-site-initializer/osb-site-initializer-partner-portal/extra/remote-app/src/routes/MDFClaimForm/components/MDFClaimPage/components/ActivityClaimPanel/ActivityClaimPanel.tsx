@@ -21,6 +21,7 @@ import PRMFormik from '../../../../../../common/components/PRMFormik';
 import {useWebDAV} from '../../../../../../common/context/WebDAV';
 import MDFClaim from '../../../../../../common/interfaces/mdfClaim';
 import MDFClaimActivity from '../../../../../../common/interfaces/mdfClaimActivity';
+import {Status} from '../../../../../../common/utils/constants/status';
 import getIntlNumberFormat from '../../../../../../common/utils/getIntlNumberFormat';
 import BudgetClaimPanel from './components/BudgetClaimPanel';
 import PanelBody from './components/PanelBody';
@@ -32,6 +33,25 @@ interface IProps {
 	activityIndex: number;
 	overallCampaignDescription: string;
 }
+
+const ActivityStatus = {
+	ACTIVE: 'active',
+	APPROVED: 'approved',
+	CLAIMED: 'claimed',
+	EXPIRED: 'expired',
+	UNCLAIMED: 'unclaimed',
+};
+
+const activityStatusClassName = {
+	[ActivityStatus.ACTIVE]: 'label label-tonal-success ml-2',
+	[ActivityStatus.APPROVED]: 'label label-tonal-success ml-2',
+	[ActivityStatus.EXPIRED]: 'label label-tonal-danger ml-2',
+};
+
+const activityClaimStatusClassName = {
+	[ActivityStatus.CLAIMED]: 'ml-3 label label-tonal-info ml-2',
+	[ActivityStatus.UNCLAIMED]: 'ml-3 label label-tonal-danger ml-2',
+};
 
 const ActivityClaimPanel = ({
 	activity,
@@ -71,10 +91,12 @@ const ActivityClaimPanel = ({
 						}
 					}}
 				>
-					<PRMFormik.Field
-						component={PRMForm.Checkbox}
-						name={`activities[${activityIndex}].selected`}
-					/>
+					{activity.activityStatus?.key !== Status.EXPIRED.key && (
+						<PRMFormik.Field
+							component={PRMForm.Checkbox}
+							name={`activities[${activityIndex}].selected`}
+						/>
+					)}
 
 					<div className="flex-grow-1 mx-3">
 						<p className="mb-1 text-neutral-7 text-paragraph-sm">
@@ -84,6 +106,39 @@ const ActivityClaimPanel = ({
 						<h5 className="text-neutral-10">
 							{activity.name} ({activity.id})
 						</h5>
+
+						<div className="align-items-center d-sm-flex mb-1 text-neutral-7 text-weight-semi-bold">
+							<p className="mb-0">
+								Claim Status:
+								<div
+									className={
+										activityClaimStatusClassName[
+											activity.claimed
+												? 'claimed'
+												: 'unclaimed'
+										]
+									}
+								>
+									{activity.claimed ? 'Claimed' : 'Unclaimed'}
+								</div>
+							</p>
+						</div>
+
+						<div className="align-items-center d-sm-flex mb-1 text-neutral-7 text-weight-semi-bold">
+							<p className="mb-0">
+								Activity Status:
+								<div
+									className={
+										activityStatusClassName[
+											activity.activityStatus
+												?.key as string
+										]
+									}
+								>
+									{activity.activityStatus?.name}
+								</div>
+							</p>
+						</div>
 
 						<div className="d-flex justify-content-end">
 							<h5 className="mb-0 text-neutral-10">

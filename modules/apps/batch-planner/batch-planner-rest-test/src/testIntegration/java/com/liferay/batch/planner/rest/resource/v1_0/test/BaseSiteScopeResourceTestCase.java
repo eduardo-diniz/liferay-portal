@@ -55,6 +55,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -216,7 +217,10 @@ public abstract class BaseSiteScopeResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantSiteScope),
 				(List<SiteScope>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetPlanInternalClassNameSiteScopesPage_getExpectedActions(
+					irrelevantInternalClassName));
 		}
 
 		SiteScope siteScope1 =
@@ -235,7 +239,20 @@ public abstract class BaseSiteScopeResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(siteScope1, siteScope2),
 			(List<SiteScope>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetPlanInternalClassNameSiteScopesPage_getExpectedActions(
+				internalClassName));
+	}
+
+	protected Map<String, Map>
+			testGetPlanInternalClassNameSiteScopesPage_getExpectedActions(
+				String internalClassName)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	protected SiteScope testGetPlanInternalClassNameSiteScopesPage_addSiteScope(
@@ -357,6 +374,12 @@ public abstract class BaseSiteScopeResourceTestCase {
 	}
 
 	protected void assertValid(Page<SiteScope> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<SiteScope> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<SiteScope> siteScopes = page.getItems();
@@ -371,6 +394,20 @@ public abstract class BaseSiteScopeResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -518,6 +555,10 @@ public abstract class BaseSiteScopeResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

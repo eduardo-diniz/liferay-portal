@@ -259,7 +259,10 @@ public abstract class BaseDocumentResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantDocument),
 				(List<Document>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetAssetLibraryDocumentsPage_getExpectedActions(
+					irrelevantAssetLibraryId));
 		}
 
 		Document document1 = testGetAssetLibraryDocumentsPage_addDocument(
@@ -276,11 +279,33 @@ public abstract class BaseDocumentResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(document1, document2),
 			(List<Document>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetAssetLibraryDocumentsPage_getExpectedActions(
+				assetLibraryId));
 
 		documentResource.deleteDocument(document1.getId());
 
 		documentResource.deleteDocument(document2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetAssetLibraryDocumentsPage_getExpectedActions(
+				Long assetLibraryId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/headless-delivery/v1.0/asset-libraries/{assetLibraryId}/documents/batch".
+				replace("{assetLibraryId}", String.valueOf(assetLibraryId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	@Test
@@ -704,6 +729,7 @@ public abstract class BaseDocumentResourceTestCase {
 											"\"" +
 												testGraphQLGetAssetLibraryDocumentByExternalReferenceCode_getAssetLibraryId() +
 													"\"");
+
 										put(
 											"externalReferenceCode",
 											"\"" +
@@ -927,7 +953,10 @@ public abstract class BaseDocumentResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantDocument),
 				(List<Document>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetDocumentFolderDocumentsPage_getExpectedActions(
+					irrelevantDocumentFolderId));
 		}
 
 		Document document1 = testGetDocumentFolderDocumentsPage_addDocument(
@@ -945,11 +974,34 @@ public abstract class BaseDocumentResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(document1, document2),
 			(List<Document>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetDocumentFolderDocumentsPage_getExpectedActions(
+				documentFolderId));
 
 		documentResource.deleteDocument(document1.getId());
 
 		documentResource.deleteDocument(document2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetDocumentFolderDocumentsPage_getExpectedActions(
+				Long documentFolderId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/headless-delivery/v1.0/document-folders/{documentFolderId}/documents/batch".
+				replace(
+					"{documentFolderId}", String.valueOf(documentFolderId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	@Test
@@ -1570,7 +1622,9 @@ public abstract class BaseDocumentResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantDocument),
 				(List<Document>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetSiteDocumentsPage_getExpectedActions(irrelevantSiteId));
 		}
 
 		Document document1 = testGetSiteDocumentsPage_addDocument(
@@ -1587,11 +1641,29 @@ public abstract class BaseDocumentResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(document1, document2),
 			(List<Document>)page.getItems());
-		assertValid(page);
+		assertValid(page, testGetSiteDocumentsPage_getExpectedActions(siteId));
 
 		documentResource.deleteDocument(document1.getId());
 
 		documentResource.deleteDocument(document2.getId());
+	}
+
+	protected Map<String, Map> testGetSiteDocumentsPage_getExpectedActions(
+			Long siteId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/headless-delivery/v1.0/sites/{siteId}/documents/batch".
+				replace("{siteId}", String.valueOf(siteId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	@Test
@@ -1947,17 +2019,30 @@ public abstract class BaseDocumentResourceTestCase {
 			204,
 			documentResource.
 				deleteSiteDocumentByExternalReferenceCodeHttpResponse(
-					document.getSiteId(), document.getExternalReferenceCode()));
+					testDeleteSiteDocumentByExternalReferenceCode_getSiteId(
+						document),
+					document.getExternalReferenceCode()));
 
 		assertHttpResponseStatusCode(
 			404,
 			documentResource.getSiteDocumentByExternalReferenceCodeHttpResponse(
-				document.getSiteId(), document.getExternalReferenceCode()));
+				testDeleteSiteDocumentByExternalReferenceCode_getSiteId(
+					document),
+				document.getExternalReferenceCode()));
 
 		assertHttpResponseStatusCode(
 			404,
 			documentResource.getSiteDocumentByExternalReferenceCodeHttpResponse(
-				document.getSiteId(), document.getExternalReferenceCode()));
+				testDeleteSiteDocumentByExternalReferenceCode_getSiteId(
+					document),
+				document.getExternalReferenceCode()));
+	}
+
+	protected Long testDeleteSiteDocumentByExternalReferenceCode_getSiteId(
+			Document document)
+		throws Exception {
+
+		return document.getSiteId();
 	}
 
 	protected Document
@@ -1975,11 +2060,19 @@ public abstract class BaseDocumentResourceTestCase {
 
 		Document getDocument =
 			documentResource.getSiteDocumentByExternalReferenceCode(
-				postDocument.getSiteId(),
+				testGetSiteDocumentByExternalReferenceCode_getSiteId(
+					postDocument),
 				postDocument.getExternalReferenceCode());
 
 		assertEquals(postDocument, getDocument);
 		assertValid(getDocument);
+	}
+
+	protected Long testGetSiteDocumentByExternalReferenceCode_getSiteId(
+			Document document)
+		throws Exception {
+
+		return document.getSiteId();
 	}
 
 	protected Document testGetSiteDocumentByExternalReferenceCode_addDocument()
@@ -2008,7 +2101,10 @@ public abstract class BaseDocumentResourceTestCase {
 									{
 										put(
 											"siteKey",
-											"\"" + document.getSiteId() + "\"");
+											"\"" +
+												testGraphQLGetSiteDocumentByExternalReferenceCode_getSiteId(
+													document) + "\"");
+
 										put(
 											"externalReferenceCode",
 											"\"" +
@@ -2020,6 +2116,13 @@ public abstract class BaseDocumentResourceTestCase {
 								getGraphQLFields())),
 						"JSONObject/data",
 						"Object/documentByExternalReferenceCode"))));
+	}
+
+	protected Long testGraphQLGetSiteDocumentByExternalReferenceCode_getSiteId(
+			Document document)
+		throws Exception {
+
+		return document.getSiteId();
 	}
 
 	@Test
@@ -2068,7 +2171,8 @@ public abstract class BaseDocumentResourceTestCase {
 
 		Document putDocument =
 			documentResource.putSiteDocumentByExternalReferenceCode(
-				postDocument.getSiteId(),
+				testPutSiteDocumentByExternalReferenceCode_getSiteId(
+					postDocument),
 				postDocument.getExternalReferenceCode(), randomDocument,
 				multipartFiles);
 
@@ -2077,7 +2181,8 @@ public abstract class BaseDocumentResourceTestCase {
 
 		Document getDocument =
 			documentResource.getSiteDocumentByExternalReferenceCode(
-				putDocument.getSiteId(),
+				testPutSiteDocumentByExternalReferenceCode_getSiteId(
+					putDocument),
 				putDocument.getExternalReferenceCode());
 
 		assertEquals(randomDocument, getDocument);
@@ -2089,20 +2194,29 @@ public abstract class BaseDocumentResourceTestCase {
 			testPutSiteDocumentByExternalReferenceCode_createDocument();
 
 		putDocument = documentResource.putSiteDocumentByExternalReferenceCode(
-			newDocument.getSiteId(), newDocument.getExternalReferenceCode(),
-			newDocument, getMultipartFiles());
+			testPutSiteDocumentByExternalReferenceCode_getSiteId(newDocument),
+			newDocument.getExternalReferenceCode(), newDocument,
+			getMultipartFiles());
 
 		assertEquals(newDocument, putDocument);
 		assertValid(putDocument);
 
 		getDocument = documentResource.getSiteDocumentByExternalReferenceCode(
-			putDocument.getSiteId(), putDocument.getExternalReferenceCode());
+			testPutSiteDocumentByExternalReferenceCode_getSiteId(putDocument),
+			putDocument.getExternalReferenceCode());
 
 		assertEquals(newDocument, getDocument);
 
 		Assert.assertEquals(
 			newDocument.getExternalReferenceCode(),
 			putDocument.getExternalReferenceCode());
+	}
+
+	protected Long testPutSiteDocumentByExternalReferenceCode_getSiteId(
+			Document document)
+		throws Exception {
+
+		return document.getSiteId();
 	}
 
 	protected Document
@@ -2632,6 +2746,12 @@ public abstract class BaseDocumentResourceTestCase {
 	}
 
 	protected void assertValid(Page<Document> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<Document> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<Document> documents = page.getItems();
@@ -2646,6 +2766,20 @@ public abstract class BaseDocumentResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected void assertValid(Rating rating) {
@@ -3212,6 +3346,10 @@ public abstract class BaseDocumentResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

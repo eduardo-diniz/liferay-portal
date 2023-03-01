@@ -240,7 +240,10 @@ public abstract class BaseDiscountSkuResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantDiscountSku),
 				(List<DiscountSku>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetDiscountByExternalReferenceCodeDiscountSkusPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		DiscountSku discountSku1 =
@@ -261,7 +264,20 @@ public abstract class BaseDiscountSkuResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(discountSku1, discountSku2),
 			(List<DiscountSku>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetDiscountByExternalReferenceCodeDiscountSkusPage_getExpectedActions(
+				externalReferenceCode));
+	}
+
+	protected Map<String, Map>
+			testGetDiscountByExternalReferenceCodeDiscountSkusPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -384,7 +400,10 @@ public abstract class BaseDiscountSkuResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantDiscountSku),
 				(List<DiscountSku>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetDiscountIdDiscountSkusPage_getExpectedActions(
+					irrelevantId));
 		}
 
 		DiscountSku discountSku1 =
@@ -403,7 +422,17 @@ public abstract class BaseDiscountSkuResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(discountSku1, discountSku2),
 			(List<DiscountSku>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page, testGetDiscountIdDiscountSkusPage_getExpectedActions(id));
+	}
+
+	protected Map<String, Map>
+			testGetDiscountIdDiscountSkusPage_getExpectedActions(Long id)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -892,6 +921,12 @@ public abstract class BaseDiscountSkuResourceTestCase {
 	}
 
 	protected void assertValid(Page<DiscountSku> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<DiscountSku> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<DiscountSku> discountSkus = page.getItems();
@@ -906,6 +941,20 @@ public abstract class BaseDiscountSkuResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1138,6 +1187,10 @@ public abstract class BaseDiscountSkuResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

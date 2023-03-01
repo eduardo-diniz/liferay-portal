@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang.StringUtils;
+
 import org.dom4j.Attribute;
 import org.dom4j.Element;
 import org.dom4j.Node;
@@ -85,11 +87,23 @@ public class ForPoshiElement extends PoshiElement {
 				value = getDoubleQuotedContent(value);
 			}
 
+			if (value.contains("\"")) {
+				int escapedQuoteCount = StringUtils.countMatches(value, "\\\"");
+				int quoteCount = StringUtils.countMatches(value, "\"");
+
+				if (escapedQuoteCount != quoteCount) {
+					throw new PoshiScriptParserException(
+						"Unescaped quotes in list value: " + value, poshiScript,
+						(PoshiElement)getParent());
+				}
+			}
+
 			addAttribute(matcher.group(2), value);
 		}
 		else {
-			throw new RuntimeException(
-				"Invalid parameter syntax:\n" + parentheticalContent);
+			throw new PoshiScriptParserException(
+				"Invalid parameter syntax: " + parentheticalContent,
+				poshiScript, (PoshiElement)getParent());
 		}
 
 		String blockContent = getBlockContent(poshiScript);

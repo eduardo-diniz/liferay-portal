@@ -42,6 +42,9 @@ import java.util.concurrent.ExecutorService;
 
 import org.apache.commons.lang.StringUtils;
 
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -610,6 +613,12 @@ public abstract class BaseJob implements Job {
 	}
 
 	@Override
+	public int getTimeoutMinutes(JenkinsMaster jenkinsMaster) {
+		return JenkinsResultsParserUtil.getJobTimeoutMinutes(
+			jenkinsMaster, getJobName());
+	}
+
+	@Override
 	public boolean isDownstreamEnabled() {
 		JobProperty jobProperty = getJobProperty(
 			"test.batch.downstream.enabled");
@@ -800,6 +809,17 @@ public abstract class BaseJob implements Job {
 				" at ", JenkinsResultsParserUtil.toDateString(new Date())));
 
 		return batchTestClassGroups;
+	}
+
+	protected Document getConfigDocument(JenkinsMaster jenkinsMaster)
+		throws DocumentException, IOException {
+
+		if (_configDocument == null) {
+			_configDocument = JenkinsResultsParserUtil.getJobConfigDocument(
+				jenkinsMaster, getJobName());
+		}
+
+		return _configDocument;
 	}
 
 	protected JSONObject getJobJSONObject(
@@ -998,6 +1018,7 @@ public abstract class BaseJob implements Job {
 	private List<BatchTestClassGroup> _batchTestClassGroups;
 	private final BuildProfile _buildProfile;
 	private String _companyDefaultLocale;
+	private Document _configDocument;
 	private List<BatchTestClassGroup> _dependentBatchTestClassGroups;
 	private boolean _initializeJobProperties;
 	private JobHistory _jobHistory;

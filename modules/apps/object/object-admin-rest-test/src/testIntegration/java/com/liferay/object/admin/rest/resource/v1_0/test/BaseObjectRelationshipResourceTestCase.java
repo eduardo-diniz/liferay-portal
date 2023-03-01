@@ -242,7 +242,10 @@ public abstract class BaseObjectRelationshipResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantObjectRelationship),
 				(List<ObjectRelationship>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetObjectDefinitionByExternalReferenceCodeObjectRelationshipsPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		ObjectRelationship objectRelationship1 =
@@ -263,13 +266,26 @@ public abstract class BaseObjectRelationshipResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(objectRelationship1, objectRelationship2),
 			(List<ObjectRelationship>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetObjectDefinitionByExternalReferenceCodeObjectRelationshipsPage_getExpectedActions(
+				externalReferenceCode));
 
 		objectRelationshipResource.deleteObjectRelationship(
 			objectRelationship1.getId());
 
 		objectRelationshipResource.deleteObjectRelationship(
 			objectRelationship2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetObjectDefinitionByExternalReferenceCodeObjectRelationshipsPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -517,7 +533,10 @@ public abstract class BaseObjectRelationshipResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantObjectRelationship),
 				(List<ObjectRelationship>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetObjectDefinitionObjectRelationshipsPage_getExpectedActions(
+					irrelevantObjectDefinitionId));
 		}
 
 		ObjectRelationship objectRelationship1 =
@@ -538,13 +557,37 @@ public abstract class BaseObjectRelationshipResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(objectRelationship1, objectRelationship2),
 			(List<ObjectRelationship>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetObjectDefinitionObjectRelationshipsPage_getExpectedActions(
+				objectDefinitionId));
 
 		objectRelationshipResource.deleteObjectRelationship(
 			objectRelationship1.getId());
 
 		objectRelationshipResource.deleteObjectRelationship(
 			objectRelationship2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetObjectDefinitionObjectRelationshipsPage_getExpectedActions(
+				Long objectDefinitionId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/object-admin/v1.0/object-definitions/{objectDefinitionId}/object-relationships/batch".
+				replace(
+					"{objectDefinitionId}",
+					String.valueOf(objectDefinitionId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	@Test
@@ -1171,6 +1214,12 @@ public abstract class BaseObjectRelationshipResourceTestCase {
 	}
 
 	protected void assertValid(Page<ObjectRelationship> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<ObjectRelationship> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<ObjectRelationship> objectRelationships =
@@ -1186,6 +1235,20 @@ public abstract class BaseObjectRelationshipResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1491,6 +1554,10 @@ public abstract class BaseObjectRelationshipResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

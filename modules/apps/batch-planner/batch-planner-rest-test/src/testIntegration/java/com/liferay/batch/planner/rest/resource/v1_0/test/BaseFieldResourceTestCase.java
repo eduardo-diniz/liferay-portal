@@ -54,6 +54,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -217,7 +218,10 @@ public abstract class BaseFieldResourceTestCase {
 
 			assertEquals(
 				Arrays.asList(irrelevantField), (List<Field>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetPlanInternalClassNameFieldsPage_getExpectedActions(
+					irrelevantInternalClassName));
 		}
 
 		Field field1 = testGetPlanInternalClassNameFieldsPage_addField(
@@ -233,7 +237,20 @@ public abstract class BaseFieldResourceTestCase {
 
 		assertEqualsIgnoringOrder(
 			Arrays.asList(field1, field2), (List<Field>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetPlanInternalClassNameFieldsPage_getExpectedActions(
+				internalClassName));
+	}
+
+	protected Map<String, Map>
+			testGetPlanInternalClassNameFieldsPage_getExpectedActions(
+				String internalClassName)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	protected Field testGetPlanInternalClassNameFieldsPage_addField(
@@ -365,6 +382,12 @@ public abstract class BaseFieldResourceTestCase {
 	}
 
 	protected void assertValid(Page<Field> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<Field> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<Field> fields = page.getItems();
@@ -379,6 +402,20 @@ public abstract class BaseFieldResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -542,6 +579,10 @@ public abstract class BaseFieldResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

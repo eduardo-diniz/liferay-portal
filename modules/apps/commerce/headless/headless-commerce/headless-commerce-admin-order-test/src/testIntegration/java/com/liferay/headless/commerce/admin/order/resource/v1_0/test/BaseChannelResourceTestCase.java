@@ -54,6 +54,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -372,10 +373,19 @@ public abstract class BaseChannelResourceTestCase {
 
 		Channel getChannel =
 			channelResource.getOrderByExternalReferenceCodeChannel(
-				postChannel.getExternalReferenceCode());
+				testGetOrderByExternalReferenceCodeChannel_getExternalReferenceCode(
+					postChannel));
 
 		assertEquals(postChannel, getChannel);
 		assertValid(getChannel);
+	}
+
+	protected String
+			testGetOrderByExternalReferenceCodeChannel_getExternalReferenceCode(
+				Channel channel)
+		throws Exception {
+
+		return channel.getExternalReferenceCode();
 	}
 
 	protected Channel testGetOrderByExternalReferenceCodeChannel_addChannel()
@@ -405,14 +415,21 @@ public abstract class BaseChannelResourceTestCase {
 										put(
 											"externalReferenceCode",
 											"\"" +
-												channel.
-													getExternalReferenceCode() +
-														"\"");
+												testGraphQLGetOrderByExternalReferenceCodeChannel_getExternalReferenceCode(
+													channel) + "\"");
 									}
 								},
 								getGraphQLFields())),
 						"JSONObject/data",
 						"Object/orderByExternalReferenceCodeChannel"))));
+	}
+
+	protected String
+			testGraphQLGetOrderByExternalReferenceCodeChannel_getExternalReferenceCode(
+				Channel channel)
+		throws Exception {
+
+		return channel.getExternalReferenceCode();
 	}
 
 	@Test
@@ -452,10 +469,16 @@ public abstract class BaseChannelResourceTestCase {
 		Channel postChannel = testGetOrderIdChannel_addChannel();
 
 		Channel getChannel = channelResource.getOrderIdChannel(
-			postChannel.getId());
+			testGetOrderIdChannel_getId(postChannel));
 
 		assertEquals(postChannel, getChannel);
 		assertValid(getChannel);
+	}
+
+	protected Long testGetOrderIdChannel_getId(Channel channel)
+		throws Exception {
+
+		return channel.getId();
 	}
 
 	protected Channel testGetOrderIdChannel_addChannel() throws Exception {
@@ -477,11 +500,20 @@ public abstract class BaseChannelResourceTestCase {
 								"orderIdChannel",
 								new HashMap<String, Object>() {
 									{
-										put("id", channel.getId());
+										put(
+											"id",
+											testGraphQLGetOrderIdChannel_getId(
+												channel));
 									}
 								},
 								getGraphQLFields())),
 						"JSONObject/data", "Object/orderIdChannel"))));
+	}
+
+	protected Long testGraphQLGetOrderIdChannel_getId(Channel channel)
+		throws Exception {
+
+		return channel.getId();
 	}
 
 	@Test
@@ -630,6 +662,12 @@ public abstract class BaseChannelResourceTestCase {
 	}
 
 	protected void assertValid(Page<Channel> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<Channel> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<Channel> channels = page.getItems();
@@ -644,6 +682,20 @@ public abstract class BaseChannelResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -824,6 +876,10 @@ public abstract class BaseChannelResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

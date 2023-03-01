@@ -266,7 +266,10 @@ public abstract class BaseStructuredContentFolderResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantStructuredContentFolder),
 				(List<StructuredContentFolder>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetAssetLibraryStructuredContentFoldersPage_getExpectedActions(
+					irrelevantAssetLibraryId));
 		}
 
 		StructuredContentFolder structuredContentFolder1 =
@@ -288,13 +291,35 @@ public abstract class BaseStructuredContentFolderResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(structuredContentFolder1, structuredContentFolder2),
 			(List<StructuredContentFolder>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetAssetLibraryStructuredContentFoldersPage_getExpectedActions(
+				assetLibraryId));
 
 		structuredContentFolderResource.deleteStructuredContentFolder(
 			structuredContentFolder1.getId());
 
 		structuredContentFolderResource.deleteStructuredContentFolder(
 			structuredContentFolder2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetAssetLibraryStructuredContentFoldersPage_getExpectedActions(
+				Long assetLibraryId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/headless-delivery/v1.0/asset-libraries/{assetLibraryId}/structured-content-folders/batch".
+				replace("{assetLibraryId}", String.valueOf(assetLibraryId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	@Test
@@ -774,6 +799,7 @@ public abstract class BaseStructuredContentFolderResourceTestCase {
 											"\"" +
 												testGraphQLGetAssetLibraryStructuredContentFolderByExternalReferenceCode_getAssetLibraryId() +
 													"\"");
+
 										put(
 											"externalReferenceCode",
 											"\"" +
@@ -1010,7 +1036,10 @@ public abstract class BaseStructuredContentFolderResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantStructuredContentFolder),
 				(List<StructuredContentFolder>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetSiteStructuredContentFoldersPage_getExpectedActions(
+					irrelevantSiteId));
 		}
 
 		StructuredContentFolder structuredContentFolder1 =
@@ -1030,13 +1059,34 @@ public abstract class BaseStructuredContentFolderResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(structuredContentFolder1, structuredContentFolder2),
 			(List<StructuredContentFolder>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetSiteStructuredContentFoldersPage_getExpectedActions(siteId));
 
 		structuredContentFolderResource.deleteStructuredContentFolder(
 			structuredContentFolder1.getId());
 
 		structuredContentFolderResource.deleteStructuredContentFolder(
 			structuredContentFolder2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetSiteStructuredContentFoldersPage_getExpectedActions(
+				Long siteId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/headless-delivery/v1.0/sites/{siteId}/structured-content-folders/batch".
+				replace("{siteId}", String.valueOf(siteId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	@Test
@@ -1477,22 +1527,33 @@ public abstract class BaseStructuredContentFolderResourceTestCase {
 			204,
 			structuredContentFolderResource.
 				deleteSiteStructuredContentFolderByExternalReferenceCodeHttpResponse(
-					structuredContentFolder.getSiteId(),
+					testDeleteSiteStructuredContentFolderByExternalReferenceCode_getSiteId(
+						structuredContentFolder),
 					structuredContentFolder.getExternalReferenceCode()));
 
 		assertHttpResponseStatusCode(
 			404,
 			structuredContentFolderResource.
 				getSiteStructuredContentFolderByExternalReferenceCodeHttpResponse(
-					structuredContentFolder.getSiteId(),
+					testDeleteSiteStructuredContentFolderByExternalReferenceCode_getSiteId(
+						structuredContentFolder),
 					structuredContentFolder.getExternalReferenceCode()));
 
 		assertHttpResponseStatusCode(
 			404,
 			structuredContentFolderResource.
 				getSiteStructuredContentFolderByExternalReferenceCodeHttpResponse(
-					structuredContentFolder.getSiteId(),
+					testDeleteSiteStructuredContentFolderByExternalReferenceCode_getSiteId(
+						structuredContentFolder),
 					structuredContentFolder.getExternalReferenceCode()));
+	}
+
+	protected Long
+			testDeleteSiteStructuredContentFolderByExternalReferenceCode_getSiteId(
+				StructuredContentFolder structuredContentFolder)
+		throws Exception {
+
+		return structuredContentFolder.getSiteId();
 	}
 
 	protected StructuredContentFolder
@@ -1513,11 +1574,20 @@ public abstract class BaseStructuredContentFolderResourceTestCase {
 		StructuredContentFolder getStructuredContentFolder =
 			structuredContentFolderResource.
 				getSiteStructuredContentFolderByExternalReferenceCode(
-					postStructuredContentFolder.getSiteId(),
+					testGetSiteStructuredContentFolderByExternalReferenceCode_getSiteId(
+						postStructuredContentFolder),
 					postStructuredContentFolder.getExternalReferenceCode());
 
 		assertEquals(postStructuredContentFolder, getStructuredContentFolder);
 		assertValid(getStructuredContentFolder);
+	}
+
+	protected Long
+			testGetSiteStructuredContentFolderByExternalReferenceCode_getSiteId(
+				StructuredContentFolder structuredContentFolder)
+		throws Exception {
+
+		return structuredContentFolder.getSiteId();
 	}
 
 	protected StructuredContentFolder
@@ -1548,8 +1618,10 @@ public abstract class BaseStructuredContentFolderResourceTestCase {
 										put(
 											"siteKey",
 											"\"" +
-												structuredContentFolder.
-													getSiteId() + "\"");
+												testGraphQLGetSiteStructuredContentFolderByExternalReferenceCode_getSiteId(
+													structuredContentFolder) +
+														"\"");
+
 										put(
 											"externalReferenceCode",
 											"\"" +
@@ -1561,6 +1633,14 @@ public abstract class BaseStructuredContentFolderResourceTestCase {
 								getGraphQLFields())),
 						"JSONObject/data",
 						"Object/structuredContentFolderByExternalReferenceCode"))));
+	}
+
+	protected Long
+			testGraphQLGetSiteStructuredContentFolderByExternalReferenceCode_getSiteId(
+				StructuredContentFolder structuredContentFolder)
+		throws Exception {
+
+		return structuredContentFolder.getSiteId();
 	}
 
 	@Test
@@ -1611,7 +1691,8 @@ public abstract class BaseStructuredContentFolderResourceTestCase {
 		StructuredContentFolder putStructuredContentFolder =
 			structuredContentFolderResource.
 				putSiteStructuredContentFolderByExternalReferenceCode(
-					postStructuredContentFolder.getSiteId(),
+					testPutSiteStructuredContentFolderByExternalReferenceCode_getSiteId(
+						postStructuredContentFolder),
 					postStructuredContentFolder.getExternalReferenceCode(),
 					randomStructuredContentFolder);
 
@@ -1621,7 +1702,8 @@ public abstract class BaseStructuredContentFolderResourceTestCase {
 		StructuredContentFolder getStructuredContentFolder =
 			structuredContentFolderResource.
 				getSiteStructuredContentFolderByExternalReferenceCode(
-					putStructuredContentFolder.getSiteId(),
+					testPutSiteStructuredContentFolderByExternalReferenceCode_getSiteId(
+						putStructuredContentFolder),
 					putStructuredContentFolder.getExternalReferenceCode());
 
 		assertEquals(randomStructuredContentFolder, getStructuredContentFolder);
@@ -1633,7 +1715,8 @@ public abstract class BaseStructuredContentFolderResourceTestCase {
 		putStructuredContentFolder =
 			structuredContentFolderResource.
 				putSiteStructuredContentFolderByExternalReferenceCode(
-					newStructuredContentFolder.getSiteId(),
+					testPutSiteStructuredContentFolderByExternalReferenceCode_getSiteId(
+						newStructuredContentFolder),
 					newStructuredContentFolder.getExternalReferenceCode(),
 					newStructuredContentFolder);
 
@@ -1643,7 +1726,8 @@ public abstract class BaseStructuredContentFolderResourceTestCase {
 		getStructuredContentFolder =
 			structuredContentFolderResource.
 				getSiteStructuredContentFolderByExternalReferenceCode(
-					putStructuredContentFolder.getSiteId(),
+					testPutSiteStructuredContentFolderByExternalReferenceCode_getSiteId(
+						putStructuredContentFolder),
 					putStructuredContentFolder.getExternalReferenceCode());
 
 		assertEquals(newStructuredContentFolder, getStructuredContentFolder);
@@ -1651,6 +1735,14 @@ public abstract class BaseStructuredContentFolderResourceTestCase {
 		Assert.assertEquals(
 			newStructuredContentFolder.getExternalReferenceCode(),
 			putStructuredContentFolder.getExternalReferenceCode());
+	}
+
+	protected Long
+			testPutSiteStructuredContentFolderByExternalReferenceCode_getSiteId(
+				StructuredContentFolder structuredContentFolder)
+		throws Exception {
+
+		return structuredContentFolder.getSiteId();
 	}
 
 	protected StructuredContentFolder
@@ -1843,7 +1935,10 @@ public abstract class BaseStructuredContentFolderResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantStructuredContentFolder),
 				(List<StructuredContentFolder>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetStructuredContentFolderStructuredContentFoldersPage_getExpectedActions(
+					irrelevantParentStructuredContentFolderId));
 		}
 
 		StructuredContentFolder structuredContentFolder1 =
@@ -1867,13 +1962,26 @@ public abstract class BaseStructuredContentFolderResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(structuredContentFolder1, structuredContentFolder2),
 			(List<StructuredContentFolder>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetStructuredContentFolderStructuredContentFoldersPage_getExpectedActions(
+				parentStructuredContentFolderId));
 
 		structuredContentFolderResource.deleteStructuredContentFolder(
 			structuredContentFolder1.getId());
 
 		structuredContentFolderResource.deleteStructuredContentFolder(
 			structuredContentFolder2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetStructuredContentFolderStructuredContentFoldersPage_getExpectedActions(
+				Long parentStructuredContentFolderId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -2887,6 +2995,12 @@ public abstract class BaseStructuredContentFolderResourceTestCase {
 	}
 
 	protected void assertValid(Page<StructuredContentFolder> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<StructuredContentFolder> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<StructuredContentFolder> structuredContentFolders =
@@ -2902,6 +3016,20 @@ public abstract class BaseStructuredContentFolderResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -3207,6 +3335,10 @@ public abstract class BaseStructuredContentFolderResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

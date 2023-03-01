@@ -54,6 +54,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -217,7 +218,10 @@ public abstract class BasePaymentMethodResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantPaymentMethod),
 				(List<PaymentMethod>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetCartPaymentMethodsPage_getExpectedActions(
+					irrelevantCartId));
 		}
 
 		PaymentMethod paymentMethod1 =
@@ -235,7 +239,17 @@ public abstract class BasePaymentMethodResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(paymentMethod1, paymentMethod2),
 			(List<PaymentMethod>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page, testGetCartPaymentMethodsPage_getExpectedActions(cartId));
+	}
+
+	protected Map<String, Map> testGetCartPaymentMethodsPage_getExpectedActions(
+			Long cartId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	protected PaymentMethod testGetCartPaymentMethodsPage_addPaymentMethod(
@@ -366,6 +380,12 @@ public abstract class BasePaymentMethodResourceTestCase {
 	}
 
 	protected void assertValid(Page<PaymentMethod> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<PaymentMethod> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<PaymentMethod> paymentMethods = page.getItems();
@@ -380,6 +400,20 @@ public abstract class BasePaymentMethodResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -541,6 +575,10 @@ public abstract class BasePaymentMethodResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

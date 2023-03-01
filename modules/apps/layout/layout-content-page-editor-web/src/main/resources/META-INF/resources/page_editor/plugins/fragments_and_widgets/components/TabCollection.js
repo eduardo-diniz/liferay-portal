@@ -12,13 +12,16 @@
  * details.
  */
 
+import ClayIcon from '@clayui/icon';
+import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import React from 'react';
 
 import {FRAGMENTS_DISPLAY_STYLES} from '../../../app/config/constants/fragmentsDisplayStyles';
+import {LIST_ITEM_TYPES} from '../../../app/config/constants/listItemTypes';
 import {config} from '../../../app/config/index';
-import Collapse from '../../../common/components/Collapse';
 import {useSessionState} from '../../../common/hooks/useSessionState';
+import useKeyboardNavigation from '../hooks/useKeyboardNavigation';
 import TabItem from './TabItem';
 
 export default function TabCollection({
@@ -32,16 +35,11 @@ export default function TabCollection({
 		initialOpen
 	);
 
-	const handleOpen = (nextOpen) => {
-		setOpen(nextOpen);
-	};
-
 	return (
-		<Collapse
-			key={collection.collectionId}
-			label={collection.label}
-			onOpen={handleOpen}
-			open={isSearchResult || open}
+		<TabCollectionCollapse
+			open={open || isSearchResult}
+			setOpen={setOpen}
+			title={collection.label}
 		>
 			{collection.collections &&
 				collection.collections.map((collection, index) => (
@@ -55,7 +53,9 @@ export default function TabCollection({
 				))}
 
 			<ul
+				aria-orientation="vertical"
 				className={`list-unstyled page-editor__fragments-widgets__tab-collection-${displayStyle} pb-2 w-100`}
+				role="menu"
 			>
 				{collection.children.map((item) => (
 					<React.Fragment key={item.itemId}>
@@ -71,7 +71,7 @@ export default function TabCollection({
 					</React.Fragment>
 				))}
 			</ul>
-		</Collapse>
+		</TabCollectionCollapse>
 	);
 }
 
@@ -108,4 +108,63 @@ TabPortletItems.proptypes = {
 	portletItems: PropTypes.array,
 	preview: PropTypes.string,
 	type: PropTypes.string,
+};
+
+function TabCollectionCollapse({children, open, setOpen, title}) {
+	const handleOpen = (nextOpen) => {
+		setOpen(nextOpen);
+	};
+
+	const {isActive, setElement} = useKeyboardNavigation({
+		handleOpen,
+		type: LIST_ITEM_TYPES.header,
+	});
+
+	return (
+		<li
+			className="page-editor__collapse panel-group panel-group-flush"
+			role="none"
+		>
+			<button
+				aria-expanded={open ? 'true' : 'false'}
+				aria-haspopup="menu"
+				className={classNames(
+					'btn',
+					'btn-unstyled',
+					'collapse-icon',
+					'sheet-subtitle',
+					{
+						collapsed: !open,
+					}
+				)}
+				onClick={() => setOpen(!open)}
+				ref={setElement}
+				role="menuitem"
+				tabIndex={isActive ? 0 : -1}
+				type="button"
+			>
+				<span className="c-inner text-truncate" tabIndex={-1}>
+					{title}
+
+					<span
+						className={`text-secondary collapse-icon-${
+							open ? 'open' : 'closed'
+						}`}
+					>
+						<ClayIcon
+							symbol={open ? 'angle-down' : 'angle-right'}
+						/>
+					</span>
+				</span>
+			</button>
+
+			{open && children}
+		</li>
+	);
+}
+
+TabCollectionCollapse.proptypes = {
+	open: PropTypes.bool.isRequired,
+	setOpen: PropTypes.func.isRequired,
+	title: PropTypes.string.isRequired,
 };

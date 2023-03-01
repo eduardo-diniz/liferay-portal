@@ -26,6 +26,7 @@ import {testrayTaskUsersImpl} from './TestrayTaskUsers';
 import {APIResponse, TestrayTask} from './types';
 
 type TaskForm = typeof yupSchema.task.__outputType & {
+	assignedUsers: string;
 	dispatchTriggerId: number;
 	projectId: number;
 };
@@ -39,12 +40,14 @@ class TestrayTaskImpl extends Rest<TaskForm, TestrayTask, NestedObjectOptions> {
 	constructor() {
 		super({
 			adapter: ({
+				assignedUsers,
 				dispatchTriggerId,
 				buildId: r_buildToTasks_c_buildId,
 				caseTypes: taskToTasksCaseTypes,
 				dueStatus = TaskStatuses.OPEN,
 				name,
 			}) => ({
+				assignedUsers,
 				dispatchTriggerId,
 				dueStatus,
 				name,

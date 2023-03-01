@@ -38,7 +38,7 @@ import './ObjectFieldFormBase.scss';
 
 interface IProps {
 	children?: ReactNode;
-	creationLanguageId2?: Locale;
+	creationLanguageId2?: Liferay.Language.Locale;
 	disabled?: boolean;
 	editingField?: boolean;
 	errors: ObjectFieldErrors;
@@ -344,7 +344,9 @@ export default function ObjectFieldFormBase({
 
 			{values.businessType === 'Aggregation' && (
 				<AggregationFormBase
-					creationLanguageId2={creationLanguageId2 as Locale}
+					creationLanguageId2={
+						creationLanguageId2 as Liferay.Language.Locale
+					}
 					editingField={editingField}
 					errors={errors}
 					objectDefinitionExternalReferenceCode={
@@ -385,7 +387,11 @@ export default function ObjectFieldFormBase({
 
 						setSelectedOutput(label);
 					}}
-					options={FORMULA_OUTPUT_OPTIONS}
+					options={FORMULA_OUTPUT_OPTIONS.filter(
+						(formulaOutput) =>
+							formulaOutput.value === 'Decimal' ||
+							formulaOutput.value === 'Integer'
+					)}
 					required
 					value={selectedOutput}
 				/>
@@ -394,6 +400,9 @@ export default function ObjectFieldFormBase({
 			{(values.businessType === 'Picklist' ||
 				values.businessType === 'MultiselectPicklist') && (
 				<AutoComplete<Partial<PickList>>
+					creationLanguageId={
+						creationLanguageId2 as Liferay.Language.Locale
+					}
 					disabled={disabled}
 					emptyStateMessage={Liferay.Language.get('option-not-found')}
 					error={errors.listTypeDefinitionId}
@@ -464,6 +473,9 @@ export default function ObjectFieldFormBase({
 
 			{values.state && (
 				<AutoComplete<PickListItem>
+					creationLanguageId={
+						creationLanguageId2 as Liferay.Language.Locale
+					}
 					emptyStateMessage={Liferay.Language.get('option-not-found')}
 					error={errors.defaultValue}
 					items={filteredPicklistItems}

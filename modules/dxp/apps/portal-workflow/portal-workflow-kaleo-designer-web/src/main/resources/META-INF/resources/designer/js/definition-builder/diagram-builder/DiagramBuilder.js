@@ -22,7 +22,7 @@ import ReactFlow, {
 	addEdge,
 	isEdge,
 } from 'react-flow-renderer';
-import uuidv4 from 'uuid/v4';
+import {v4 as uuidv4} from 'uuid';
 
 import {DefinitionBuilderContext} from '../DefinitionBuilderContext';
 import {defaultLanguageId} from '../constants';
@@ -57,6 +57,7 @@ export default function DiagramBuilder() {
 		setDeserialize,
 		setElements,
 		setShowDefinitionInfo,
+		statuses,
 		version,
 	} = useContext(DefinitionBuilderContext);
 	const reactFlowWrapperRef = useRef(null);
@@ -390,6 +391,7 @@ export default function DiagramBuilder() {
 		setElementRectangle,
 		setSelectedItem,
 		setSelectedItemNewId,
+		statuses,
 	};
 
 	return (

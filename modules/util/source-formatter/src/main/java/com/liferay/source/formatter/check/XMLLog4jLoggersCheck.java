@@ -50,11 +50,15 @@ public class XMLLog4jLoggersCheck extends BaseFileCheck {
 	private void _checkLoggers(String fileName, String content)
 		throws Exception {
 
+		Set<String> classNames = _getClassNames();
+
+		if (classNames.isEmpty()) {
+			return;
+		}
+
 		Document document = SourceUtil.readXML(content);
 
 		Element rootElement = document.getRootElement();
-
-		Set<String> srcPaths = _getSrcPaths();
 
 		for (Element loggersElement :
 				(List<Element>)rootElement.elements("Loggers")) {
@@ -64,21 +68,16 @@ public class XMLLog4jLoggersCheck extends BaseFileCheck {
 
 				String name = loggerElement.attributeValue("name");
 
-				if (!name.startsWith("com.liferay")) {
-					continue;
-				}
+				if (!name.startsWith("com.liferay") ||
+					classNames.contains(name)) {
 
-				String path = StringUtil.replace(
-					name, CharPool.PERIOD, CharPool.SLASH);
-
-				if (_srcPaths.contains(path)) {
 					continue;
 				}
 
 				boolean exists = false;
 
-				for (String srcPath : srcPaths) {
-					if (srcPath.startsWith(path)) {
+				for (String className : classNames) {
+					if (className.startsWith(name)) {
 						exists = true;
 
 						break;
@@ -93,10 +92,12 @@ public class XMLLog4jLoggersCheck extends BaseFileCheck {
 		}
 	}
 
-	private Set<String> _getSrcPaths() throws Exception {
-		if (!_srcPaths.isEmpty()) {
-			return _srcPaths;
+	private synchronized Set<String> _getClassNames() throws Exception {
+		if (_classNames != null) {
+			return _classNames;
 		}
+
+		_classNames = new HashSet<>();
 
 		File file = getPortalDir();
 
@@ -105,12 +106,19 @@ public class XMLLog4jLoggersCheck extends BaseFileCheck {
 			new String[] {"**/com/liferay/**/*.java"});
 
 		for (String fileName : fileNames) {
-			_srcPaths.add(fileName.substring(fileName.indexOf("com/liferay/")));
+			fileName = fileName.substring(
+				0, fileName.lastIndexOf(CharPool.PERIOD));
+
+			fileName = StringUtil.replace(
+				fileName, File.separatorChar, CharPool.PERIOD);
+
+			_classNames.add(
+				fileName.substring(fileName.indexOf("com.liferay")));
 		}
 
-		return _srcPaths;
+		return _classNames;
 	}
 
-	private final Set<String> _srcPaths = new HashSet<>();
+	private Set<String> _classNames;
 
 }

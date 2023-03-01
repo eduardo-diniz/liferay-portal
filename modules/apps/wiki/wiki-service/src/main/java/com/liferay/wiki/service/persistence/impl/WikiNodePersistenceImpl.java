@@ -5186,7 +5186,8 @@ public class WikiNodePersistenceImpl
 				if (ercWikiNode != null) {
 					throw new DuplicateWikiNodeExternalReferenceCodeException(
 						"Duplicate wiki node with external reference code " +
-							wikiNode.getExternalReferenceCode());
+							wikiNode.getExternalReferenceCode() +
+								" and group " + wikiNode.getGroupId());
 				}
 			}
 			else {
@@ -5195,7 +5196,8 @@ public class WikiNodePersistenceImpl
 
 					throw new DuplicateWikiNodeExternalReferenceCodeException(
 						"Duplicate wiki node with external reference code " +
-							wikiNode.getExternalReferenceCode());
+							wikiNode.getExternalReferenceCode() +
+								" and group " + wikiNode.getGroupId());
 				}
 			}
 		}

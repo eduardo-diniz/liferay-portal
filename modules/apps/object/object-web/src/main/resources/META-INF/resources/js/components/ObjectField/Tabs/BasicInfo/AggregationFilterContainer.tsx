@@ -48,11 +48,11 @@ interface AggregationFilters {
 
 interface AggregationFilterProps {
 	aggregationFilters: AggregationFilters[];
-	creationLanguageId2?: Locale;
+	creationLanguageId2?: Liferay.Language.Locale;
 	filterOperators: TFilterOperators;
 	objectDefinitionExternalReferenceCode2?: string;
 	setAggregationFilters: (values: AggregationFilters[]) => void;
-	setCreationLanguageId2: (values: Locale) => void;
+	setCreationLanguageId2: (values: Liferay.Language.Locale) => void;
 	setValues: (values: Partial<ObjectField>) => void;
 	values: Partial<ObjectField>;
 	workflowStatusJSONArray: LabelValueObject[];
@@ -150,7 +150,7 @@ export function AggregationFilterContainer({
 				if (objectField && filterType) {
 					const aggregationFilter: AggregationFilters = {
 						fieldLabel: getLocalizableLabel(
-							creationLanguageId2 as Locale,
+							creationLanguageId2 as Liferay.Language.Locale,
 							objectField.label,
 							objectField.name
 						),
@@ -331,7 +331,7 @@ export function AggregationFilterContainer({
 				...aggregationFilters,
 				{
 					fieldLabel: getLocalizableLabel(
-						creationLanguageId2 as Locale,
+						creationLanguageId2 as Liferay.Language.Locale,
 						fieldLabel,
 						objectFieldName
 					),
@@ -528,7 +528,9 @@ export function AggregationFilterContainer({
 	return (
 		<>
 			<BuilderScreen
-				creationLanguageId={creationLanguageId2 as Locale}
+				creationLanguageId={
+					creationLanguageId2 as Liferay.Language.Locale
+				}
 				disableEdit
 				emptyState={{
 					buttonText: Liferay.Language.get('new-filter'),

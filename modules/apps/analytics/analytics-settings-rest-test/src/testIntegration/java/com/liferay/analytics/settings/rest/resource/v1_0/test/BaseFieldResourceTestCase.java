@@ -219,7 +219,15 @@ public abstract class BaseFieldResourceTestCase {
 
 		assertContains(field1, (List<Field>)page.getItems());
 		assertContains(field2, (List<Field>)page.getItems());
-		assertValid(page);
+		assertValid(page, testGetFieldsAccountsPage_getExpectedActions());
+	}
+
+	protected Map<String, Map> testGetFieldsAccountsPage_getExpectedActions()
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -410,7 +418,15 @@ public abstract class BaseFieldResourceTestCase {
 
 		assertContains(field1, (List<Field>)page.getItems());
 		assertContains(field2, (List<Field>)page.getItems());
-		assertValid(page);
+		assertValid(page, testGetFieldsOrdersPage_getExpectedActions());
+	}
+
+	protected Map<String, Map> testGetFieldsOrdersPage_getExpectedActions()
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -601,7 +617,15 @@ public abstract class BaseFieldResourceTestCase {
 
 		assertContains(field1, (List<Field>)page.getItems());
 		assertContains(field2, (List<Field>)page.getItems());
-		assertValid(page);
+		assertValid(page, testGetFieldsPeoplePage_getExpectedActions());
+	}
+
+	protected Map<String, Map> testGetFieldsPeoplePage_getExpectedActions()
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -792,7 +816,15 @@ public abstract class BaseFieldResourceTestCase {
 
 		assertContains(field1, (List<Field>)page.getItems());
 		assertContains(field2, (List<Field>)page.getItems());
-		assertValid(page);
+		assertValid(page, testGetFieldsProductsPage_getExpectedActions());
+	}
+
+	protected Map<String, Map> testGetFieldsProductsPage_getExpectedActions()
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -1087,6 +1119,12 @@ public abstract class BaseFieldResourceTestCase {
 	}
 
 	protected void assertValid(Page<Field> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<Field> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<Field> fields = page.getItems();
@@ -1101,6 +1139,20 @@ public abstract class BaseFieldResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1284,6 +1336,10 @@ public abstract class BaseFieldResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

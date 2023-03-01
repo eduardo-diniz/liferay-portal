@@ -56,6 +56,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -565,7 +566,10 @@ public abstract class BaseAccountAddressResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantAccountAddress),
 				(List<AccountAddress>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetAccountByExternalReferenceCodeAccountAddressesPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		AccountAddress accountAddress1 =
@@ -586,11 +590,24 @@ public abstract class BaseAccountAddressResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(accountAddress1, accountAddress2),
 			(List<AccountAddress>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetAccountByExternalReferenceCodeAccountAddressesPage_getExpectedActions(
+				externalReferenceCode));
 
 		accountAddressResource.deleteAccountAddress(accountAddress1.getId());
 
 		accountAddressResource.deleteAccountAddress(accountAddress2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetAccountByExternalReferenceCodeAccountAddressesPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -718,7 +735,10 @@ public abstract class BaseAccountAddressResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantAccountAddress),
 				(List<AccountAddress>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetAccountIdAccountAddressesPage_getExpectedActions(
+					irrelevantId));
 		}
 
 		AccountAddress accountAddress1 =
@@ -737,11 +757,21 @@ public abstract class BaseAccountAddressResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(accountAddress1, accountAddress2),
 			(List<AccountAddress>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page, testGetAccountIdAccountAddressesPage_getExpectedActions(id));
 
 		accountAddressResource.deleteAccountAddress(accountAddress1.getId());
 
 		accountAddressResource.deleteAccountAddress(accountAddress2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetAccountIdAccountAddressesPage_getExpectedActions(Long id)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -1061,6 +1091,12 @@ public abstract class BaseAccountAddressResourceTestCase {
 	}
 
 	protected void assertValid(Page<AccountAddress> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<AccountAddress> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<AccountAddress> accountAddresses = page.getItems();
@@ -1075,6 +1111,20 @@ public abstract class BaseAccountAddressResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1389,6 +1439,10 @@ public abstract class BaseAccountAddressResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

@@ -65,6 +65,7 @@ import {
 	getErrorObject,
 	getFullPath,
 	historyPushWithSlug,
+	processGraphQLError,
 } from '../../utils/utils.es';
 import useActiviyQuestionKebabOptions from './hooks/useActivityQuestionKebabOptions.es';
 import useFlagsContainer from './hooks/useFlagsContainer.es';
@@ -77,15 +78,14 @@ const tabs = [
 const Question = ({
 	display = {
 		actions: true,
+		activity: false,
 		addAnswer: true,
 		breadcrumb: true,
 		flags: true,
-		kebab: false,
 		rating: true,
 		showAnswer: true,
 		showSignature: false,
 		styled: false,
-		tabs: true,
 	},
 	history,
 	questionId,
@@ -107,7 +107,7 @@ const Question = ({
 	const [error, setError] = useState(null);
 	const [isModerate, setIsModerate] = useState(false);
 	const [isPageScroll, setIsPageScroll] = useState(false);
-	const [isPostButtonDisable, setIsPostButtonDisable] = useState(true);
+	const [isPostButtonDisabled, setIsPostButtonDisabled] = useState(true);
 
 	const [isVisibleEditor, setIsVisibleEditor] = useState(false);
 	const [loading, setLoading] = useState(true);
@@ -124,12 +124,14 @@ const Question = ({
 	const flagsContainerProps = useFlagsContainer({
 		content: question,
 		context,
+		questionId: question.id,
 		showIcon: false,
 	});
 
 	const {kebabOptions, setIsSubscribe} = useActiviyQuestionKebabOptions({
+		activityPage: display.activity,
 		context,
-		onClickReport: () => flagsContainerProps.flagsModal.handleClickShow(),
+		onClickReport: () => flagsContainerProps.handleClickShow(),
 		question,
 		questionId,
 		sectionTitle,
@@ -257,8 +259,10 @@ const Question = ({
 	};
 
 	const onCreateAnswer = async () => {
+		setIsPostButtonDisabled(true);
+
 		try {
-			await createAnswer({
+			const {error} = await createAnswer({
 				fetchOptionsOverrides: getContextLink(
 					`${sectionTitle}/${questionId}`
 				),
@@ -267,6 +271,12 @@ const Question = ({
 					messageBoardThreadId: question.id,
 				},
 			});
+
+			if (error) {
+				setIsPostButtonDisabled(false);
+
+				return processGraphQLError(error);
+			}
 
 			editorRef.current.clearContent();
 
@@ -280,9 +290,14 @@ const Question = ({
 				pageSize: 20,
 				siteKey: context.siteKey,
 			});
+
 			setIsVisibleEditor(false);
 		}
-		catch (error) {}
+		catch (error) {
+			processGraphQLError(error);
+		}
+
+		setIsPostButtonDisabled(false);
 	};
 
 	const deleteAnswer = useCallback(
@@ -646,7 +661,7 @@ const Question = ({
 															'your-answer'
 														)}
 														onContentLengthValid={
-															setIsPostButtonDisable
+															setIsPostButtonDisabled
 														}
 														question={question}
 														ref={editorRef}
@@ -681,7 +696,7 @@ const Question = ({
 												isVisibleEditor && (
 													<ClayButton
 														disabled={
-															isPostButtonDisable
+															isPostButtonDisabled
 														}
 														displayType="primary"
 														onClick={onCreateAnswer}
@@ -708,9 +723,7 @@ const Question = ({
 			{flagsContainerProps.flagsModal.reportDialogOpen && (
 				<FlagsModal
 					handleClose={flagsContainerProps.flagsModal.onClose}
-					handleSubmit={
-						flagsContainerProps.flagsModal.handleSubmitReport
-					}
+					handleSubmit={flagsContainerProps.handleSubmitReport}
 					{...flagsContainerProps.flagsModal}
 				/>
 			)}

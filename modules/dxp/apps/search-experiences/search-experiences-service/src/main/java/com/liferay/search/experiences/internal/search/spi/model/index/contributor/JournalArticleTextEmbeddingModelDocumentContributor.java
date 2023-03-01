@@ -21,17 +21,16 @@ import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.service.JournalArticleLocalService;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.search.engine.SearchEngineInformation;
 import com.liferay.portal.search.spi.model.index.contributor.ModelDocumentContributor;
 import com.liferay.search.experiences.ml.embedding.text.TextEmbeddingRetriever;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -51,17 +50,19 @@ public class JournalArticleTextEmbeddingModelDocumentContributor
 
 	@Override
 	public void contribute(Document document, JournalArticle journalArticle) {
-		try {
-			if (!_journalArticleLocalService.isLatestVersion(
-					journalArticle.getGroupId(), journalArticle.getArticleId(),
-					journalArticle.getVersion(),
-					WorkflowConstants.STATUS_APPROVED)) {
+		if (Objects.equals(
+				_searchEngineInformation.getVendorString(), "Solr")) {
 
-				return;
-			}
+			return;
 		}
-		catch (PortalException portalException) {
-			_log.error(portalException);
+
+		JournalArticle latestArticle =
+			_journalArticleLocalService.fetchLatestArticle(
+				journalArticle.getResourcePrimKey(),
+				WorkflowConstants.STATUS_APPROVED);
+
+		if ((latestArticle == null) ||
+			(latestArticle.getVersion() != journalArticle.getVersion())) {
 
 			return;
 		}
@@ -100,14 +101,14 @@ public class JournalArticleTextEmbeddingModelDocumentContributor
 		return value.getString(_language.getLocale(languageId));
 	}
 
-	private static final Log _log = LogFactoryUtil.getLog(
-		JournalArticleTextEmbeddingModelDocumentContributor.class);
-
 	@Reference
 	private JournalArticleLocalService _journalArticleLocalService;
 
 	@Reference
 	private Language _language;
+
+	@Reference
+	private SearchEngineInformation _searchEngineInformation;
 
 	@Reference
 	private TextEmbeddingRetriever _textEmbeddingRetriever;

@@ -56,6 +56,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -422,7 +423,10 @@ public abstract class BaseObjectActionResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantObjectAction),
 				(List<ObjectAction>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetObjectDefinitionByExternalReferenceCodeObjectActionsPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		ObjectAction objectAction1 =
@@ -443,11 +447,24 @@ public abstract class BaseObjectActionResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(objectAction1, objectAction2),
 			(List<ObjectAction>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetObjectDefinitionByExternalReferenceCodeObjectActionsPage_getExpectedActions(
+				externalReferenceCode));
 
 		objectActionResource.deleteObjectAction(objectAction1.getId());
 
 		objectActionResource.deleteObjectAction(objectAction2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetObjectDefinitionByExternalReferenceCodeObjectActionsPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -577,7 +594,10 @@ public abstract class BaseObjectActionResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantObjectAction),
 				(List<ObjectAction>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetObjectDefinitionObjectActionsPage_getExpectedActions(
+					irrelevantObjectDefinitionId));
 		}
 
 		ObjectAction objectAction1 =
@@ -596,11 +616,35 @@ public abstract class BaseObjectActionResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(objectAction1, objectAction2),
 			(List<ObjectAction>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetObjectDefinitionObjectActionsPage_getExpectedActions(
+				objectDefinitionId));
 
 		objectActionResource.deleteObjectAction(objectAction1.getId());
 
 		objectActionResource.deleteObjectAction(objectAction2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetObjectDefinitionObjectActionsPage_getExpectedActions(
+				Long objectDefinitionId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/object-admin/v1.0/object-definitions/{objectDefinitionId}/object-actions/batch".
+				replace(
+					"{objectDefinitionId}",
+					String.valueOf(objectDefinitionId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	@Test
@@ -904,6 +948,12 @@ public abstract class BaseObjectActionResourceTestCase {
 	}
 
 	protected void assertValid(Page<ObjectAction> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<ObjectAction> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<ObjectAction> objectActions = page.getItems();
@@ -918,6 +968,20 @@ public abstract class BaseObjectActionResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1217,6 +1281,10 @@ public abstract class BaseObjectActionResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

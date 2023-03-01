@@ -56,6 +56,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -219,7 +220,9 @@ public abstract class BaseSLAResourceTestCase {
 
 			assertEquals(
 				Arrays.asList(irrelevantSLA), (List<SLA>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetProcessSLAsPage_getExpectedActions(irrelevantProcessId));
 		}
 
 		SLA sla1 = testGetProcessSLAsPage_addSLA(processId, randomSLA());
@@ -233,11 +236,29 @@ public abstract class BaseSLAResourceTestCase {
 
 		assertEqualsIgnoringOrder(
 			Arrays.asList(sla1, sla2), (List<SLA>)page.getItems());
-		assertValid(page);
+		assertValid(page, testGetProcessSLAsPage_getExpectedActions(processId));
 
 		slaResource.deleteSLA(sla1.getId());
 
 		slaResource.deleteSLA(sla2.getId());
+	}
+
+	protected Map<String, Map> testGetProcessSLAsPage_getExpectedActions(
+			Long processId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/portal-workflow-metrics/v1.0/processes/{processId}/slas/batch".
+				replace("{processId}", String.valueOf(processId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	@Test
@@ -595,6 +616,12 @@ public abstract class BaseSLAResourceTestCase {
 	}
 
 	protected void assertValid(Page<SLA> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<SLA> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<SLA> slas = page.getItems();
@@ -609,6 +636,20 @@ public abstract class BaseSLAResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -841,6 +882,10 @@ public abstract class BaseSLAResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

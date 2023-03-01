@@ -55,6 +55,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -216,7 +217,10 @@ public abstract class BaseSegmentUserResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantSegmentUser),
 				(List<SegmentUser>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetSegmentUserAccountsPage_getExpectedActions(
+					irrelevantSegmentId));
 		}
 
 		SegmentUser segmentUser1 =
@@ -235,7 +239,17 @@ public abstract class BaseSegmentUserResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(segmentUser1, segmentUser2),
 			(List<SegmentUser>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page, testGetSegmentUserAccountsPage_getExpectedActions(segmentId));
+	}
+
+	protected Map<String, Map>
+			testGetSegmentUserAccountsPage_getExpectedActions(Long segmentId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -413,6 +427,12 @@ public abstract class BaseSegmentUserResourceTestCase {
 	}
 
 	protected void assertValid(Page<SegmentUser> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<SegmentUser> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<SegmentUser> segmentUsers = page.getItems();
@@ -427,6 +447,20 @@ public abstract class BaseSegmentUserResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -588,6 +622,10 @@ public abstract class BaseSegmentUserResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

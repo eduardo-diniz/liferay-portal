@@ -59,6 +59,8 @@ import com.liferay.layout.util.structure.RowStyledLayoutStructureItem;
 import com.liferay.layout.util.structure.collection.EmptyCollectionOptions;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.petra.string.StringUtil;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.io.unsync.UnsyncStringWriter;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.layoutconfiguration.util.RuntimePageUtil;
@@ -77,7 +79,6 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.util.PropsValues;
@@ -749,8 +750,42 @@ public class RenderLayoutStructureTag extends IncludeTag {
 
 		Layout layout = themeDisplay.getLayout();
 
-		if (Objects.equals(layout.getType(), LayoutConstants.TYPE_PORTLET)) {
-			LayoutTypePortlet layoutTypePortlet = _getLayoutTypePortlet(
+		LayoutTypePortlet layoutTypePortlet =
+			themeDisplay.getLayoutTypePortlet();
+
+		String ppid = ParamUtil.getString(httpServletRequest, "p_p_id");
+
+		if (layoutTypePortlet.hasStateMax() && Validator.isNotNull(ppid)) {
+			String templateContent = LayoutTemplateLocalServiceUtil.getContent(
+				"max", true, themeDisplay.getThemeId());
+
+			if (Validator.isNotNull(templateContent)) {
+				HttpServletRequest originalHttpServletRequest =
+					(HttpServletRequest)httpServletRequest.getAttribute(
+						"ORIGINAL_HTTP_SERVLET_REQUEST");
+
+				if (originalHttpServletRequest == null) {
+					originalHttpServletRequest = httpServletRequest;
+				}
+
+				List<String> ppids = StringUtil.split(
+					layoutTypePortlet.getStateMax());
+				String templateId =
+					themeDisplay.getThemeId() +
+						LayoutTemplateConstants.STANDARD_SEPARATOR + "max";
+
+				RuntimePageUtil.processTemplate(
+					originalHttpServletRequest,
+					(HttpServletResponse)pageContext.getResponse(),
+					ppids.get(0), templateId, templateContent,
+					LayoutTemplateLocalServiceUtil.getLangType(
+						"max", true, themeDisplay.getThemeId()));
+			}
+		}
+		else if (Objects.equals(
+					layout.getType(), LayoutConstants.TYPE_PORTLET)) {
+
+			layoutTypePortlet = _getLayoutTypePortlet(
 				layout, themeDisplay.getLayoutTypePortlet(),
 				themeDisplay.getThemeId());
 
@@ -848,7 +883,7 @@ public class RenderLayoutStructureTag extends IncludeTag {
 		throws Exception {
 
 		if ((infoForm == null) ||
-			(GetterUtil.getBoolean(PropsUtil.get("feature.flag.LPS-169923")) &&
+			(FeatureFlagManagerUtil.isEnabled("LPS-169923") &&
 			 !_hasAddPermission(
 				 PortalUtil.getClassName(
 					 formStyledLayoutStructureItem.getClassNameId())))) {

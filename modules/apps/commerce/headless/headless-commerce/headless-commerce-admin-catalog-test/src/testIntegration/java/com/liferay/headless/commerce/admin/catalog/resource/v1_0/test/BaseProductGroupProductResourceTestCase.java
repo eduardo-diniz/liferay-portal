@@ -55,6 +55,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -277,7 +278,10 @@ public abstract class BaseProductGroupProductResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantProductGroupProduct),
 				(List<ProductGroupProduct>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetProductGroupByExternalReferenceCodeProductGroupProductsPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		ProductGroupProduct productGroupProduct1 =
@@ -298,13 +302,26 @@ public abstract class BaseProductGroupProductResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(productGroupProduct1, productGroupProduct2),
 			(List<ProductGroupProduct>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetProductGroupByExternalReferenceCodeProductGroupProductsPage_getExpectedActions(
+				externalReferenceCode));
 
 		productGroupProductResource.deleteProductGroupProduct(
 			productGroupProduct1.getId());
 
 		productGroupProductResource.deleteProductGroupProduct(
 			productGroupProduct2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetProductGroupByExternalReferenceCodeProductGroupProductsPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -441,7 +458,10 @@ public abstract class BaseProductGroupProductResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantProductGroupProduct),
 				(List<ProductGroupProduct>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetProductGroupIdProductGroupProductsPage_getExpectedActions(
+					irrelevantId));
 		}
 
 		ProductGroupProduct productGroupProduct1 =
@@ -462,13 +482,26 @@ public abstract class BaseProductGroupProductResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(productGroupProduct1, productGroupProduct2),
 			(List<ProductGroupProduct>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetProductGroupIdProductGroupProductsPage_getExpectedActions(
+				id));
 
 		productGroupProductResource.deleteProductGroupProduct(
 			productGroupProduct1.getId());
 
 		productGroupProductResource.deleteProductGroupProduct(
 			productGroupProduct2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetProductGroupIdProductGroupProductsPage_getExpectedActions(
+				Long id)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -737,6 +770,12 @@ public abstract class BaseProductGroupProductResourceTestCase {
 	}
 
 	protected void assertValid(Page<ProductGroupProduct> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<ProductGroupProduct> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<ProductGroupProduct> productGroupProducts =
@@ -752,6 +791,20 @@ public abstract class BaseProductGroupProductResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -969,6 +1022,10 @@ public abstract class BaseProductGroupProductResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

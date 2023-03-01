@@ -56,6 +56,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -441,7 +442,10 @@ public abstract class BaseAccountChannelShippingOptionResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantAccountChannelShippingOption),
 				(List<AccountChannelShippingOption>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetAccountByExternalReferenceCodeAccountChannelShippingOptionPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		AccountChannelShippingOption accountChannelShippingOption1 =
@@ -463,13 +467,26 @@ public abstract class BaseAccountChannelShippingOptionResourceTestCase {
 			Arrays.asList(
 				accountChannelShippingOption1, accountChannelShippingOption2),
 			(List<AccountChannelShippingOption>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetAccountByExternalReferenceCodeAccountChannelShippingOptionPage_getExpectedActions(
+				externalReferenceCode));
 
 		accountChannelShippingOptionResource.deleteAccountChannelShippingOption(
 			accountChannelShippingOption1.getId());
 
 		accountChannelShippingOptionResource.deleteAccountChannelShippingOption(
 			accountChannelShippingOption2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetAccountByExternalReferenceCodeAccountChannelShippingOptionPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -612,7 +629,10 @@ public abstract class BaseAccountChannelShippingOptionResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantAccountChannelShippingOption),
 				(List<AccountChannelShippingOption>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetAccountIdAccountChannelShippingOptionPage_getExpectedActions(
+					irrelevantId));
 		}
 
 		AccountChannelShippingOption accountChannelShippingOption1 =
@@ -634,13 +654,26 @@ public abstract class BaseAccountChannelShippingOptionResourceTestCase {
 			Arrays.asList(
 				accountChannelShippingOption1, accountChannelShippingOption2),
 			(List<AccountChannelShippingOption>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetAccountIdAccountChannelShippingOptionPage_getExpectedActions(
+				id));
 
 		accountChannelShippingOptionResource.deleteAccountChannelShippingOption(
 			accountChannelShippingOption1.getId());
 
 		accountChannelShippingOptionResource.deleteAccountChannelShippingOption(
 			accountChannelShippingOption2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetAccountIdAccountChannelShippingOptionPage_getExpectedActions(
+				Long id)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -966,6 +999,13 @@ public abstract class BaseAccountChannelShippingOptionResourceTestCase {
 	}
 
 	protected void assertValid(Page<AccountChannelShippingOption> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<AccountChannelShippingOption> page,
+		Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<AccountChannelShippingOption>
@@ -981,6 +1021,20 @@ public abstract class BaseAccountChannelShippingOptionResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1238,6 +1292,10 @@ public abstract class BaseAccountChannelShippingOptionResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

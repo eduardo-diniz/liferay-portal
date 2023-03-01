@@ -1008,6 +1008,20 @@ public class TestrayImporter {
 							axisTestClassGroup instanceof
 								JUnitAxisTestClassGroup) {
 
+							PortalLogTestrayCaseResult
+								portalLogTestrayCaseResult =
+									TestrayFactory.
+										newPortalLogTestrayCaseResult(
+											testrayBuild, getTopLevelBuild(),
+											axisTestClassGroup);
+
+							if (!JenkinsResultsParserUtil.isNullOrEmpty(
+									portalLogTestrayCaseResult.getErrors())) {
+
+								testrayCaseResults.add(
+									portalLogTestrayCaseResult);
+							}
+
 							for (TestClass testClass :
 									axisTestClassGroup.getTestClasses()) {
 
@@ -1684,6 +1698,12 @@ public class TestrayImporter {
 
 		if (jobName.contains("subrepository")) {
 			string = _replaceEnvVarsSubrepository(string);
+		}
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(string) &&
+			(string.length() > 150)) {
+
+			string = string.substring(string.length() - 150);
 		}
 
 		return string;

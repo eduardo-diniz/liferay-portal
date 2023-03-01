@@ -12,7 +12,15 @@
 .popover {
 	max-width: 900px !important;
 	width: 480px !important;
-	z-index: 99;
+	z-index: 9;
+}
+
+.testray-multi-select__clear-indicator {
+	display: none !important;
+}
+
+.popover .inline-scroller {
+	max-height: unset !important;
 }
 
 .compare-runs-popover {
@@ -61,6 +69,7 @@ body {
 
 .management-toolbar-filter-dropdown {
 	max-height: 800px;
+	overflow-y: hidden;
 	width: 300px;
 
 	label {
@@ -91,6 +100,9 @@ body {
 }
 
 .popover-footer {
-	padding: 0 12px 12px;
+	background-color: #fff;
+	bottom: 0;
+	padding: 3px 16px 16px;
+	position: sticky;
 	z-index: 999;
 }

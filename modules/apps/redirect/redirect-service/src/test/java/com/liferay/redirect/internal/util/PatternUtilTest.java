@@ -43,7 +43,27 @@ public class PatternUtilTest {
 		Map<Pattern, String> patternStrings = PatternUtil.parse(
 			new String[] {"^xyz abc"});
 
-		Assert.assertEquals("^xyz", _getFistPatternString(patternStrings));
+		Assert.assertEquals("^xyz", _getFirstPatternString(patternStrings));
+		Assert.assertEquals(
+			patternStrings.toString(), 1, patternStrings.size());
+	}
+
+	@Test
+	public void testCaretPattern() {
+		Map<Pattern, String> patternStrings = PatternUtil.parse(
+			new String[] {"^xyz abc"});
+
+		Assert.assertEquals("^xyz", _getFirstPatternString(patternStrings));
+		Assert.assertEquals(
+			patternStrings.toString(), 1, patternStrings.size());
+	}
+
+	@Test
+	public void testCaretSlashPattern() {
+		Map<Pattern, String> patternStrings = PatternUtil.parse(
+			new String[] {"^/xyz abc"});
+
+		Assert.assertEquals("^xyz", _getFirstPatternString(patternStrings));
 		Assert.assertEquals(
 			patternStrings.toString(), 1, patternStrings.size());
 	}
@@ -69,16 +89,26 @@ public class PatternUtilTest {
 	}
 
 	@Test
-	public void testUnanchoredPattern() {
+	public void testSlashPattern() {
 		Map<Pattern, String> patternStrings = PatternUtil.parse(
-			new String[] {"xyz abc"});
+			new String[] {"/xyz abc"});
 
-		Assert.assertEquals("^xyz", _getFistPatternString(patternStrings));
+		Assert.assertEquals("^xyz", _getFirstPatternString(patternStrings));
 		Assert.assertEquals(
 			patternStrings.toString(), 1, patternStrings.size());
 	}
 
-	private String _getFistPatternString(Map<Pattern, String> patternStrings) {
+	@Test
+	public void testUnanchoredPattern() {
+		Map<Pattern, String> patternStrings = PatternUtil.parse(
+			new String[] {"xyz abc"});
+
+		Assert.assertEquals("^xyz", _getFirstPatternString(patternStrings));
+		Assert.assertEquals(
+			patternStrings.toString(), 1, patternStrings.size());
+	}
+
+	private String _getFirstPatternString(Map<Pattern, String> patternStrings) {
 		Set<Map.Entry<Pattern, String>> entries = patternStrings.entrySet();
 
 		Iterator<Map.Entry<Pattern, String>> iterator = entries.iterator();

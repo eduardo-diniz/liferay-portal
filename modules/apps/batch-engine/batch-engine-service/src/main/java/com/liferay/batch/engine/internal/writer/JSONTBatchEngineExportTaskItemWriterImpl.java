@@ -16,7 +16,7 @@ package com.liferay.batch.engine.internal.writer;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
 
-import com.liferay.batch.engine.internal.auto.deploy.BatchEngineAutoDeployListener;
+import com.liferay.batch.engine.internal.file.install.BatchEngineFileInstaller;
 import com.liferay.petra.io.unsync.UnsyncPrintWriter;
 import com.liferay.petra.string.StringPool;
 
@@ -36,7 +36,7 @@ public class JSONTBatchEngineExportTaskItemWriterImpl
 
 	public JSONTBatchEngineExportTaskItemWriterImpl(
 			Set<String> allFieldNames,
-			BatchEngineAutoDeployListener.BatchEngineImportConfiguration
+			BatchEngineFileInstaller.BatchEngineImportConfiguration
 				batchEngineImportConfiguration,
 			List<String> includeFieldNames, OutputStream outputStream)
 		throws IOException {
@@ -46,7 +46,12 @@ public class JSONTBatchEngineExportTaskItemWriterImpl
 
 		_unsyncPrintWriter = new UnsyncPrintWriter(outputStream);
 
-		_unsyncPrintWriter.write("{\"configuration\":\n");
+		_unsyncPrintWriter.write(
+			"{\"actions\":\n{\"createBatch\": {\"href\": \"");
+		_unsyncPrintWriter.write("/o/headless-batch-engine/v1.0/import-task/");
+		_unsyncPrintWriter.write(batchEngineImportConfiguration.getClassName());
+		_unsyncPrintWriter.write(
+			"\", \"method\": \"POST\"}},\n\"configuration\":\n");
 		_unsyncPrintWriter.write(
 			_objectWriter.writeValueAsString(batchEngineImportConfiguration));
 		_unsyncPrintWriter.write(",\n");

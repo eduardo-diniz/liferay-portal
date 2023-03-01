@@ -260,11 +260,19 @@ public abstract class BaseAccountResourceTestCase {
 
 		assertContains(account1, (List<Account>)page.getItems());
 		assertContains(account2, (List<Account>)page.getItems());
-		assertValid(page);
+		assertValid(page, testGetAccountsPage_getExpectedActions());
 
 		accountResource.deleteAccount(account1.getId());
 
 		accountResource.deleteAccount(account2.getId());
+	}
+
+	protected Map<String, Map> testGetAccountsPage_getExpectedActions()
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -1039,6 +1047,12 @@ public abstract class BaseAccountResourceTestCase {
 	}
 
 	protected void assertValid(Page<Account> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<Account> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<Account> accounts = page.getItems();
@@ -1053,6 +1067,20 @@ public abstract class BaseAccountResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1378,6 +1406,10 @@ public abstract class BaseAccountResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

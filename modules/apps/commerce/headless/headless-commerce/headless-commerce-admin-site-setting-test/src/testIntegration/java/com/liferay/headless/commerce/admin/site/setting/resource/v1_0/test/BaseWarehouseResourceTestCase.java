@@ -56,6 +56,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -228,7 +229,10 @@ public abstract class BaseWarehouseResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantWarehouse),
 				(List<Warehouse>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetCommerceAdminSiteSettingGroupWarehousePage_getExpectedActions(
+					irrelevantGroupId));
 		}
 
 		Warehouse warehouse1 =
@@ -247,11 +251,24 @@ public abstract class BaseWarehouseResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(warehouse1, warehouse2),
 			(List<Warehouse>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetCommerceAdminSiteSettingGroupWarehousePage_getExpectedActions(
+				groupId));
 
 		warehouseResource.deleteWarehouse(warehouse1.getId());
 
 		warehouseResource.deleteWarehouse(warehouse2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetCommerceAdminSiteSettingGroupWarehousePage_getExpectedActions(
+				Long groupId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -683,6 +700,12 @@ public abstract class BaseWarehouseResourceTestCase {
 	}
 
 	protected void assertValid(Page<Warehouse> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<Warehouse> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<Warehouse> warehouses = page.getItems();
@@ -697,6 +720,20 @@ public abstract class BaseWarehouseResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -991,6 +1028,10 @@ public abstract class BaseWarehouseResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

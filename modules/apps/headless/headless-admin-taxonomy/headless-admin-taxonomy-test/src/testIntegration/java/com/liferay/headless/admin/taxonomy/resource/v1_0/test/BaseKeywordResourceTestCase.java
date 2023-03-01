@@ -244,7 +244,10 @@ public abstract class BaseKeywordResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantKeyword),
 				(List<Keyword>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetAssetLibraryKeywordsPage_getExpectedActions(
+					irrelevantAssetLibraryId));
 		}
 
 		Keyword keyword1 = testGetAssetLibraryKeywordsPage_addKeyword(
@@ -260,11 +263,32 @@ public abstract class BaseKeywordResourceTestCase {
 
 		assertEqualsIgnoringOrder(
 			Arrays.asList(keyword1, keyword2), (List<Keyword>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetAssetLibraryKeywordsPage_getExpectedActions(assetLibraryId));
 
 		keywordResource.deleteKeyword(keyword1.getId());
 
 		keywordResource.deleteKeyword(keyword2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetAssetLibraryKeywordsPage_getExpectedActions(
+				Long assetLibraryId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/headless-admin-taxonomy/v1.0/asset-libraries/{assetLibraryId}/keywords/batch".
+				replace("{assetLibraryId}", String.valueOf(assetLibraryId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	@Test
@@ -658,11 +682,19 @@ public abstract class BaseKeywordResourceTestCase {
 
 		assertContains(keyword1, (List<Keyword>)page.getItems());
 		assertContains(keyword2, (List<Keyword>)page.getItems());
-		assertValid(page);
+		assertValid(page, testGetKeywordsRankedPage_getExpectedActions());
 
 		keywordResource.deleteKeyword(keyword1.getId());
 
 		keywordResource.deleteKeyword(keyword2.getId());
+	}
+
+	protected Map<String, Map> testGetKeywordsRankedPage_getExpectedActions()
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -908,7 +940,9 @@ public abstract class BaseKeywordResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantKeyword),
 				(List<Keyword>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetSiteKeywordsPage_getExpectedActions(irrelevantSiteId));
 		}
 
 		Keyword keyword1 = testGetSiteKeywordsPage_addKeyword(
@@ -924,11 +958,29 @@ public abstract class BaseKeywordResourceTestCase {
 
 		assertEqualsIgnoringOrder(
 			Arrays.asList(keyword1, keyword2), (List<Keyword>)page.getItems());
-		assertValid(page);
+		assertValid(page, testGetSiteKeywordsPage_getExpectedActions(siteId));
 
 		keywordResource.deleteKeyword(keyword1.getId());
 
 		keywordResource.deleteKeyword(keyword2.getId());
+	}
+
+	protected Map<String, Map> testGetSiteKeywordsPage_getExpectedActions(
+			Long siteId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/headless-admin-taxonomy/v1.0/sites/{siteId}/keywords/batch".
+				replace("{siteId}", String.valueOf(siteId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	@Test
@@ -1580,6 +1632,12 @@ public abstract class BaseKeywordResourceTestCase {
 	}
 
 	protected void assertValid(Page<Keyword> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<Keyword> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<Keyword> keywords = page.getItems();
@@ -1594,6 +1652,20 @@ public abstract class BaseKeywordResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1807,6 +1879,10 @@ public abstract class BaseKeywordResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

@@ -9,6 +9,11 @@
 			<stop-one-java-process process.name="LocalProcess" />
 			<stop-one-java-process process.name="DBUpgrader" />
 
+			<exec executable="/bin/bash" logError="true" output="true">
+				<arg value="-c" />
+				<arg value="pkill -f db.upgrade" />
+			</exec>
+
 			<delete file="${db.upgrade.client.log}" />
 			<delete file="temp.log" />
 		</sequential>
@@ -108,6 +113,19 @@
 		</waitfor>
 
 		<fail if="gogoshell.timeout" message="The Gogo shell connection did not connect as expected." />
+	</target>
+
+	<target name="check-passed-upgrade-log">
+		<get-database-upgrade-client-paths />
+
+		<waitfor maxwait="150" maxwaitunit="second" timeoutproperty="upgrade.failed">
+			<resourcecontains
+				resource="${db.upgrade.client.log}"
+				substring="Checking to see if all upgrades have completed...${line.separator}Looks good."
+			/>
+		</waitfor>
+
+		<fail if="upgrade.failed" message="The upgrade process has timed out." />
 	</target>
 
 	<target name="check-upgrade-client-additional-settings">
@@ -488,6 +506,18 @@ upgrade.database.auto.run=false</echo>
 		</sequential>
 	</target>
 
+	<target name="check-upgrade-debug-options">
+		<get-database-upgrade-client-paths />
+
+		<run-expect
+			db.upgrade.client.home="${db.upgrade.client.home}"
+			file.suffix.bat="${file.suffix.bat}"
+			expect.file="check-upgrade-debug-options.expect"
+		/>
+
+		<clean-database-upgrade-client />
+	</target>
+
 	<target name="check-upgrade-properties-app-db-set">
 		<get-database-upgrade-client-paths />
 
@@ -586,6 +616,24 @@ upgrade.database.auto.run=false</echo>
 
 	<target name="clean-database-upgrade-client">
 		<clean-database-upgrade-client />
+	</target>
+
+	<target name="delete-indexes-sql">
+		<get-test-app-server-lib-portal-dir />
+
+		<unzip
+			dest="${test.app.server.lib.portal.dir}/portal-impl"
+			src="${test.app.server.lib.portal.dir}/portal-impl.jar"
+		/>
+
+		<delete file="${test.app.server.lib.portal.dir}/portal-impl.jar" />
+
+		<delete file="${test.app.server.lib.portal.dir}/portal-impl/com/liferay/portal/tools/sql/dependencies/indexes.sql" />
+
+		<jar
+			basedir="${test.app.server.lib.portal.dir}/portal-impl"
+			destfile="${test.app.server.lib.portal.dir}/portal-impl.jar"
+		/>
 	</target>
 
 	<target name="execute-all-pending-upgrades-from-gogo-shell">

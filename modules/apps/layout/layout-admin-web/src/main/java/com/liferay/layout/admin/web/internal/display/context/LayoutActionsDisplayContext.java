@@ -21,6 +21,8 @@ import com.liferay.layout.admin.constants.LayoutAdminPortletKeys;
 import com.liferay.layout.content.page.editor.constants.ContentPageEditorPortletKeys;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalServiceUtil;
+import com.liferay.layout.utility.page.model.LayoutUtilityPageEntry;
+import com.liferay.layout.utility.page.service.LayoutUtilityPageEntryLocalServiceUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
@@ -332,7 +334,16 @@ public class LayoutActionsDisplayContext {
 		}
 
 		if (layoutPageTemplateEntry == null) {
-			_contentLayout = true;
+			LayoutUtilityPageEntry layoutUtilityPageEntry =
+				LayoutUtilityPageEntryLocalServiceUtil.
+					fetchLayoutUtilityPageEntryByPlid(layout.getPlid());
+
+			if (layoutUtilityPageEntry != null) {
+				_contentLayout = false;
+			}
+			else {
+				_contentLayout = true;
+			}
 		}
 		else {
 			_contentLayout = false;

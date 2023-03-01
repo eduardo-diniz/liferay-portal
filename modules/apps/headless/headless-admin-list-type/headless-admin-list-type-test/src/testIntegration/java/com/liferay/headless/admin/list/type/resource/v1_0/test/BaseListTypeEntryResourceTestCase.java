@@ -234,7 +234,10 @@ public abstract class BaseListTypeEntryResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantListTypeEntry),
 				(List<ListTypeEntry>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetListTypeDefinitionListTypeEntriesPage_getExpectedActions(
+					irrelevantListTypeDefinitionId));
 		}
 
 		ListTypeEntry listTypeEntry1 =
@@ -253,11 +256,35 @@ public abstract class BaseListTypeEntryResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(listTypeEntry1, listTypeEntry2),
 			(List<ListTypeEntry>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetListTypeDefinitionListTypeEntriesPage_getExpectedActions(
+				listTypeDefinitionId));
 
 		listTypeEntryResource.deleteListTypeEntry(listTypeEntry1.getId());
 
 		listTypeEntryResource.deleteListTypeEntry(listTypeEntry2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetListTypeDefinitionListTypeEntriesPage_getExpectedActions(
+				Long listTypeDefinitionId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/headless-admin-list-type/v1.0/list-type-definitions/{listTypeDefinitionId}/list-type-entries/batch".
+				replace(
+					"{listTypeDefinitionId}",
+					String.valueOf(listTypeDefinitionId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	@Test
@@ -1071,6 +1098,12 @@ public abstract class BaseListTypeEntryResourceTestCase {
 	}
 
 	protected void assertValid(Page<ListTypeEntry> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<ListTypeEntry> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<ListTypeEntry> listTypeEntries = page.getItems();
@@ -1085,6 +1118,20 @@ public abstract class BaseListTypeEntryResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1312,6 +1359,10 @@ public abstract class BaseListTypeEntryResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

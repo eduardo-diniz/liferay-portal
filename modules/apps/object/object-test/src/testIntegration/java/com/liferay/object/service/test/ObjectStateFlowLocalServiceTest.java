@@ -15,6 +15,7 @@
 package com.liferay.object.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.list.type.entry.util.ListTypeEntryUtil;
 import com.liferay.list.type.model.ListTypeDefinition;
 import com.liferay.list.type.model.ListTypeEntry;
 import com.liferay.list.type.service.ListTypeDefinitionLocalService;
@@ -81,7 +82,6 @@ public class ObjectStateFlowLocalServiceTest {
 		_step1ListTypeEntry = _addListTypeEntry("step1");
 		_step2ListTypeEntry = _addListTypeEntry("step2");
 		_step3ListTypeEntry = _addListTypeEntry("step3");
-		_step4ListTypeEntry = _addListTypeEntry("step4");
 
 		_objectDefinition =
 			_objectDefinitionLocalService.addCustomObjectDefinition(
@@ -283,18 +283,11 @@ public class ObjectStateFlowLocalServiceTest {
 			_listTypeDefinitionLocalService.addListTypeDefinition(
 				null, TestPropsValues.getUserId(),
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-				Collections.emptyList());
-
-		_listTypeEntryLocalService.addListTypeEntry(
-			null, TestPropsValues.getUserId(),
-			listTypeDefinition.getListTypeDefinitionId(),
-			RandomTestUtil.randomString(),
-			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()));
-		_listTypeEntryLocalService.addListTypeEntry(
-			null, TestPropsValues.getUserId(),
-			listTypeDefinition.getListTypeDefinitionId(),
-			RandomTestUtil.randomString(),
-			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()));
+				Arrays.asList(
+					ListTypeEntryUtil.createListTypeEntry(
+						RandomTestUtil.randomString()),
+					ListTypeEntryUtil.createListTypeEntry(
+						RandomTestUtil.randomString())));
 
 		ObjectStateFlow objectStateFlow =
 			_objectStateFlowLocalService.updateDefaultObjectStateFlow(
@@ -320,6 +313,8 @@ public class ObjectStateFlowLocalServiceTest {
 
 	@Test
 	public void testUpdateObjectStateTransitions() throws Exception {
+		ListTypeEntry listTypeEntry = _addListTypeEntry("step4");
+
 		List<ObjectState> objectStates =
 			_objectStateLocalService.getObjectStateFlowObjectStates(
 				_objectStateFlow.getObjectStateFlowId());
@@ -355,7 +350,7 @@ public class ObjectStateFlowLocalServiceTest {
 						TestPropsValues.getUserId(),
 						_objectStateFlow.getObjectStateFlowId(),
 						objectState.getObjectStateId(),
-						_step4ListTypeEntry.getListTypeEntryId())));
+						listTypeEntry.getListTypeEntryId())));
 		}
 
 		newObjectStateFlow.setObjectStates(newObjectStates);
@@ -483,6 +478,5 @@ public class ObjectStateFlowLocalServiceTest {
 	private ListTypeEntry _step1ListTypeEntry;
 	private ListTypeEntry _step2ListTypeEntry;
 	private ListTypeEntry _step3ListTypeEntry;
-	private ListTypeEntry _step4ListTypeEntry;
 
 }

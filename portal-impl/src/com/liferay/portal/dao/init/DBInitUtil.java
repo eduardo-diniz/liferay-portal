@@ -16,6 +16,7 @@ package com.liferay.portal.dao.init;
 
 import com.liferay.petra.io.StreamUtil;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.dao.jdbc.util.DynamicDataSource;
 import com.liferay.portal.db.partition.DBPartitionUtil;
 import com.liferay.portal.events.StartupHelperUtil;
 import com.liferay.portal.kernel.dao.db.DB;
@@ -54,23 +55,21 @@ public class DBInitUtil {
 		return _dataSource;
 	}
 
-	public static DataSource getReadDataSource() {
-		return _readDataSource;
-	}
-
-	public static DataSource getWriteDataSource() {
-		return _writeDataSource;
-	}
-
 	public static void init() throws Exception {
 		_readDataSource = _initDataSource("jdbc.read.");
 
 		_writeDataSource = _initDataSource("jdbc.write.");
 
-		_dataSource = _writeDataSource;
-
-		if ((_readDataSource == null) && (_writeDataSource == null)) {
+		if ((_readDataSource != null) && (_writeDataSource != null)) {
+			_dataSource = new DynamicDataSource(
+				_readDataSource, _writeDataSource);
+		}
+		else {
 			_dataSource = _initDataSource("jdbc.default.");
+		}
+
+		if (_dataSource == null) {
+			throw new IllegalStateException("Data source is null");
 		}
 
 		try (Connection connection = _dataSource.getConnection()) {

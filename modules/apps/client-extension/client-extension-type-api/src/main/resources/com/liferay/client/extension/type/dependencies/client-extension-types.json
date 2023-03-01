@@ -270,6 +270,11 @@
 				"default": "",
 				"name": "url",
 				"type": "CETProperty.Type.URL"
+			},
+			{
+				"default": "false",
+				"name": "enableSVG4Everybody",
+				"type": "CETProperty.Type.Boolean"
 			}
 		]
 	}

@@ -57,6 +57,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -279,7 +280,9 @@ public abstract class BaseFormResourceTestCase {
 
 			assertEquals(
 				Arrays.asList(irrelevantForm), (List<Form>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetSiteFormsPage_getExpectedActions(irrelevantSiteId));
 		}
 
 		Form form1 = testGetSiteFormsPage_addForm(siteId, randomForm());
@@ -292,7 +295,16 @@ public abstract class BaseFormResourceTestCase {
 
 		assertEqualsIgnoringOrder(
 			Arrays.asList(form1, form2), (List<Form>)page.getItems());
-		assertValid(page);
+		assertValid(page, testGetSiteFormsPage_getExpectedActions(siteId));
+	}
+
+	protected Map<String, Map> testGetSiteFormsPage_getExpectedActions(
+			Long siteId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -603,6 +615,12 @@ public abstract class BaseFormResourceTestCase {
 	}
 
 	protected void assertValid(Page<Form> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<Form> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<Form> forms = page.getItems();
@@ -617,6 +635,20 @@ public abstract class BaseFormResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected void assertValid(FormContext formContext) {
@@ -1232,6 +1264,10 @@ public abstract class BaseFormResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

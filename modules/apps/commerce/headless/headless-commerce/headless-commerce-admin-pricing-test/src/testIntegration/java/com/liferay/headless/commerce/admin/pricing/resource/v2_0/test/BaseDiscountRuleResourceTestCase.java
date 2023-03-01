@@ -392,7 +392,10 @@ public abstract class BaseDiscountRuleResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantDiscountRule),
 				(List<DiscountRule>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetDiscountByExternalReferenceCodeDiscountRulesPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		DiscountRule discountRule1 =
@@ -413,11 +416,24 @@ public abstract class BaseDiscountRuleResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(discountRule1, discountRule2),
 			(List<DiscountRule>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetDiscountByExternalReferenceCodeDiscountRulesPage_getExpectedActions(
+				externalReferenceCode));
 
 		discountRuleResource.deleteDiscountRule(discountRule1.getId());
 
 		discountRuleResource.deleteDiscountRule(discountRule2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetDiscountByExternalReferenceCodeDiscountRulesPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -545,7 +561,10 @@ public abstract class BaseDiscountRuleResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantDiscountRule),
 				(List<DiscountRule>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetDiscountIdDiscountRulesPage_getExpectedActions(
+					irrelevantId));
 		}
 
 		DiscountRule discountRule1 =
@@ -564,11 +583,21 @@ public abstract class BaseDiscountRuleResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(discountRule1, discountRule2),
 			(List<DiscountRule>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page, testGetDiscountIdDiscountRulesPage_getExpectedActions(id));
 
 		discountRuleResource.deleteDiscountRule(discountRule1.getId());
 
 		discountRuleResource.deleteDiscountRule(discountRule2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetDiscountIdDiscountRulesPage_getExpectedActions(Long id)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -1037,6 +1066,12 @@ public abstract class BaseDiscountRuleResourceTestCase {
 	}
 
 	protected void assertValid(Page<DiscountRule> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<DiscountRule> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<DiscountRule> discountRules = page.getItems();
@@ -1051,6 +1086,20 @@ public abstract class BaseDiscountRuleResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1244,6 +1293,10 @@ public abstract class BaseDiscountRuleResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

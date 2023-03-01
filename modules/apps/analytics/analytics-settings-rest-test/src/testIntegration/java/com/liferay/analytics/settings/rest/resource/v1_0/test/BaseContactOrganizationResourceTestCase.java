@@ -223,7 +223,16 @@ public abstract class BaseContactOrganizationResourceTestCase {
 			contactOrganization1, (List<ContactOrganization>)page.getItems());
 		assertContains(
 			contactOrganization2, (List<ContactOrganization>)page.getItems());
-		assertValid(page);
+		assertValid(page, testGetContactOrganizationsPage_getExpectedActions());
+	}
+
+	protected Map<String, Map>
+			testGetContactOrganizationsPage_getExpectedActions()
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -611,6 +620,12 @@ public abstract class BaseContactOrganizationResourceTestCase {
 	}
 
 	protected void assertValid(Page<ContactOrganization> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<ContactOrganization> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<ContactOrganization> contactOrganizations =
@@ -626,6 +641,20 @@ public abstract class BaseContactOrganizationResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -790,6 +819,10 @@ public abstract class BaseContactOrganizationResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

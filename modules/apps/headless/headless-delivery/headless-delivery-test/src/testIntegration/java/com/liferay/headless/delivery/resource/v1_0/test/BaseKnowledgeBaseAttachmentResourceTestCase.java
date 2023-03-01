@@ -58,6 +58,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -241,7 +242,10 @@ public abstract class BaseKnowledgeBaseAttachmentResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantKnowledgeBaseAttachment),
 				(List<KnowledgeBaseAttachment>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetKnowledgeBaseArticleKnowledgeBaseAttachmentsPage_getExpectedActions(
+					irrelevantKnowledgeBaseArticleId));
 		}
 
 		KnowledgeBaseAttachment knowledgeBaseAttachment1 =
@@ -262,13 +266,37 @@ public abstract class BaseKnowledgeBaseAttachmentResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(knowledgeBaseAttachment1, knowledgeBaseAttachment2),
 			(List<KnowledgeBaseAttachment>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetKnowledgeBaseArticleKnowledgeBaseAttachmentsPage_getExpectedActions(
+				knowledgeBaseArticleId));
 
 		knowledgeBaseAttachmentResource.deleteKnowledgeBaseAttachment(
 			knowledgeBaseAttachment1.getId());
 
 		knowledgeBaseAttachmentResource.deleteKnowledgeBaseAttachment(
 			knowledgeBaseAttachment2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetKnowledgeBaseArticleKnowledgeBaseAttachmentsPage_getExpectedActions(
+				Long knowledgeBaseArticleId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/headless-delivery/v1.0/knowledge-base-articles/{knowledgeBaseArticleId}/knowledge-base-attachments/batch".
+				replace(
+					"{knowledgeBaseArticleId}",
+					String.valueOf(knowledgeBaseArticleId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	protected KnowledgeBaseAttachment
@@ -652,6 +680,12 @@ public abstract class BaseKnowledgeBaseAttachmentResourceTestCase {
 	}
 
 	protected void assertValid(Page<KnowledgeBaseAttachment> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<KnowledgeBaseAttachment> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<KnowledgeBaseAttachment> knowledgeBaseAttachments =
@@ -667,6 +701,20 @@ public abstract class BaseKnowledgeBaseAttachmentResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -877,6 +925,10 @@ public abstract class BaseKnowledgeBaseAttachmentResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

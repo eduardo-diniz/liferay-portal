@@ -482,7 +482,10 @@ public class SalesforceObjectEntryManagerImpl
 				objectField.getExternalReferenceCode(),
 				Objects.equals(value, StringPool.BLANK) ? null : value);
 
-			if (Objects.equals(
+			if (StringUtil.endsWith(
+					objectDefinition.getExternalReferenceCode(),
+					_CUSTOM_OBJECT_SUFFIX) &&
+				Objects.equals(
 					objectField.getObjectFieldId(),
 					objectDefinition.getTitleObjectFieldId())) {
 
@@ -605,6 +608,8 @@ public class SalesforceObjectEntryManagerImpl
 
 		return objectEntry;
 	}
+
+	private static final String _CUSTOM_OBJECT_SUFFIX = "__c";
 
 	private final Map<String, String> _defaultObjectFieldNames =
 		HashMapBuilder.put(

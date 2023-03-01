@@ -514,7 +514,10 @@ public abstract class BaseBlogPostingResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantBlogPosting),
 				(List<BlogPosting>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetSiteBlogPostingsPage_getExpectedActions(
+					irrelevantSiteId));
 		}
 
 		BlogPosting blogPosting1 = testGetSiteBlogPostingsPage_addBlogPosting(
@@ -531,11 +534,30 @@ public abstract class BaseBlogPostingResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(blogPosting1, blogPosting2),
 			(List<BlogPosting>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page, testGetSiteBlogPostingsPage_getExpectedActions(siteId));
 
 		blogPostingResource.deleteBlogPosting(blogPosting1.getId());
 
 		blogPostingResource.deleteBlogPosting(blogPosting2.getId());
+	}
+
+	protected Map<String, Map> testGetSiteBlogPostingsPage_getExpectedActions(
+			Long siteId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/headless-delivery/v1.0/sites/{siteId}/blog-postings/batch".
+				replace("{siteId}", String.valueOf(siteId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	@Test
@@ -911,22 +933,32 @@ public abstract class BaseBlogPostingResourceTestCase {
 			204,
 			blogPostingResource.
 				deleteSiteBlogPostingByExternalReferenceCodeHttpResponse(
-					blogPosting.getSiteId(),
+					testDeleteSiteBlogPostingByExternalReferenceCode_getSiteId(
+						blogPosting),
 					blogPosting.getExternalReferenceCode()));
 
 		assertHttpResponseStatusCode(
 			404,
 			blogPostingResource.
 				getSiteBlogPostingByExternalReferenceCodeHttpResponse(
-					blogPosting.getSiteId(),
+					testDeleteSiteBlogPostingByExternalReferenceCode_getSiteId(
+						blogPosting),
 					blogPosting.getExternalReferenceCode()));
 
 		assertHttpResponseStatusCode(
 			404,
 			blogPostingResource.
 				getSiteBlogPostingByExternalReferenceCodeHttpResponse(
-					blogPosting.getSiteId(),
+					testDeleteSiteBlogPostingByExternalReferenceCode_getSiteId(
+						blogPosting),
 					blogPosting.getExternalReferenceCode()));
+	}
+
+	protected Long testDeleteSiteBlogPostingByExternalReferenceCode_getSiteId(
+			BlogPosting blogPosting)
+		throws Exception {
+
+		return blogPosting.getSiteId();
 	}
 
 	protected BlogPosting
@@ -946,11 +978,19 @@ public abstract class BaseBlogPostingResourceTestCase {
 
 		BlogPosting getBlogPosting =
 			blogPostingResource.getSiteBlogPostingByExternalReferenceCode(
-				postBlogPosting.getSiteId(),
+				testGetSiteBlogPostingByExternalReferenceCode_getSiteId(
+					postBlogPosting),
 				postBlogPosting.getExternalReferenceCode());
 
 		assertEquals(postBlogPosting, getBlogPosting);
 		assertValid(getBlogPosting);
+	}
+
+	protected Long testGetSiteBlogPostingByExternalReferenceCode_getSiteId(
+			BlogPosting blogPosting)
+		throws Exception {
+
+		return blogPosting.getSiteId();
 	}
 
 	protected BlogPosting
@@ -980,8 +1020,10 @@ public abstract class BaseBlogPostingResourceTestCase {
 									{
 										put(
 											"siteKey",
-											"\"" + blogPosting.getSiteId() +
-												"\"");
+											"\"" +
+												testGraphQLGetSiteBlogPostingByExternalReferenceCode_getSiteId(
+													blogPosting) + "\"");
+
 										put(
 											"externalReferenceCode",
 											"\"" +
@@ -993,6 +1035,14 @@ public abstract class BaseBlogPostingResourceTestCase {
 								getGraphQLFields())),
 						"JSONObject/data",
 						"Object/blogPostingByExternalReferenceCode"))));
+	}
+
+	protected Long
+			testGraphQLGetSiteBlogPostingByExternalReferenceCode_getSiteId(
+				BlogPosting blogPosting)
+		throws Exception {
+
+		return blogPosting.getSiteId();
 	}
 
 	@Test
@@ -1041,7 +1091,8 @@ public abstract class BaseBlogPostingResourceTestCase {
 
 		BlogPosting putBlogPosting =
 			blogPostingResource.putSiteBlogPostingByExternalReferenceCode(
-				postBlogPosting.getSiteId(),
+				testPutSiteBlogPostingByExternalReferenceCode_getSiteId(
+					postBlogPosting),
 				postBlogPosting.getExternalReferenceCode(), randomBlogPosting);
 
 		assertEquals(randomBlogPosting, putBlogPosting);
@@ -1049,7 +1100,8 @@ public abstract class BaseBlogPostingResourceTestCase {
 
 		BlogPosting getBlogPosting =
 			blogPostingResource.getSiteBlogPostingByExternalReferenceCode(
-				putBlogPosting.getSiteId(),
+				testPutSiteBlogPostingByExternalReferenceCode_getSiteId(
+					putBlogPosting),
 				putBlogPosting.getExternalReferenceCode());
 
 		assertEquals(randomBlogPosting, getBlogPosting);
@@ -1060,7 +1112,8 @@ public abstract class BaseBlogPostingResourceTestCase {
 
 		putBlogPosting =
 			blogPostingResource.putSiteBlogPostingByExternalReferenceCode(
-				newBlogPosting.getSiteId(),
+				testPutSiteBlogPostingByExternalReferenceCode_getSiteId(
+					newBlogPosting),
 				newBlogPosting.getExternalReferenceCode(), newBlogPosting);
 
 		assertEquals(newBlogPosting, putBlogPosting);
@@ -1068,7 +1121,8 @@ public abstract class BaseBlogPostingResourceTestCase {
 
 		getBlogPosting =
 			blogPostingResource.getSiteBlogPostingByExternalReferenceCode(
-				putBlogPosting.getSiteId(),
+				testPutSiteBlogPostingByExternalReferenceCode_getSiteId(
+					putBlogPosting),
 				putBlogPosting.getExternalReferenceCode());
 
 		assertEquals(newBlogPosting, getBlogPosting);
@@ -1076,6 +1130,13 @@ public abstract class BaseBlogPostingResourceTestCase {
 		Assert.assertEquals(
 			newBlogPosting.getExternalReferenceCode(),
 			putBlogPosting.getExternalReferenceCode());
+	}
+
+	protected Long testPutSiteBlogPostingByExternalReferenceCode_getSiteId(
+			BlogPosting blogPosting)
+		throws Exception {
+
+		return blogPosting.getSiteId();
 	}
 
 	protected BlogPosting
@@ -1630,6 +1691,12 @@ public abstract class BaseBlogPostingResourceTestCase {
 	}
 
 	protected void assertValid(Page<BlogPosting> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<BlogPosting> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<BlogPosting> blogPostings = page.getItems();
@@ -1644,6 +1711,20 @@ public abstract class BaseBlogPostingResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected void assertValid(Rating rating) {
@@ -2203,6 +2284,10 @@ public abstract class BaseBlogPostingResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

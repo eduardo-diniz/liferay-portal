@@ -25,16 +25,15 @@ import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.service.DepotEntryLocalService;
 import com.liferay.document.library.kernel.exception.NoSuchFileEntryException;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
+import com.liferay.list.type.entry.util.ListTypeEntryUtil;
 import com.liferay.list.type.model.ListTypeDefinition;
 import com.liferay.list.type.service.ListTypeDefinitionLocalService;
-import com.liferay.list.type.service.ListTypeEntryLocalService;
 import com.liferay.object.constants.ObjectDefinitionConstants;
 import com.liferay.object.constants.ObjectFieldConstants;
 import com.liferay.object.constants.ObjectValidationRuleConstants;
 import com.liferay.object.exception.NoSuchObjectEntryException;
 import com.liferay.object.exception.ObjectDefinitionScopeException;
 import com.liferay.object.exception.ObjectEntryValuesException;
-import com.liferay.object.field.util.ObjectFieldFormulaEvaluatorUtil;
 import com.liferay.object.field.util.ObjectFieldUtil;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectEntry;
@@ -177,56 +176,43 @@ public class ObjectEntryLocalServiceTest {
 				null, TestPropsValues.getUserId(),
 				Collections.singletonMap(
 					LocaleUtil.getDefault(), RandomTestUtil.randomString()),
-				Collections.emptyList());
-
-		_listTypeEntryLocalService.addListTypeEntry(
-			null, TestPropsValues.getUserId(),
-			_listTypeDefinition.getListTypeDefinitionId(), "listTypeEntryKey1",
-			Collections.singletonMap(LocaleUtil.US, "List Type Entry Key 1"));
-		_listTypeEntryLocalService.addListTypeEntry(
-			null, TestPropsValues.getUserId(),
-			_listTypeDefinition.getListTypeDefinitionId(), "listTypeEntryKey2",
-			Collections.singletonMap(LocaleUtil.US, "List Type Entry Key 2"));
-		_listTypeEntryLocalService.addListTypeEntry(
-			null, TestPropsValues.getUserId(),
-			_listTypeDefinition.getListTypeDefinitionId(), "listTypeEntryKey3",
-			Collections.singletonMap(LocaleUtil.US, "List Type Entry Key 3"));
-		_listTypeEntryLocalService.addListTypeEntry(
-			null, TestPropsValues.getUserId(),
-			_listTypeDefinition.getListTypeDefinitionId(),
-			"multipleListTypeEntryKey1",
-			Collections.singletonMap(
-				LocaleUtil.US, "Multiple List Type Entry Key 1"));
-		_listTypeEntryLocalService.addListTypeEntry(
-			null, TestPropsValues.getUserId(),
-			_listTypeDefinition.getListTypeDefinitionId(),
-			"multipleListTypeEntryKey2",
-			Collections.singletonMap(
-				LocaleUtil.US, "Multiple List Type Entry Key 2"));
-		_listTypeEntryLocalService.addListTypeEntry(
-			null, TestPropsValues.getUserId(),
-			_listTypeDefinition.getListTypeDefinitionId(),
-			"multipleListTypeEntryKey3",
-			Collections.singletonMap(
-				LocaleUtil.US, "Multiple List Type Entry Key 3"));
-		_listTypeEntryLocalService.addListTypeEntry(
-			null, TestPropsValues.getUserId(),
-			_listTypeDefinition.getListTypeDefinitionId(),
-			"multipleListTypeEntryKey4",
-			Collections.singletonMap(
-				LocaleUtil.US, "Multiple List Type Entry Key 4"));
-		_listTypeEntryLocalService.addListTypeEntry(
-			null, TestPropsValues.getUserId(),
-			_listTypeDefinition.getListTypeDefinitionId(),
-			"multipleListTypeEntryKey5",
-			Collections.singletonMap(
-				LocaleUtil.US, "Multiple List Type Entry Key 5"));
-		_listTypeEntryLocalService.addListTypeEntry(
-			null, TestPropsValues.getUserId(),
-			_listTypeDefinition.getListTypeDefinitionId(),
-			"multipleListTypeEntryKey6",
-			Collections.singletonMap(
-				LocaleUtil.US, "Multiple List Type Entry Key 6"));
+				Arrays.asList(
+					ListTypeEntryUtil.createListTypeEntry(
+						"listTypeEntryKey1",
+						Collections.singletonMap(
+							LocaleUtil.US, "List Type Entry Key 1")),
+					ListTypeEntryUtil.createListTypeEntry(
+						"listTypeEntryKey2",
+						Collections.singletonMap(
+							LocaleUtil.US, "List Type Entry Key 1")),
+					ListTypeEntryUtil.createListTypeEntry(
+						"listTypeEntryKey3",
+						Collections.singletonMap(
+							LocaleUtil.US, "List Type Entry Key 3")),
+					ListTypeEntryUtil.createListTypeEntry(
+						"multipleListTypeEntryKey1",
+						Collections.singletonMap(
+							LocaleUtil.US, "Multiple List Type Entry Key 1")),
+					ListTypeEntryUtil.createListTypeEntry(
+						"multipleListTypeEntryKey2",
+						Collections.singletonMap(
+							LocaleUtil.US, "Multiple List Type Entry Key 2")),
+					ListTypeEntryUtil.createListTypeEntry(
+						"multipleListTypeEntryKey3",
+						Collections.singletonMap(
+							LocaleUtil.US, "Multiple List Type Entry Key 3")),
+					ListTypeEntryUtil.createListTypeEntry(
+						"multipleListTypeEntryKey4",
+						Collections.singletonMap(
+							LocaleUtil.US, "Multiple List Type Entry Key 4")),
+					ListTypeEntryUtil.createListTypeEntry(
+						"multipleListTypeEntryKey5",
+						Collections.singletonMap(
+							LocaleUtil.US, "Multiple List Type Entry Key 5")),
+					ListTypeEntryUtil.createListTypeEntry(
+						"multipleListTypeEntryKey6",
+						Collections.singletonMap(
+							LocaleUtil.US, "Multiple List Type Entry Key 6"))));
 
 		_objectDefinition = ObjectDefinitionTestUtil.addObjectDefinition(
 			_objectDefinitionLocalService,
@@ -650,32 +636,12 @@ public class ObjectEntryLocalServiceTest {
 			_objectDefinition.getObjectDefinitionId(),
 			ObjectFieldConstants.BUSINESS_TYPE_FORMULA,
 			ObjectFieldConstants.DB_TYPE_STRING, null, false, false, null,
-			LocalizedMapUtil.getLocalizedMap("Full Name"), "fullName", false,
+			LocalizedMapUtil.getLocalizedMap("Overweight"), "overweight", false,
 			false,
 			Arrays.asList(
+				_createObjectFieldSetting("script", "weight + 10"),
 				_createObjectFieldSetting(
-					"script",
-					"concat(firstName, \" \", middleName, \" \", lastName)"),
-				_createObjectFieldSetting(
-					"output", ObjectFieldConstants.BUSINESS_TYPE_TEXT)));
-
-		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
-				ObjectFieldFormulaEvaluatorUtil.class.getName(),
-				LoggerTestUtil.ERROR)) {
-
-			_addObjectEntry(
-				HashMapBuilder.<String, Serializable>put(
-					"emailAddress", RandomTestUtil.randomString()
-				).put(
-					"emailAddressRequired", "athanasius@liferay.com"
-				).put(
-					"listTypeEntryKeyRequired", "listTypeEntryKey1"
-				).build());
-
-			List<LogEntry> logEntries = logCapture.getLogEntries();
-
-			Assert.assertEquals(logEntries.toString(), 3, logEntries.size());
-		}
+					"output", ObjectFieldConstants.BUSINESS_TYPE_DECIMAL)));
 
 		ObjectEntry objectEntry = _addObjectEntry(
 			HashMapBuilder.<String, Serializable>put(
@@ -683,13 +649,9 @@ public class ObjectEntryLocalServiceTest {
 			).put(
 				"emailAddressRequired", "athanasius@liferay.com"
 			).put(
-				"firstName", "Athanasius"
-			).put(
-				"lastName", "Mundum"
-			).put(
 				"listTypeEntryKeyRequired", "listTypeEntryKey1"
 			).put(
-				"middleName", "Contra"
+				"weight", 65D
 			).build());
 
 		Assert.assertNotNull(objectEntry);
@@ -697,7 +659,7 @@ public class ObjectEntryLocalServiceTest {
 		Map<String, Serializable> values = _objectEntryLocalService.getValues(
 			objectEntry.getObjectEntryId());
 
-		Assert.assertEquals("Athanasius Contra Mundum", values.get("fullName"));
+		Assert.assertEquals(75D, values.get("overweight"));
 
 		_objectFieldLocalService.deleteObjectField(objectField);
 	}
@@ -2865,9 +2827,6 @@ public class ObjectEntryLocalServiceTest {
 
 	@Inject
 	private ListTypeDefinitionLocalService _listTypeDefinitionLocalService;
-
-	@Inject
-	private ListTypeEntryLocalService _listTypeEntryLocalService;
 
 	private final Queue<Message> _messages = new LinkedList<>();
 	private ObjectDefinition _objectDefinition;

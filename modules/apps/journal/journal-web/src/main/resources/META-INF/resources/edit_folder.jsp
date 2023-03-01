@@ -101,7 +101,7 @@ renderResponse.setTitle(title);
 				collapsible="<%= true %>"
 				label="details"
 			>
-				<aui:input autoFocus="<%= windowState.equals(WindowState.MAXIMIZED) || windowState.equals(LiferayWindowState.POP_UP) %>" name="name" />
+				<aui:input name="name" />
 
 				<aui:input name="description" />
 			</liferay-frontend:fieldset>
@@ -393,7 +393,7 @@ renderResponse.setTitle(title);
 					const itemValue = JSON.parse(selectedItem.value);
 
 					var ddmStructureLink = `
-							<button aria-label="<%= LanguageUtil.get(request, "remove") %>" class="btn btn-monospaced btn-outline-borderless btn-outline-secondary modify-link" data-rowId="${itemValue.ddmstructureid }" title="<%= LanguageUtil.get(request, "remove") %>">
+							<button aria-label="<%= LanguageUtil.get(request, "remove") %>" class="btn btn-monospaced btn-outline-borderless btn-outline-secondary float-right modify-link" data-rowId="${itemValue.ddmstructureid }" title="<%= LanguageUtil.get(request, "remove") %>">
 								<%= UnicodeFormatter.toString(removeDDMStructureIcon) %></button>`;
 
 					<c:choose>

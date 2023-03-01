@@ -14,21 +14,40 @@ definition {
 	tearDown {
 		var testPortalInstance = PropsUtil.get("test.portal.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testPortalInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 	}
 
 	@description = "Check for errors in the minified browser console"
-	@priority = "3"
+	@priority = 3
 	test SmokeMinifiedEnabled {
+		task ("Given: Minified property set to true") {
+			property custom.properties = "minified.enabled=true";
+			property test.assert.warning.exceptions = "true";
+		}
 
-		// TODO LPS-171621 SmokeMinifiedEnabled pending implementation JQuery enabled
+		task ("When: Restart portal") {
+			Portlet.shutdownServer();
 
+			Portlet.startServer(deleteLiferayHome = "false");
+		}
+
+		task ("And When: login") {
+			User.firstLoginPG();
+		}
+
+		task ("Then: No liferay log or js console log errors") {
+			User.viewLoggedInPG();
+		}
+
+		task ("And Then: Smoke test passes") {
+			Smoke.runSmoke();
+		}
 	}
 
 	@description = "Check for errors in the browser console on the jQuery page"
-	@priority = "3"
+	@priority = 3
 	test VerifyErroWhenJQueryEnabled {
 
 		// TODO LPS-155271 VerifyErroWhenJQueryEnabled pending implementation JQuery enabled

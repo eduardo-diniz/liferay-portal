@@ -56,6 +56,19 @@ import org.osgi.annotation.versioning.ProviderType;
 @ProviderType
 public interface ProductSpecificationResource {
 
+	public void deleteProductSpecification(Long id) throws Exception;
+
+	public Response deleteProductSpecificationBatch(
+			String callbackURL, Object object)
+		throws Exception;
+
+	public ProductSpecification getProductSpecification(Long id)
+		throws Exception;
+
+	public ProductSpecification patchProductSpecification(
+			Long id, ProductSpecification productSpecification)
+		throws Exception;
+
 	public Page<ProductSpecification> getProductIdProductSpecificationsPage(
 			Long id, Pagination pagination)
 		throws Exception;
@@ -65,7 +78,7 @@ public interface ProductSpecificationResource {
 		throws Exception;
 
 	public Response postProductIdProductSpecificationBatch(
-			Long id, String callbackURL, Object object)
+			String callbackURL, Object object)
 		throws Exception;
 
 	public default void setContextAcceptLanguage(

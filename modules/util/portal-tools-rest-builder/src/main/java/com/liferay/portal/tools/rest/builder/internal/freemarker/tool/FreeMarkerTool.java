@@ -842,6 +842,20 @@ public class FreeMarkerTool {
 		return false;
 	}
 
+	public boolean hasPath(
+		List<JavaMethodSignature> javaMethodSignatures, String path) {
+
+		for (JavaMethodSignature javaMethodSignature : javaMethodSignatures) {
+			String javaMethodSignaturePath = javaMethodSignature.getPath();
+
+			if (javaMethodSignaturePath.equals(path)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	public boolean hasPathParameter(JavaMethodSignature javaMethodSignature) {
 		List<JavaMethodParameter> javaMethodParameters =
 			javaMethodSignature.getJavaMethodParameters();
@@ -937,6 +951,29 @@ public class FreeMarkerTool {
 
 				return true;
 			}
+		}
+
+		return false;
+	}
+
+	public boolean isParameterNameSchemaRelated(
+		String parameterName, String path, String schemaName) {
+
+		String parameterNameSubpath = "/{" + parameterName + "}";
+
+		if (StringUtil.endsWith(path, parameterNameSubpath)) {
+			return true;
+		}
+
+		String prefixPath = path.substring(
+			0, path.indexOf(parameterNameSubpath));
+
+		if (prefixPath.contains(
+				TextFormatter.format(schemaName, TextFormatter.I)) ||
+			prefixPath.contains(
+				TextFormatter.format(schemaName, TextFormatter.K))) {
+
+			return true;
 		}
 
 		return false;

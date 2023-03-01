@@ -24,6 +24,8 @@ import com.liferay.layout.admin.constants.LayoutAdminPortletKeys;
 import com.liferay.layout.admin.web.internal.configuration.LayoutUtilityPageThumbnailConfiguration;
 import com.liferay.layout.admin.web.internal.security.permission.resource.LayoutUtilityPageEntryPermission;
 import com.liferay.layout.utility.page.constants.LayoutUtilityPageActionKeys;
+import com.liferay.layout.utility.page.kernel.LayoutUtilityPageEntryViewRenderer;
+import com.liferay.layout.utility.page.kernel.LayoutUtilityPageEntryViewRendererRegistryUtil;
 import com.liferay.layout.utility.page.model.LayoutUtilityPageEntry;
 import com.liferay.layout.utility.page.service.LayoutUtilityPageEntryLocalServiceUtil;
 import com.liferay.petra.function.UnsafeConsumer;
@@ -41,7 +43,7 @@ import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.upload.UploadServletRequestConfigurationHelperUtil;
+import com.liferay.portal.kernel.upload.configuration.UploadServletRequestConfigurationProviderUtil;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
@@ -305,7 +307,7 @@ public class LayoutUtilityPageEntryActionDropdownItemsProvider {
 			).extensions(
 				_layoutUtilityPageThumbnailConfiguration.thumbnailExtensions()
 			).maxFileSize(
-				UploadServletRequestConfigurationHelperUtil.getMaxSize()
+				UploadServletRequestConfigurationProviderUtil.getMaxSize()
 			).portletId(
 				LayoutAdminPortletKeys.GROUP_PAGES
 			).repositoryName(
@@ -382,8 +384,21 @@ public class LayoutUtilityPageEntryActionDropdownItemsProvider {
 			if (Validator.isNull(message) &&
 				_layoutUtilityPageEntry.isDefaultLayoutUtilityPageEntry()) {
 
-				message = LanguageUtil.get(
-					_httpServletRequest, "unmark-default-confirmation");
+				LayoutUtilityPageEntryViewRenderer
+					layoutUtilityPageEntryViewRenderer =
+						LayoutUtilityPageEntryViewRendererRegistryUtil.
+							getLayoutUtilityPageEntryViewRenderer(
+								_layoutUtilityPageEntry.getType());
+
+				message = LanguageUtil.format(
+					_httpServletRequest,
+					"the-site-will-use-the-default-x-system-page-from-now-" +
+						"on.-are-you-sure-you-want-to-unmark-this",
+					new String[] {
+						layoutUtilityPageEntryViewRenderer.getLabel(
+							_themeDisplay.getLocale())
+					},
+					false);
 			}
 
 			dropdownItem.putData("message", message);
@@ -543,6 +558,12 @@ public class LayoutUtilityPageEntryActionDropdownItemsProvider {
 			_deletePermission = false;
 
 			return false;
+		}
+
+		if (!_layoutUtilityPageEntry.isDefaultLayoutUtilityPageEntry()) {
+			_deletePermission = true;
+
+			return true;
 		}
 
 		_deletePermission = _hasAssignDefaultLayoutUtilityPagePermission();

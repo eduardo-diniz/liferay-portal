@@ -43,6 +43,20 @@ public class ModifiedFacetPortletPreferencesImpl
 	}
 
 	@Override
+	public int getFrequencyThreshold() {
+		return _portletPreferencesHelper.getInteger(
+			ModifiedFacetPortletPreferences.PREFERENCE_KEY_FREQUENCY_THRESHOLD,
+			0);
+	}
+
+	@Override
+	public String getOrder() {
+		return _portletPreferencesHelper.getString(
+			ModifiedFacetPortletPreferences.PREFERENCE_KEY_ORDER,
+			"OrderHitsDesc");
+	}
+
+	@Override
 	public String getParameterName() {
 		return _portletPreferencesHelper.getString(
 			ModifiedFacetPortletPreferences.PREFERENCE_KEY_PARAMETER_NAME,

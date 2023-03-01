@@ -43,7 +43,7 @@ import {
 import './ModalAddFilter.scss';
 interface IProps {
 	aggregationFilter?: boolean;
-	creationLanguageId?: Locale;
+	creationLanguageId?: Liferay.Language.Locale;
 	currentFilters: CurrentFilter[];
 	disableAutoClose?: boolean;
 	disableDateValues?: boolean;
@@ -160,7 +160,7 @@ export function ModalAddFilter({
 	const filteredAvailableFields = useMemo(() => {
 		return filterArrayByQuery({
 			array: objectFields,
-			creationLanguageId: creationLanguageId as Locale,
+			creationLanguageId: creationLanguageId as Liferay.Language.Locale,
 			query,
 			str: 'label',
 		});
@@ -457,6 +457,9 @@ export function ModalAddFilter({
 			<ClayModal.Body>
 				{!editingFilter && (
 					<AutoComplete<ObjectField>
+						creationLanguageId={
+							creationLanguageId as Liferay.Language.Locale
+						}
 						emptyStateMessage={Liferay.Language.get(
 							'there-are-no-columns-available'
 						)}
@@ -490,7 +493,7 @@ export function ModalAddFilter({
 						query={query}
 						required
 						value={getLocalizableLabel(
-							creationLanguageId as Locale,
+							creationLanguageId as Liferay.Language.Locale,
 							selectedFilterBy?.label
 						)}
 					>
@@ -498,7 +501,7 @@ export function ModalAddFilter({
 							<div className="d-flex justify-content-between">
 								<div>
 									{getLocalizableLabel(
-										creationLanguageId as Locale,
+										creationLanguageId as Liferay.Language.Locale,
 										label,
 										name
 									)}

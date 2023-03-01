@@ -58,6 +58,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -333,6 +334,7 @@ public abstract class BaseWikiPageAttachmentResourceTestCase {
 											"\"" +
 												testGraphQLGetSiteWikiPageByExternalReferenceCodeWikiPageExternalReferenceCodeWikiPageAttachmentByExternalReferenceCode_getWikiPageExternalReferenceCode() +
 													"\"");
+
 										put(
 											"externalReferenceCode",
 											"\"" +
@@ -574,7 +576,10 @@ public abstract class BaseWikiPageAttachmentResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantWikiPageAttachment),
 				(List<WikiPageAttachment>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetWikiPageWikiPageAttachmentsPage_getExpectedActions(
+					irrelevantWikiPageId));
 		}
 
 		WikiPageAttachment wikiPageAttachment1 =
@@ -593,13 +598,35 @@ public abstract class BaseWikiPageAttachmentResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(wikiPageAttachment1, wikiPageAttachment2),
 			(List<WikiPageAttachment>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetWikiPageWikiPageAttachmentsPage_getExpectedActions(
+				wikiPageId));
 
 		wikiPageAttachmentResource.deleteWikiPageAttachment(
 			wikiPageAttachment1.getId());
 
 		wikiPageAttachmentResource.deleteWikiPageAttachment(
 			wikiPageAttachment2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetWikiPageWikiPageAttachmentsPage_getExpectedActions(
+				Long wikiPageId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/headless-delivery/v1.0/wiki-pages/{wikiPageId}/wiki-page-attachments/batch".
+				replace("{wikiPageId}", String.valueOf(wikiPageId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	protected WikiPageAttachment
@@ -753,6 +780,14 @@ public abstract class BaseWikiPageAttachmentResourceTestCase {
 		for (String additionalAssertFieldName :
 				getAdditionalAssertFieldNames()) {
 
+			if (Objects.equals("actions", additionalAssertFieldName)) {
+				if (wikiPageAttachment.getActions() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("contentUrl", additionalAssertFieldName)) {
 				if (wikiPageAttachment.getContentUrl() == null) {
 					valid = false;
@@ -829,6 +864,12 @@ public abstract class BaseWikiPageAttachmentResourceTestCase {
 	}
 
 	protected void assertValid(Page<WikiPageAttachment> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<WikiPageAttachment> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<WikiPageAttachment> wikiPageAttachments =
@@ -844,6 +885,20 @@ public abstract class BaseWikiPageAttachmentResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -914,6 +969,17 @@ public abstract class BaseWikiPageAttachmentResourceTestCase {
 
 		for (String additionalAssertFieldName :
 				getAdditionalAssertFieldNames()) {
+
+			if (Objects.equals("actions", additionalAssertFieldName)) {
+				if (!equals(
+						(Map)wikiPageAttachment1.getActions(),
+						(Map)wikiPageAttachment2.getActions())) {
+
+					return false;
+				}
+
+				continue;
+			}
 
 			if (Objects.equals("contentUrl", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
@@ -1066,6 +1132,10 @@ public abstract class BaseWikiPageAttachmentResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -1102,6 +1172,11 @@ public abstract class BaseWikiPageAttachmentResourceTestCase {
 		sb.append(" ");
 		sb.append(operator);
 		sb.append(" ");
+
+		if (entityFieldName.equals("actions")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
 
 		if (entityFieldName.equals("contentUrl")) {
 			sb.append("'");

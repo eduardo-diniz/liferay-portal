@@ -48,6 +48,7 @@ import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -311,13 +312,14 @@ public class LayoutsAdminDisplayContext {
 	}
 
 	public PortletURL getCETItemSelectorURL(
-		String selectEventName, String type) {
+		boolean multipleSelection, String selectEventName, String type) {
 
 		CETItemSelectorCriterion cetItemSelectorCriterion =
 			new CETItemSelectorCriterion();
 
 		cetItemSelectorCriterion.setDesiredItemSelectorReturnTypes(
 			new CETItemSelectorReturnType());
+		cetItemSelectorCriterion.setMultipleSelection(multipleSelection);
 		cetItemSelectorCriterion.setType(type);
 
 		return _itemSelector.getItemSelectorURL(
@@ -744,7 +746,7 @@ public class LayoutsAdminDisplayContext {
 	}
 
 	public List<NavigationItem> getNavigationItems() {
-		if (!GetterUtil.getBoolean(PropsUtil.get("feature.flag.LPS-162765"))) {
+		if (!FeatureFlagManagerUtil.isEnabled("LPS-162765")) {
 			return Collections.emptyList();
 		}
 
@@ -1272,7 +1274,7 @@ public class LayoutsAdminDisplayContext {
 			"selectThemeCSSClientExtensionURL",
 			() -> String.valueOf(
 				getCETItemSelectorURL(
-					selectThemeCSSClientExtensionEventName,
+					false, selectThemeCSSClientExtensionEventName,
 					ClientExtensionEntryConstants.TYPE_THEME_CSS))
 		).put(
 			"themeCSSCETExternalReferenceCode",

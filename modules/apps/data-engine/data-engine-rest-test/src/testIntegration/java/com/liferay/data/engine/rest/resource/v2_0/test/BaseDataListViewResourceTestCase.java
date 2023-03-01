@@ -204,7 +204,15 @@ public abstract class BaseDataListViewResourceTestCase {
 		assertHttpResponseStatusCode(
 			204,
 			dataListViewResource.deleteDataDefinitionDataListViewHttpResponse(
-				dataListView.getDataDefinitionId()));
+				testDeleteDataDefinitionDataListView_getDataDefinitionId(
+					dataListView)));
+	}
+
+	protected Long testDeleteDataDefinitionDataListView_getDataDefinitionId(
+			DataListView dataListView)
+		throws Exception {
+
+		return dataListView.getDataDefinitionId();
 	}
 
 	protected DataListView
@@ -242,7 +250,10 @@ public abstract class BaseDataListViewResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantDataListView),
 				(List<DataListView>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetDataDefinitionDataListViewsPage_getExpectedActions(
+					irrelevantDataDefinitionId));
 		}
 
 		DataListView dataListView1 =
@@ -261,11 +272,34 @@ public abstract class BaseDataListViewResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(dataListView1, dataListView2),
 			(List<DataListView>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetDataDefinitionDataListViewsPage_getExpectedActions(
+				dataDefinitionId));
 
 		dataListViewResource.deleteDataListView(dataListView1.getId());
 
 		dataListViewResource.deleteDataListView(dataListView2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetDataDefinitionDataListViewsPage_getExpectedActions(
+				Long dataDefinitionId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/data-engine/v2.0/data-definitions/{dataDefinitionId}/data-list-views/batch".
+				replace(
+					"{dataDefinitionId}", String.valueOf(dataDefinitionId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	@Test
@@ -817,6 +851,12 @@ public abstract class BaseDataListViewResourceTestCase {
 	}
 
 	protected void assertValid(Page<DataListView> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<DataListView> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<DataListView> dataListViews = page.getItems();
@@ -831,6 +871,20 @@ public abstract class BaseDataListViewResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1065,6 +1119,10 @@ public abstract class BaseDataListViewResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

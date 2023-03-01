@@ -13,11 +13,20 @@
  */
 
 import Form from '..';
-import React, {useEffect, useState} from 'react';
+import React, {
+	Dispatch,
+	memo,
+	useCallback,
+	useEffect,
+	useMemo,
+	useState,
+} from 'react';
 import {useParams} from 'react-router-dom';
 
 import i18n from '../../../i18n';
 import fetcher from '../../../services/fetcher';
+import {safeJSONParse} from '../../../util';
+import {Operators} from '../../../util/search';
 import {AutoCompleteProps} from '../AutoComplete';
 
 type RenderedFieldOptions = string[] | {label: string; value: string}[];
@@ -26,82 +35,107 @@ export type RendererFields = {
 	disabled?: boolean;
 	label: string;
 	name: string;
+	operator?: Operators;
 	options?: RenderedFieldOptions;
+	removeQuoteMark?: boolean;
 	type:
 		| 'autocomplete'
 		| 'checkbox'
-		| 'text'
-		| 'textarea'
+		| 'date'
+		| 'multiselect'
+		| 'number'
 		| 'select'
-		| 'multiselect';
+		| 'text'
+		| 'textarea';
 } & Partial<AutoCompleteProps>;
 
+export type FieldOptions = {[key: string]: any[]};
+
 type RendererProps = {
+	fieldOptions: FieldOptions;
 	fields: RendererFields[];
 	filter?: string;
 	form: any;
 	onChange: (event: any) => void;
+	setFieldOptions: Dispatch<FieldOptions>;
 };
 
 const Renderer: React.FC<RendererProps> = ({
+	fieldOptions,
 	fields,
 	filter,
 	form,
 	onChange,
+	setFieldOptions,
 }) => {
 	const params = useParams();
-	const [disabledFields, setDisableFields] = useState({});
-	const [gqlOptions, setGqlOptions] = useState<{[key: string]: []}>({});
 
-	const fieldsFiltered = fields.filter(({label}) =>
-		filter ? label.toLowerCase().includes(filter.toLowerCase()) : true
+	const [fieldDisabled, setFieldDisabled] = useState({});
+
+	const paramsMemoized = useMemo(() => {
+		const testrayModalParams = document.getElementById(
+			'testray-modal-params'
+		);
+
+		if (testrayModalParams) {
+			return testrayModalParams.textContent!;
+		}
+
+		return JSON.stringify(params);
+	}, [params]);
+
+	const fieldsMemoized = useMemo(() => fields, [fields]);
+
+	const setFieldOpt = useCallback(
+		(abc: any) => {
+			setFieldOptions(abc);
+		},
+		[setFieldOptions]
 	);
 
-	const fetchQueries = (
-		gqlQueries: (RendererFields | (() => Promise<any>))[][]
-	) => {
-		Promise.allSettled(
-			gqlQueries.map(([, query]) => (query as any)())
-		).then((results) => {
-			let i = 0;
-			const _gqlOptions: any = {};
-			for (const result of results) {
-				if (result.status === 'fulfilled') {
-					const queries: any[][] = [...(gqlQueries as any)];
-					const field: RendererFields = queries[i][0];
+	const fieldsFilteredMemoized = useMemo(
+		() =>
+			fieldsMemoized.filter(({label}) =>
+				filter
+					? label.toLowerCase().includes(filter.toLowerCase())
+					: true
+			),
+		[fieldsMemoized, filter]
+	);
 
-					if (field.transformData) {
-						_gqlOptions[field.name] = field.transformData(
-							result.value
-						);
-					}
-				}
-				i++;
+	const fetchResources = useCallback(async () => {
+		const parameters = safeJSONParse(paramsMemoized);
+
+		const fieldsWithResource = fieldsMemoized.filter(
+			({resource}) => resource
+		);
+
+		const _fieldOptions: any = {};
+
+		for (const field of fieldsWithResource) {
+			const result = await fetcher(
+				(typeof field.resource === 'function'
+					? field.resource(parameters)
+					: field.resource) as string
+			);
+
+			if (field.transformData) {
+				const parsedValue = field.transformData(result);
+
+				_fieldOptions[field.name] = parsedValue;
 			}
+		}
 
-			setGqlOptions(_gqlOptions);
-		});
-	};
+		setFieldOpt(_fieldOptions);
+	}, [fieldsMemoized, paramsMemoized, setFieldOpt]);
 
 	useEffect(() => {
-		const gqlQueries = fields
-			.filter(({resource}) => resource)
-			.map(({resource, ...field}) => [
-				field,
-				() =>
-					fetcher(
-						(typeof resource === 'function'
-							? resource(params)
-							: resource) as string
-					),
-			]);
-
-		fetchQueries(gqlQueries as any);
-	}, [fields, params]);
+		fetchResources();
+	}, [fetchResources]);
 
 	return (
 		<div className="form-renderer">
-			{fieldsFiltered.map((field, index) => {
+			{fieldsFilteredMemoized.map((field, index) => {
 				const {
 					label,
 					disabled,
@@ -115,7 +149,7 @@ const Renderer: React.FC<RendererProps> = ({
 
 				const getOptions = () => {
 					const _options =
-						gqlOptions[name] ||
+						fieldOptions[name] ||
 						(options || []).map((option) =>
 							typeof option === 'object'
 								? option
@@ -128,12 +162,12 @@ const Renderer: React.FC<RendererProps> = ({
 					return _options;
 				};
 
-				if (['text', 'textarea'].includes(type)) {
+				if (['date', 'number', 'text', 'textarea'].includes(type)) {
 					return (
 						<div key={index}>
 							<Form.Input
 								disabled={
-									(disabled ?? (disabledFields as any))[name]
+									(disabled ?? (fieldDisabled as any))[name]
 								}
 								onChange={onChange}
 								value={currentValue}
@@ -147,9 +181,9 @@ const Renderer: React.FC<RendererProps> = ({
 									onClick={() => {
 										onChange({target: {name, value: null}});
 
-										setDisableFields({
-											...disabledFields,
-											[name]: !(disabledFields as any)[
+										setFieldDisabled({
+											...fieldDisabled,
+											[name]: !(fieldDisabled as any)[
 												name
 											],
 										});
@@ -195,25 +229,30 @@ const Renderer: React.FC<RendererProps> = ({
 						<div key={index}>
 							<label>{label}</label>
 
-							{options.map((option, index) => (
-								<Form.Checkbox
-									checked={form[name]?.includes(option)}
-									disabled={disabled}
-									key={index}
-									label={
-										typeof option === 'string'
-											? option
-											: option.label
-									}
-									name={name}
-									onChange={onCheckboxChange}
-									value={
-										typeof option === 'string'
-											? option
-											: option.value
-									}
-								/>
-							))}
+							{options.map((option, index) => {
+								const optionValue =
+									typeof option === 'string'
+										? option
+										: option.value;
+
+								return (
+									<Form.Checkbox
+										checked={form[name]?.includes(
+											optionValue
+										)}
+										disabled={disabled}
+										key={index}
+										label={
+											typeof option === 'string'
+												? option
+												: option.label
+										}
+										name={name}
+										onChange={onCheckboxChange}
+										value={optionValue}
+									/>
+								);
+							})}
 						</div>
 					);
 				}
@@ -246,11 +285,11 @@ const Renderer: React.FC<RendererProps> = ({
 				return null;
 			})}
 
-			{!fieldsFiltered.length && (
+			{!fieldsFilteredMemoized.length && (
 				<p>{i18n.translate('there-are-no-matching-results')}</p>
 			)}
 		</div>
 	);
 };
 
-export default Renderer;
+export default memo(Renderer);

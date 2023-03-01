@@ -34,6 +34,7 @@ import com.liferay.portal.search.web.internal.modified.facet.builder.DateRangeFa
 import com.liferay.portal.search.web.internal.modified.facet.configuration.ModifiedFacetPortletInstanceConfiguration;
 import com.liferay.portal.search.web.internal.modified.facet.display.context.ModifiedFacetCalendarDisplayContext;
 import com.liferay.portal.search.web.internal.modified.facet.display.context.ModifiedFacetDisplayContext;
+import com.liferay.portal.search.web.internal.util.comparator.BucketDisplayContextComparatorFactoryUtil;
 
 import java.io.Serializable;
 
@@ -117,12 +118,20 @@ public class ModifiedFacetDisplayContextBuilder implements Serializable {
 		_frequenciesVisible = frequenciesVisible;
 	}
 
+	public void setFrequencyThreshold(int frequencyThreshold) {
+		_frequencyThreshold = frequencyThreshold;
+	}
+
 	public void setFromParameterValue(String from) {
 		_from = from;
 	}
 
 	public void setLocale(Locale locale) {
 		_locale = locale;
+	}
+
+	public void setOrder(String order) {
+		_order = order;
 	}
 
 	public void setPaginationStartParameterName(
@@ -284,10 +293,22 @@ public class ModifiedFacetDisplayContextBuilder implements Serializable {
 		for (int i = 0; i < rangesJSONArray.length(); i++) {
 			JSONObject jsonObject = rangesJSONArray.getJSONObject(i);
 
+			String range = jsonObject.getString("range");
+
+			if ((_frequencyThreshold > 0) &&
+				(_frequencyThreshold > getFrequency(getTermCollector(range)))) {
+
+				continue;
+			}
+
 			bucketDisplayContexts.add(
-				_buildTermDisplayContext(
-					jsonObject.getString("label"),
-					jsonObject.getString("range")));
+				_buildTermDisplayContext(jsonObject.getString("label"), range));
+		}
+
+		if (!_order.equals("OrderHitsDesc")) {
+			bucketDisplayContexts.sort(
+				BucketDisplayContextComparatorFactoryUtil.
+					getBucketDisplayContextComparator(_order));
 		}
 
 		return bucketDisplayContexts;
@@ -365,10 +386,12 @@ public class ModifiedFacetDisplayContextBuilder implements Serializable {
 	private final DateRangeFactory _dateRangeFactory;
 	private Facet _facet;
 	private boolean _frequenciesVisible;
+	private int _frequencyThreshold;
 	private String _from;
 	private Locale _locale;
 	private final ModifiedFacetPortletInstanceConfiguration
 		_modifiedFacetPortletInstanceConfiguration;
+	private String _order;
 	private String _paginationStartParameterName;
 	private String _parameterName;
 	private List<String> _selectedRanges = Collections.emptyList();

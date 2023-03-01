@@ -190,6 +190,7 @@ public abstract class BaseOrderResourceTestCase {
 		order.setAdvanceStatus(regex);
 		order.setChannelExternalReferenceCode(regex);
 		order.setCouponCode(regex);
+		order.setCreatorEmailAddress(regex);
 		order.setCurrencyCode(regex);
 		order.setDeliveryTermDescription(regex);
 		order.setDeliveryTermName(regex);
@@ -227,6 +228,7 @@ public abstract class BaseOrderResourceTestCase {
 		Assert.assertEquals(regex, order.getAdvanceStatus());
 		Assert.assertEquals(regex, order.getChannelExternalReferenceCode());
 		Assert.assertEquals(regex, order.getCouponCode());
+		Assert.assertEquals(regex, order.getCreatorEmailAddress());
 		Assert.assertEquals(regex, order.getCurrencyCode());
 		Assert.assertEquals(regex, order.getDeliveryTermDescription());
 		Assert.assertEquals(regex, order.getDeliveryTermName());
@@ -276,11 +278,19 @@ public abstract class BaseOrderResourceTestCase {
 
 		assertContains(order1, (List<Order>)page.getItems());
 		assertContains(order2, (List<Order>)page.getItems());
-		assertValid(page);
+		assertValid(page, testGetOrdersPage_getExpectedActions());
 
 		orderResource.deleteOrder(order1.getId());
 
 		orderResource.deleteOrder(order2.getId());
+	}
+
+	protected Map<String, Map> testGetOrdersPage_getExpectedActions()
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -981,6 +991,16 @@ public abstract class BaseOrderResourceTestCase {
 
 			if (Objects.equals("createDate", additionalAssertFieldName)) {
 				if (order.getCreateDate() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"creatorEmailAddress", additionalAssertFieldName)) {
+
+				if (order.getCreatorEmailAddress() == null) {
 					valid = false;
 				}
 
@@ -1892,6 +1912,12 @@ public abstract class BaseOrderResourceTestCase {
 	}
 
 	protected void assertValid(Page<Order> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<Order> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<Order> orders = page.getItems();
@@ -1906,6 +1932,20 @@ public abstract class BaseOrderResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -2097,6 +2137,19 @@ public abstract class BaseOrderResourceTestCase {
 			if (Objects.equals("createDate", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						order1.getCreateDate(), order2.getCreateDate())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"creatorEmailAddress", additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						order1.getCreatorEmailAddress(),
+						order2.getCreatorEmailAddress())) {
 
 					return false;
 				}
@@ -3315,6 +3368,10 @@ public abstract class BaseOrderResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -3445,6 +3502,14 @@ public abstract class BaseOrderResourceTestCase {
 
 				sb.append(_dateFormat.format(order.getCreateDate()));
 			}
+
+			return sb.toString();
+		}
+
+		if (entityFieldName.equals("creatorEmailAddress")) {
+			sb.append("'");
+			sb.append(String.valueOf(order.getCreatorEmailAddress()));
+			sb.append("'");
 
 			return sb.toString();
 		}
@@ -4188,6 +4253,8 @@ public abstract class BaseOrderResourceTestCase {
 				couponCode = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				createDate = RandomTestUtil.nextDate();
+				creatorEmailAddress = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
 				currencyCode = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				deliveryTermDescription = StringUtil.toLowerCase(

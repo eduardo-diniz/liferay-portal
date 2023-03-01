@@ -1,4 +1,9 @@
 {
+	"dependencies": {
+		"@clayui/drop-down": "3.88.0",
+		"@liferay/frontend-data-set-web": "*",
+		"frontend-js-web": "*"
+	},
 	"name": "@liferay/frontend-data-set-views-web",
 	"private": true,
 	"scripts": {

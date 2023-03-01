@@ -240,7 +240,10 @@ public abstract class BaseOrganizationResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantOrganization),
 				(List<Organization>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetAccountByExternalReferenceCodeOrganizationsPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		Organization organization1 =
@@ -262,11 +265,24 @@ public abstract class BaseOrganizationResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(organization1, organization2),
 			(List<Organization>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetAccountByExternalReferenceCodeOrganizationsPage_getExpectedActions(
+				externalReferenceCode));
 
 		organizationResource.deleteOrganization(organization1.getId());
 
 		organizationResource.deleteOrganization(organization2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetAccountByExternalReferenceCodeOrganizationsPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -618,8 +634,17 @@ public abstract class BaseOrganizationResourceTestCase {
 			204,
 			organizationResource.
 				deleteAccountByExternalReferenceCodeOrganizationHttpResponse(
-					organization.getExternalReferenceCode(),
+					testDeleteAccountByExternalReferenceCodeOrganization_getExternalReferenceCode(
+						organization),
 					organization.getId()));
+	}
+
+	protected String
+			testDeleteAccountByExternalReferenceCodeOrganization_getExternalReferenceCode(
+				Organization organization)
+		throws Exception {
+
+		return organization.getExternalReferenceCode();
 	}
 
 	protected Organization
@@ -685,7 +710,10 @@ public abstract class BaseOrganizationResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantOrganization),
 				(List<Organization>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetAccountOrganizationsPage_getExpectedActions(
+					irrelevantAccountId));
 		}
 
 		Organization organization1 =
@@ -704,11 +732,22 @@ public abstract class BaseOrganizationResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(organization1, organization2),
 			(List<Organization>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetAccountOrganizationsPage_getExpectedActions(accountId));
 
 		organizationResource.deleteOrganization(organization1.getId());
 
 		organizationResource.deleteOrganization(organization2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetAccountOrganizationsPage_getExpectedActions(Long accountId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -1096,11 +1135,19 @@ public abstract class BaseOrganizationResourceTestCase {
 
 		assertContains(organization1, (List<Organization>)page.getItems());
 		assertContains(organization2, (List<Organization>)page.getItems());
-		assertValid(page);
+		assertValid(page, testGetOrganizationsPage_getExpectedActions());
 
 		organizationResource.deleteOrganization(organization1.getId());
 
 		organizationResource.deleteOrganization(organization2.getId());
+	}
+
+	protected Map<String, Map> testGetOrganizationsPage_getExpectedActions()
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -1870,7 +1917,10 @@ public abstract class BaseOrganizationResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantOrganization),
 				(List<Organization>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetOrganizationChildOrganizationsPage_getExpectedActions(
+					irrelevantOrganizationId));
 		}
 
 		Organization organization1 =
@@ -1889,11 +1939,24 @@ public abstract class BaseOrganizationResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(organization1, organization2),
 			(List<Organization>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetOrganizationChildOrganizationsPage_getExpectedActions(
+				organizationId));
 
 		organizationResource.deleteOrganization(organization1.getId());
 
 		organizationResource.deleteOrganization(organization2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetOrganizationChildOrganizationsPage_getExpectedActions(
+				String organizationId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -2302,7 +2365,10 @@ public abstract class BaseOrganizationResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantOrganization),
 				(List<Organization>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetOrganizationOrganizationsPage_getExpectedActions(
+					irrelevantParentOrganizationId));
 		}
 
 		Organization organization1 =
@@ -2321,11 +2387,24 @@ public abstract class BaseOrganizationResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(organization1, organization2),
 			(List<Organization>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetOrganizationOrganizationsPage_getExpectedActions(
+				parentOrganizationId));
 
 		organizationResource.deleteOrganization(organization1.getId());
 
 		organizationResource.deleteOrganization(organization2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetOrganizationOrganizationsPage_getExpectedActions(
+				String parentOrganizationId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -2919,6 +2998,12 @@ public abstract class BaseOrganizationResourceTestCase {
 	}
 
 	protected void assertValid(Page<Organization> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<Organization> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<Organization> organizations = page.getItems();
@@ -2933,6 +3018,20 @@ public abstract class BaseOrganizationResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected void assertValid(UserAccount userAccount) {
@@ -3878,6 +3977,10 @@ public abstract class BaseOrganizationResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

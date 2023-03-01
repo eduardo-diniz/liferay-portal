@@ -165,6 +165,8 @@ public class ClientExtensionEntryRelStagedModelDataHandler
 		else {
 			importedClientExtensionEntryRel.setMvccVersion(
 				existingClientExtensionEntryRel.getMvccVersion());
+			importedClientExtensionEntryRel.setExternalReferenceCode(
+				existingClientExtensionEntryRel.getExternalReferenceCode());
 			importedClientExtensionEntryRel.setClientExtensionEntryRelId(
 				existingClientExtensionEntryRel.getClientExtensionEntryRelId());
 

@@ -103,7 +103,7 @@
 </tr>
 <tr>
 	<td>DETAILS_PORTRAIT</td>
-	<td>//a//img[contains(@src,'user_portrait')]</td>
+	<td>//div//img[contains(@src,'user_portrait')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -274,7 +274,7 @@
 </tr>
 <tr>
 	<td>ROLES_SELECT_LINK</td>
-	<td>//a[contains(@id,'select${key_roleType}Link')]/span</td>
+	<td>//button[contains(@id,'select${key_roleType}Link')]</td>
 	<td></td>
 </tr>
 <tr>

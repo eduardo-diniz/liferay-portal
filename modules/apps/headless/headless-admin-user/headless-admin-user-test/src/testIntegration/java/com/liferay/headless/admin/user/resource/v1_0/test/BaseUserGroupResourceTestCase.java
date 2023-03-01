@@ -223,7 +223,10 @@ public abstract class BaseUserGroupResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantUserGroup),
 				(List<UserGroup>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetUserUserGroups_getExpectedActions(
+					irrelevantUserAccountId));
 		}
 
 		UserGroup userGroup1 = testGetUserUserGroups_addUserGroup(
@@ -239,11 +242,21 @@ public abstract class BaseUserGroupResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(userGroup1, userGroup2),
 			(List<UserGroup>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page, testGetUserUserGroups_getExpectedActions(userAccountId));
 
 		userGroupResource.deleteUserGroup(userGroup1.getId());
 
 		userGroupResource.deleteUserGroup(userGroup2.getId());
+	}
+
+	protected Map<String, Map> testGetUserUserGroups_getExpectedActions(
+			Long userAccountId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	protected UserGroup testGetUserUserGroups_addUserGroup(
@@ -285,11 +298,19 @@ public abstract class BaseUserGroupResourceTestCase {
 
 		assertContains(userGroup1, (List<UserGroup>)page.getItems());
 		assertContains(userGroup2, (List<UserGroup>)page.getItems());
-		assertValid(page);
+		assertValid(page, testGetUserGroupsPage_getExpectedActions());
 
 		userGroupResource.deleteUserGroup(userGroup1.getId());
 
 		userGroupResource.deleteUserGroup(userGroup2.getId());
+	}
+
+	protected Map<String, Map> testGetUserGroupsPage_getExpectedActions()
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -1152,6 +1173,12 @@ public abstract class BaseUserGroupResourceTestCase {
 	}
 
 	protected void assertValid(Page<UserGroup> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<UserGroup> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<UserGroup> userGroups = page.getItems();
@@ -1166,6 +1193,20 @@ public abstract class BaseUserGroupResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1359,6 +1400,10 @@ public abstract class BaseUserGroupResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

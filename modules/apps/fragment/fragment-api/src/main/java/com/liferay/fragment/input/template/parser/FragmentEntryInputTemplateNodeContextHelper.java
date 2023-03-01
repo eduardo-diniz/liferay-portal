@@ -23,6 +23,7 @@ import com.liferay.info.exception.InfoFormValidationException;
 import com.liferay.info.field.InfoField;
 import com.liferay.info.field.type.FileInfoFieldType;
 import com.liferay.info.field.type.InfoFieldType;
+import com.liferay.info.field.type.MultiselectInfoFieldType;
 import com.liferay.info.field.type.NumberInfoFieldType;
 import com.liferay.info.field.type.RelationshipInfoFieldType;
 import com.liferay.info.field.type.SelectInfoFieldType;
@@ -303,6 +304,31 @@ public class FragmentEntryInputTemplateNodeContextHelper {
 				}
 			}
 		}
+		else if (infoField.getInfoFieldType() instanceof
+					MultiselectInfoFieldType) {
+
+			List<InputTemplateNode.Option> options = new ArrayList<>();
+
+			List<MultiselectInfoFieldType.Option>
+				multiselectInfoFieldTypeOptions =
+					(List<MultiselectInfoFieldType.Option>)
+						infoField.getAttribute(
+							MultiselectInfoFieldType.OPTIONS);
+
+			if (multiselectInfoFieldTypeOptions == null) {
+				multiselectInfoFieldTypeOptions = Collections.emptyList();
+			}
+
+			for (MultiselectInfoFieldType.Option option :
+					multiselectInfoFieldTypeOptions) {
+
+				options.add(
+					new InputTemplateNode.Option(
+						option.getLabel(locale), option.getValue()));
+			}
+
+			inputTemplateNode.addAttribute("options", options);
+		}
 		else if (infoField.getInfoFieldType() instanceof NumberInfoFieldType) {
 			String dataType = "integer";
 
@@ -443,7 +469,11 @@ public class FragmentEntryInputTemplateNodeContextHelper {
 			inputLabel = infoField.getLabel(locale);
 		}
 
-		return GetterUtil.getString(inputLabel, defaultInputLabel);
+		if (Validator.isNotNull(inputLabel)) {
+			return inputLabel;
+		}
+
+		return defaultInputLabel;
 	}
 
 	private String _getStep(Integer decimalPartMaxLength) {

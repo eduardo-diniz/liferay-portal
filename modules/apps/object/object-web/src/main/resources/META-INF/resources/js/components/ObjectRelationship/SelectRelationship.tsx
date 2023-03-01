@@ -34,7 +34,9 @@ export default function SelectRelationship({
 	value,
 	...otherProps
 }: IProps) {
-	const [creationLanguageId, setCreationLanguageId] = useState<Locale>();
+	const [creationLanguageId, setCreationLanguageId] = useState<
+		Liferay.Language.Locale
+	>();
 	const [fields, setFields] = useState<ObjectField[]>([]);
 	const [query, setQuery] = useState<string>('');
 	const options = useMemo(
@@ -42,7 +44,7 @@ export default function SelectRelationship({
 			fields.map(({label, name}) => {
 				return {
 					label: getLocalizableLabel(
-						creationLanguageId as Locale,
+						creationLanguageId as Liferay.Language.Locale,
 						label,
 						name
 					),
@@ -81,6 +83,8 @@ export default function SelectRelationship({
 					({businessType}) => businessType === 'Relationship'
 				);
 
+				setCreationLanguageId(objectDefinition.defaultLanguageId);
+
 				setFields(options);
 			};
 
@@ -93,6 +97,7 @@ export default function SelectRelationship({
 
 	return (
 		<AutoComplete<LabelNameObject>
+			creationLanguageId={creationLanguageId as Liferay.Language.Locale}
 			emptyStateMessage={Liferay.Language.get('no-parameters-were-found')}
 			error={error}
 			items={filteredOptions ?? []}
@@ -110,7 +115,7 @@ export default function SelectRelationship({
 				'choose-a-relationship-field-from-the-selected-object'
 			)}
 			value={getLocalizableLabel(
-				creationLanguageId as Locale,
+				creationLanguageId as Liferay.Language.Locale,
 				selectedValue?.label,
 				selectedValue?.name
 			)}

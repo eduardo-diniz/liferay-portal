@@ -7444,7 +7444,8 @@ public class AccountGroupPersistenceImpl
 				if (ercAccountGroup != null) {
 					throw new DuplicateAccountGroupExternalReferenceCodeException(
 						"Duplicate account group with external reference code " +
-							accountGroup.getExternalReferenceCode());
+							accountGroup.getExternalReferenceCode() +
+								" and company " + accountGroup.getCompanyId());
 				}
 			}
 			else {
@@ -7454,7 +7455,8 @@ public class AccountGroupPersistenceImpl
 
 					throw new DuplicateAccountGroupExternalReferenceCodeException(
 						"Duplicate account group with external reference code " +
-							accountGroup.getExternalReferenceCode());
+							accountGroup.getExternalReferenceCode() +
+								" and company " + accountGroup.getCompanyId());
 				}
 			}
 		}

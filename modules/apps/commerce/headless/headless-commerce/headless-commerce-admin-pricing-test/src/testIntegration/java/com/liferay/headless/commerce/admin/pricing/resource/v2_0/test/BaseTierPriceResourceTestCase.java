@@ -56,6 +56,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -230,7 +231,10 @@ public abstract class BaseTierPriceResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantTierPrice),
 				(List<TierPrice>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetPriceEntryByExternalReferenceCodeTierPricesPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		TierPrice tierPrice1 =
@@ -251,11 +255,24 @@ public abstract class BaseTierPriceResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(tierPrice1, tierPrice2),
 			(List<TierPrice>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetPriceEntryByExternalReferenceCodeTierPricesPage_getExpectedActions(
+				externalReferenceCode));
 
 		tierPriceResource.deleteTierPrice(tierPrice1.getId());
 
 		tierPriceResource.deleteTierPrice(tierPrice2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetPriceEntryByExternalReferenceCodeTierPricesPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -378,7 +395,10 @@ public abstract class BaseTierPriceResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantTierPrice),
 				(List<TierPrice>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetPriceEntryIdTierPricesPage_getExpectedActions(
+					irrelevantPriceEntryId));
 		}
 
 		TierPrice tierPrice1 = testGetPriceEntryIdTierPricesPage_addTierPrice(
@@ -395,11 +415,32 @@ public abstract class BaseTierPriceResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(tierPrice1, tierPrice2),
 			(List<TierPrice>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetPriceEntryIdTierPricesPage_getExpectedActions(priceEntryId));
 
 		tierPriceResource.deleteTierPrice(tierPrice1.getId());
 
 		tierPriceResource.deleteTierPrice(tierPrice2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetPriceEntryIdTierPricesPage_getExpectedActions(
+				Long priceEntryId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/headless-commerce-admin-pricing/v2.0/price-entries/{priceEntryId}/tier-prices/batch".
+				replace("{priceEntryId}", String.valueOf(priceEntryId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	@Test
@@ -956,6 +997,12 @@ public abstract class BaseTierPriceResourceTestCase {
 	}
 
 	protected void assertValid(Page<TierPrice> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<TierPrice> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<TierPrice> tierPrices = page.getItems();
@@ -970,6 +1017,20 @@ public abstract class BaseTierPriceResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1300,6 +1361,10 @@ public abstract class BaseTierPriceResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

@@ -54,6 +54,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -326,10 +327,16 @@ public abstract class BaseDiagramResourceTestCase {
 		Diagram postDiagram = testGetProductIdDiagram_addDiagram();
 
 		Diagram getDiagram = diagramResource.getProductIdDiagram(
-			postDiagram.getProductId());
+			testGetProductIdDiagram_getProductId(postDiagram));
 
 		assertEquals(postDiagram, getDiagram);
 		assertValid(getDiagram);
+	}
+
+	protected Long testGetProductIdDiagram_getProductId(Diagram diagram)
+		throws Exception {
+
+		return diagram.getProductId();
 	}
 
 	protected Diagram testGetProductIdDiagram_addDiagram() throws Exception {
@@ -353,11 +360,18 @@ public abstract class BaseDiagramResourceTestCase {
 									{
 										put(
 											"productId",
-											diagram.getProductId());
+											testGraphQLGetProductIdDiagram_getProductId(
+												diagram));
 									}
 								},
 								getGraphQLFields())),
 						"JSONObject/data", "Object/productIdDiagram"))));
+	}
+
+	protected Long testGraphQLGetProductIdDiagram_getProductId(Diagram diagram)
+		throws Exception {
+
+		return diagram.getProductId();
 	}
 
 	@Test
@@ -557,6 +571,12 @@ public abstract class BaseDiagramResourceTestCase {
 	}
 
 	protected void assertValid(Page<Diagram> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<Diagram> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<Diagram> diagrams = page.getItems();
@@ -571,6 +591,20 @@ public abstract class BaseDiagramResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -792,6 +826,10 @@ public abstract class BaseDiagramResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

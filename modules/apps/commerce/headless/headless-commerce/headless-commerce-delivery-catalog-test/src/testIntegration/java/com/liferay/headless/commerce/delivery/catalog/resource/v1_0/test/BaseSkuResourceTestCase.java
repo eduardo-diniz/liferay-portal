@@ -55,6 +55,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -223,7 +224,10 @@ public abstract class BaseSkuResourceTestCase {
 
 			assertEquals(
 				Arrays.asList(irrelevantSku), (List<Sku>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetChannelProductSkusPage_getExpectedActions(
+					irrelevantChannelId, irrelevantProductId));
 		}
 
 		Sku sku1 = testGetChannelProductSkusPage_addSku(
@@ -239,7 +243,19 @@ public abstract class BaseSkuResourceTestCase {
 
 		assertEqualsIgnoringOrder(
 			Arrays.asList(sku1, sku2), (List<Sku>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetChannelProductSkusPage_getExpectedActions(
+				channelId, productId));
+	}
+
+	protected Map<String, Map> testGetChannelProductSkusPage_getExpectedActions(
+			Long channelId, Long productId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -540,6 +556,12 @@ public abstract class BaseSkuResourceTestCase {
 	}
 
 	protected void assertValid(Page<Sku> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<Sku> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<Sku> skus = page.getItems();
@@ -554,6 +576,20 @@ public abstract class BaseSkuResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -864,6 +900,10 @@ public abstract class BaseSkuResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

@@ -18,12 +18,14 @@ import com.liferay.document.library.util.DLURLHelper;
 import com.liferay.headless.delivery.dto.v1_0.WikiPageAttachment;
 import com.liferay.headless.delivery.dto.v1_0.util.ContentValueUtil;
 import com.liferay.headless.delivery.resource.v1_0.WikiPageAttachmentResource;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepository;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.vulcan.multipart.BinaryFile;
 import com.liferay.portal.vulcan.multipart.MultipartBody;
 import com.liferay.portal.vulcan.pagination.Page;
@@ -46,6 +48,7 @@ import org.osgi.service.component.annotations.ServiceScope;
 	properties = "OSGI-INF/liferay/rest/v1_0/wiki-page-attachment.properties",
 	scope = ServiceScope.PROTOTYPE, service = WikiPageAttachmentResource.class
 )
+@CTAware
 public class WikiPageAttachmentResourceImpl
 	extends BaseWikiPageAttachmentResourceImpl {
 
@@ -109,6 +112,12 @@ public class WikiPageAttachmentResourceImpl
 		WikiPage wikiPage = _wikiPageService.getPage(wikiPageId);
 
 		return Page.of(
+			HashMapBuilder.put(
+				"createBatch",
+				addAction(
+					ActionKeys.UPDATE, "postWikiPageWikiPageAttachmentBatch",
+					WikiPage.class.getName(), wikiPageId)
+			).build(),
 			transform(
 				wikiPage.getAttachmentsFileEntries(),
 				this::_toWikiPageAttachment));

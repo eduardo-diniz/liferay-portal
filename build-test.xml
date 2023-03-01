@@ -498,7 +498,10 @@ typeSettings=&#91;&quot;friendlyURLMapping=perico&quot;,&quot;instanceable=false
 
 		<sequential>
 			<if>
-				<equals arg1="${env.DOCKER_ENABLED}" arg2="true" />
+				<or>
+					<equals arg1="${env.DOCKER_ENABLED}" arg2="true" />
+					<isset property="database.${database.type}.docker.image" />
+				</or>
 				<then>
 					<local name="export.dmp.file.path" />
 
@@ -1833,11 +1836,11 @@ jdbc.counter.connectionProperties=oracle.jdbc.ReadTimeout=0;oracle.net.CONNECT_T
 					<propertyregex
 						input="${test.url}"
 						property="proxy.url"
-						regexp="(http:\/\/.*)(:[0-9][0-9])([0-9]+)"
-						select="\1\2"
+						regexp="(http:\/\/.*)(:[0-9]+)"
+						select="\1"
 					/>
 
-					<var name="test.url" value="${proxy.url}/${portal.proxy.path}" />
+					<var name="test.url" value="${proxy.url}:88/${portal.proxy.path}" />
 				</then>
 			</if>
 		</sequential>
@@ -2219,11 +2222,25 @@ war.path=${app.server.portal.dir}/</echo>
 							value="liferay.home=${test.app.server.parent.dir}"
 						/>
 
-						<replace
-							file="${test.app.server.classes.portal.dir}/portal-ext.properties"
-							token="web.server.http.port=8080"
-							value="web.server.http.port=${test.app.server.leading.port.number}080"
-						/>
+						<get-testcase-property property.name="portal.proxy.path" />
+
+						<if>
+							<isset property="portal.proxy.path" />
+							<then>
+								<replace
+									file="${test.app.server.classes.portal.dir}/portal-ext.properties"
+									token="web.server.http.port=88"
+									value="web.server.http.port=${test.app.server.leading.port.number}8"
+								/>
+							</then>
+							<else>
+								<replace
+									file="${test.app.server.classes.portal.dir}/portal-ext.properties"
+									token="web.server.http.port=8080"
+									value="web.server.http.port=${test.app.server.leading.port.number}080"
+								/>
+							</else>
+						</if>
 
 						<math
 							datatype="int"
@@ -2975,6 +2992,12 @@ include-and-override=portal-liferay-online-limit.properties</echo>
 		</sequential>
 	</macrodef>
 
+	<macrodef name="prepare-portal-security-audit-osgi-configuration">
+		<sequential>
+			<echo file="${liferay.home}/osgi/configs/com.liferay.portal.security.audit.router.configuration.PersistentAuditMessageProcessorConfiguration.config">enabled=B"true"</echo>
+		</sequential>
+	</macrodef>
+
 	<macrodef name="prepare-portal-template-freemarker-osgi-configuration">
 		<sequential>
 			<echo file="${liferay.home}/osgi/configs/com.liferay.portal.template.freemarker.configuration.FreeMarkerEngineConfiguration.config">asyncRenderTimeout=L"7200000"${line.separator}loopCountThreshold=I"2147483647"</echo>
@@ -3061,33 +3084,9 @@ jdbc.read.jndi.name=jdbc/LiferayReadPool</echo>
 				</elseif>
 			</if>
 
-			<loadproperties srcFile="${project.dir}/portal-impl/src/portal.properties">
-				<filterchain>
-					<tokenfilter>
-						<containsstring contains="spring" />
-					</tokenfilter>
-				</filterchain>
-			</loadproperties>
-
-			<propertycopy from="spring.configs" name="spring.configs.default" />
-			<propertycopy from="spring.infrastructure.configs" name="spring.infrastructure.configs.default" />
-
 			<echo append="true" file="${test.app.server.classes.portal.dir}/portal-ext.properties">
-				<![CDATA[
-counter.jdbc.prefix=jdbc.write.
-spring.configs=\
-	${spring.configs.default},/META-INF/dynamic-data-source-spring.xml
-spring.infrastructure.configs=\
-	${spring.infrastructure.configs.default}
-				]]>
-			</echo>
 
-			<replace
-				file="${test.app.server.classes.portal.dir}/portal-ext.properties"
-			>
-				<replacetoken><![CDATA[#/META-INF/dynamic-data-source-infrastructure-spring.xml]]></replacetoken>
-				<replacevalue><![CDATA[/META-INF/dynamic-data-source-infrastructure-spring.xml]]></replacevalue>
-			</replace>
+counter.jdbc.prefix=jdbc.write.</echo>
 		</sequential>
 	</macrodef>
 
@@ -7373,7 +7372,7 @@ ${docker.start.error}</fail>
 										<elseif>
 											<isset property="portal.proxy.path" />
 											<then>
-												<property name="app.server.waiting.url" value="http://localhost:${test.app.server.leading.port.number}0/${portal.proxy.path}/web/guest" />
+												<property name="app.server.waiting.url" value="http://localhost:${test.app.server.leading.port.number}8/${portal.proxy.path}/web/guest" />
 											</then>
 										</elseif>
 										<elseif>
@@ -7971,7 +7970,7 @@ war.path=${app.server.portal.dir}/</echo>
 				<elseif>
 					<isset property="portal.proxy.path" />
 					<then>
-						<property name="app.server.waiting.url" value="http://localhost:${test.app.server.leading.port.number}0/${portal.proxy.path}/web/guest" />
+						<property name="app.server.waiting.url" value="http://localhost:${test.app.server.leading.port.number}8/${portal.proxy.path}/web/guest" />
 					</then>
 				</elseif>
 				<elseif>
@@ -11010,6 +11009,18 @@ ${update.properties}</echo>
 			</then>
 		</if>
 
+		<get-testcase-property property.name="testray.main.component.name" />
+
+		<if>
+			<or>
+				<equals arg1="${testray.main.component.name}" arg2="Audit" />
+				<equals arg1="${testray.main.component.name}" arg2="Multi Factor Authentication" />
+			</or>
+			<then>
+				<prepare-portal-security-audit-osgi-configuration />
+			</then>
+		</if>
+
 		<prepare-portal-template-freemarker-osgi-configuration />
 
 		<prepare-selenium-login-config />
@@ -11268,6 +11279,7 @@ company.default.web.id=www.able.com</echo>
 		</if>
 
 		<get-testcase-property property.name="liferay.online.properties" />
+		<propertycopy from="liferay.online.properties[${env.CI_TEST_SUITE}]" name="liferay.online.properties" silent="true" />
 
 		<if>
 			<isset property="liferay.online.properties" />
@@ -11461,7 +11473,7 @@ portal.proxy.path=/${portal.proxy.path}</echo>
 				<replace
 					file="portal-impl/src/portal-ext.properties"
 					token="web.server.http.port=8080"
-					value=""
+					value="web.server.http.port=88"
 				/>
 			</then>
 		</if>
@@ -14619,7 +14631,13 @@ mail.send.blacklist=</echo>
 		<if>
 			<isset property="portal.proxy.path" />
 			<then>
-				<ant antfile="build-test-httpd.xml" target="configure-httpd-server" />
+				<ant antfile="build-test-httpd.xml" target="stop-httpd-server" />
+
+				<ant antfile="build-test-httpd.xml" target="clean-up-httpd-server" />
+
+				<ant antfile="build-test-httpd.xml" target="configure-httpd-server">
+					<property name="portal.proxy.path" value="${portal.proxy.path}" />
+				</ant>
 
 				<ant antfile="build-test-httpd.xml" target="start-httpd-server" />
 			</then>
@@ -14764,7 +14782,7 @@ mail.send.blacklist=</echo>
 			<elseif>
 				<equals arg1="${rebuild.staging.database}" arg2="true" />
 				<then>
-					<ant antfile="build-test-staging-mysql.xml" target="rebuild-staging-database" />
+					<ant antfile="build-test-staging.xml" target="rebuild-staging-database" />
 				</then>
 			</elseif>
 			<else>
@@ -15008,9 +15026,7 @@ mail.send.blacklist=</echo>
 
 		<set-up-search-engine />
 
-		<antcall inheritAll="false" target="prepare-log4j-ext-xml">
-			<param name="database.type" value="@{database.type}" />
-		</antcall>
+		<antcall target="prepare-log4j-ext-xml" />
 
 		<get-testcase-property property.name="osgi.module.configuration.file.names" />
 		<get-testcase-property property.name="osgi.module.configurations" />
@@ -15381,6 +15397,8 @@ mail.send.blacklist=</echo>
 			<isset property="portal.proxy.path" />
 			<then>
 				<ant antfile="build-test-httpd.xml" target="stop-httpd-server" />
+
+				<ant antfile="build-test-httpd.xml" target="clean-up-httpd-server" />
 			</then>
 		</if>
 

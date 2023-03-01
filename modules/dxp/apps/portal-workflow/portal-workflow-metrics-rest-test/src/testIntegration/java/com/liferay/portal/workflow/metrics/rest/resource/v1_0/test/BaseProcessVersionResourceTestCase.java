@@ -54,6 +54,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -214,7 +215,10 @@ public abstract class BaseProcessVersionResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantProcessVersion),
 				(List<ProcessVersion>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetProcessProcessVersionsPage_getExpectedActions(
+					irrelevantProcessId));
 		}
 
 		ProcessVersion processVersion1 =
@@ -232,7 +236,18 @@ public abstract class BaseProcessVersionResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(processVersion1, processVersion2),
 			(List<ProcessVersion>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetProcessProcessVersionsPage_getExpectedActions(processId));
+	}
+
+	protected Map<String, Map>
+			testGetProcessProcessVersionsPage_getExpectedActions(Long processId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	protected ProcessVersion
@@ -350,6 +365,12 @@ public abstract class BaseProcessVersionResourceTestCase {
 	}
 
 	protected void assertValid(Page<ProcessVersion> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<ProcessVersion> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<ProcessVersion> processVersions = page.getItems();
@@ -364,6 +385,20 @@ public abstract class BaseProcessVersionResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -504,6 +539,10 @@ public abstract class BaseProcessVersionResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

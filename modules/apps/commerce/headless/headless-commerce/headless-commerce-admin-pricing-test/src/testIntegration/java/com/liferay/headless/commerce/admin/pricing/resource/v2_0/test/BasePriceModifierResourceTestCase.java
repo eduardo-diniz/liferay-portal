@@ -237,7 +237,10 @@ public abstract class BasePriceModifierResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantPriceModifier),
 				(List<PriceModifier>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetPriceListByExternalReferenceCodePriceModifiersPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		PriceModifier priceModifier1 =
@@ -258,11 +261,24 @@ public abstract class BasePriceModifierResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(priceModifier1, priceModifier2),
 			(List<PriceModifier>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetPriceListByExternalReferenceCodePriceModifiersPage_getExpectedActions(
+				externalReferenceCode));
 
 		priceModifierResource.deletePriceModifier(priceModifier1.getId());
 
 		priceModifierResource.deletePriceModifier(priceModifier2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetPriceListByExternalReferenceCodePriceModifiersPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -390,7 +406,10 @@ public abstract class BasePriceModifierResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantPriceModifier),
 				(List<PriceModifier>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetPriceListIdPriceModifiersPage_getExpectedActions(
+					irrelevantId));
 		}
 
 		PriceModifier priceModifier1 =
@@ -409,11 +428,21 @@ public abstract class BasePriceModifierResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(priceModifier1, priceModifier2),
 			(List<PriceModifier>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page, testGetPriceListIdPriceModifiersPage_getExpectedActions(id));
 
 		priceModifierResource.deletePriceModifier(priceModifier1.getId());
 
 		priceModifierResource.deletePriceModifier(priceModifier2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetPriceListIdPriceModifiersPage_getExpectedActions(Long id)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -1253,6 +1282,12 @@ public abstract class BasePriceModifierResourceTestCase {
 	}
 
 	protected void assertValid(Page<PriceModifier> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<PriceModifier> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<PriceModifier> priceModifiers = page.getItems();
@@ -1267,6 +1302,20 @@ public abstract class BasePriceModifierResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1593,6 +1642,10 @@ public abstract class BasePriceModifierResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

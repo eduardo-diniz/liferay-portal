@@ -16,13 +16,13 @@ package com.liferay.headless.delivery.internal.resource.v1_0;
 
 import com.liferay.document.library.kernel.model.DLFolder;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
+import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.document.library.kernel.service.DLAppService;
 import com.liferay.dynamic.data.mapping.util.DDMIndexer;
 import com.liferay.expando.kernel.service.ExpandoColumnLocalService;
 import com.liferay.expando.kernel.service.ExpandoTableLocalService;
 import com.liferay.headless.common.spi.odata.entity.EntityFieldsUtil;
 import com.liferay.headless.common.spi.service.context.ServiceContextRequestUtil;
-import com.liferay.headless.delivery.dto.v1_0.CustomField;
 import com.liferay.headless.delivery.dto.v1_0.DocumentFolder;
 import com.liferay.headless.delivery.dto.v1_0.util.CustomFieldsUtil;
 import com.liferay.headless.delivery.internal.dto.v1_0.converter.DocumentFolderDTOConverter;
@@ -31,6 +31,7 @@ import com.liferay.headless.delivery.resource.v1_0.DocumentFolderResource;
 import com.liferay.headless.delivery.search.aggregation.AggregationUtil;
 import com.liferay.headless.delivery.search.filter.FilterUtil;
 import com.liferay.headless.delivery.search.sort.SortUtil;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
 import com.liferay.portal.kernel.search.Field;
@@ -58,7 +59,6 @@ import com.liferay.portal.vulcan.util.SearchUtil;
 import com.liferay.portlet.documentlibrary.constants.DLConstants;
 
 import java.util.Map;
-import java.util.Optional;
 
 import javax.ws.rs.core.MultivaluedMap;
 
@@ -73,11 +73,23 @@ import org.osgi.service.component.annotations.ServiceScope;
 	properties = "OSGI-INF/liferay/rest/v1_0/document-folder.properties",
 	scope = ServiceScope.PROTOTYPE, service = DocumentFolderResource.class
 )
+@CTAware
 public class DocumentFolderResourceImpl extends BaseDocumentFolderResourceImpl {
 
 	@Override
 	public void deleteDocumentFolder(Long documentFolderId) throws Exception {
 		_dlAppService.deleteFolder(documentFolderId);
+	}
+
+	@Override
+	public void deleteSiteDocumentsFolderByExternalReferenceCode(
+			Long siteId, String externalReferenceCode)
+		throws Exception {
+
+		Folder folder = _dlAppService.getFolderByExternalReferenceCode(
+			externalReferenceCode, siteId);
+
+		_dlAppService.deleteFolder(folder.getFolderId());
 	}
 
 	@Override
@@ -213,24 +225,14 @@ public class DocumentFolderResourceImpl extends BaseDocumentFolderResourceImpl {
 	}
 
 	@Override
-	public DocumentFolder patchDocumentFolder(
-			Long documentFolderId, DocumentFolder documentFolder)
+	public DocumentFolder getSiteDocumentsFolderByExternalReferenceCode(
+			Long siteId, String externalReferenceCode)
 		throws Exception {
 
-		Folder existingFolder = _dlAppService.getFolder(documentFolderId);
+		Folder folder = _dlAppService.getFolderByExternalReferenceCode(
+			externalReferenceCode, siteId);
 
-		return _updateDocumentFolder(
-			documentFolderId, documentFolder.getCustomFields(),
-			Optional.ofNullable(
-				documentFolder.getDescription()
-			).orElse(
-				existingFolder.getDescription()
-			),
-			Optional.ofNullable(
-				documentFolder.getName()
-			).orElse(
-				existingFolder.getName()
-			));
+		return _toDocumentFolder(folder);
 	}
 
 	@Override
@@ -248,8 +250,9 @@ public class DocumentFolderResourceImpl extends BaseDocumentFolderResourceImpl {
 
 		Folder folder = _dlAppService.getFolder(parentDocumentFolderId);
 
-		return _addFolder(
-			folder.getGroupId(), folder.getFolderId(), documentFolder);
+		return _addDocumentFolder(
+			documentFolder.getExternalReferenceCode(), folder.getGroupId(),
+			folder.getFolderId(), documentFolder);
 	}
 
 	@Override
@@ -257,7 +260,9 @@ public class DocumentFolderResourceImpl extends BaseDocumentFolderResourceImpl {
 			Long siteId, DocumentFolder documentFolder)
 		throws Exception {
 
-		return _addFolder(siteId, 0L, documentFolder);
+		return _addDocumentFolder(
+			documentFolder.getExternalReferenceCode(), siteId, 0L,
+			documentFolder);
 	}
 
 	@Override
@@ -266,8 +271,7 @@ public class DocumentFolderResourceImpl extends BaseDocumentFolderResourceImpl {
 		throws Exception {
 
 		return _updateDocumentFolder(
-			documentFolderId, documentFolder.getCustomFields(),
-			documentFolder.getDescription(), documentFolder.getName());
+			_dlAppService.getFolder(documentFolderId), documentFolder);
 	}
 
 	@Override
@@ -291,6 +295,23 @@ public class DocumentFolderResourceImpl extends BaseDocumentFolderResourceImpl {
 	}
 
 	@Override
+	public DocumentFolder putSiteDocumentsFolderByExternalReferenceCode(
+			Long siteId, String externalReferenceCode,
+			DocumentFolder documentFolder)
+		throws Exception {
+
+		Folder folder = _dlAppLocalService.fetchFolderByExternalReferenceCode(
+			externalReferenceCode, siteId);
+
+		if (folder != null) {
+			return _updateDocumentFolder(folder, documentFolder);
+		}
+
+		return _addDocumentFolder(
+			externalReferenceCode, siteId, 0L, documentFolder);
+	}
+
+	@Override
 	protected Long getPermissionCheckerGroupId(Object id) throws Exception {
 		Folder folder = _dlAppService.getFolder((Long)id);
 
@@ -307,21 +328,21 @@ public class DocumentFolderResourceImpl extends BaseDocumentFolderResourceImpl {
 		return DLFolder.class.getName();
 	}
 
-	private DocumentFolder _addFolder(
-			Long siteId, Long parentDocumentFolderId,
+	private DocumentFolder _addDocumentFolder(
+			String externalReferenceCode, Long groupId, Long parentFolderId,
 			DocumentFolder documentFolder)
 		throws Exception {
 
 		return _toDocumentFolder(
 			_dlAppService.addFolder(
-				siteId, parentDocumentFolderId, documentFolder.getName(),
-				documentFolder.getDescription(),
+				externalReferenceCode, groupId, parentFolderId,
+				documentFolder.getName(), documentFolder.getDescription(),
 				ServiceContextRequestUtil.createServiceContext(
 					CustomFieldsUtil.toMap(
 						DLFolder.class.getName(), contextCompany.getCompanyId(),
 						documentFolder.getCustomFields(),
 						contextAcceptLanguage.getPreferredLocale()),
-					siteId, contextHttpServletRequest,
+					groupId, contextHttpServletRequest,
 					documentFolder.getViewableByAsString())));
 	}
 
@@ -428,17 +449,17 @@ public class DocumentFolderResourceImpl extends BaseDocumentFolderResourceImpl {
 	}
 
 	private DocumentFolder _updateDocumentFolder(
-			Long documentFolderId, CustomField[] customFields,
-			String description, String name)
+			Folder folder, DocumentFolder documentFolder)
 		throws Exception {
 
 		return _toDocumentFolder(
 			_dlAppService.updateFolder(
-				documentFolderId, name, description,
+				folder.getFolderId(), documentFolder.getName(),
+				documentFolder.getDescription(),
 				ServiceContextRequestUtil.createServiceContext(
 					CustomFieldsUtil.toMap(
 						DLFolder.class.getName(), contextCompany.getCompanyId(),
-						customFields,
+						documentFolder.getCustomFields(),
 						contextAcceptLanguage.getPreferredLocale()),
 					0, contextHttpServletRequest, null)));
 	}
@@ -448,6 +469,9 @@ public class DocumentFolderResourceImpl extends BaseDocumentFolderResourceImpl {
 
 	@Reference
 	private DDMIndexer _ddmIndexer;
+
+	@Reference
+	private DLAppLocalService _dlAppLocalService;
 
 	@Reference
 	private DLAppService _dlAppService;

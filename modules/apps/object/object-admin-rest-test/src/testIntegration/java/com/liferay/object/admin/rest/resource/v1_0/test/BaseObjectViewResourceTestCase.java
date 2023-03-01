@@ -56,6 +56,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -227,7 +228,10 @@ public abstract class BaseObjectViewResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantObjectView),
 				(List<ObjectView>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetObjectDefinitionByExternalReferenceCodeObjectViewsPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		ObjectView objectView1 =
@@ -248,11 +252,24 @@ public abstract class BaseObjectViewResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(objectView1, objectView2),
 			(List<ObjectView>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetObjectDefinitionByExternalReferenceCodeObjectViewsPage_getExpectedActions(
+				externalReferenceCode));
 
 		objectViewResource.deleteObjectView(objectView1.getId());
 
 		objectViewResource.deleteObjectView(objectView2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetObjectDefinitionByExternalReferenceCodeObjectViewsPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -377,7 +394,10 @@ public abstract class BaseObjectViewResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantObjectView),
 				(List<ObjectView>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetObjectDefinitionObjectViewsPage_getExpectedActions(
+					irrelevantObjectDefinitionId));
 		}
 
 		ObjectView objectView1 =
@@ -396,11 +416,35 @@ public abstract class BaseObjectViewResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(objectView1, objectView2),
 			(List<ObjectView>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetObjectDefinitionObjectViewsPage_getExpectedActions(
+				objectDefinitionId));
 
 		objectViewResource.deleteObjectView(objectView1.getId());
 
 		objectViewResource.deleteObjectView(objectView2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetObjectDefinitionObjectViewsPage_getExpectedActions(
+				Long objectDefinitionId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/object-admin/v1.0/object-definitions/{objectDefinitionId}/object-views/batch".
+				replace(
+					"{objectDefinitionId}",
+					String.valueOf(objectDefinitionId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	@Test
@@ -837,6 +881,12 @@ public abstract class BaseObjectViewResourceTestCase {
 	}
 
 	protected void assertValid(Page<ObjectView> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<ObjectView> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<ObjectView> objectViews = page.getItems();
@@ -851,6 +901,20 @@ public abstract class BaseObjectViewResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1112,6 +1176,10 @@ public abstract class BaseObjectViewResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

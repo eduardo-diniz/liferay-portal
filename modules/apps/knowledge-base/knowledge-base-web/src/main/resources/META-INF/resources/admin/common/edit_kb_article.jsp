@@ -155,7 +155,7 @@ if (editKBArticleDisplayContext.isPortletTitleBasedNavigation()) {
 						/>
 					</aui:fieldset>
 
-					<c:if test='<%= GetterUtil.getBoolean(com.liferay.portal.kernel.util.PropsUtil.get("feature.flag.LPS-165476")) %>'>
+					<c:if test='<%= FeatureFlagManagerUtil.isEnabled("LPS-165476") %>'>
 						<liferay-frontend:fieldset
 							collapsed="<%= true %>"
 							collapsible="<%= true %>"
@@ -273,7 +273,7 @@ if (editKBArticleDisplayContext.isPortletTitleBasedNavigation()) {
 				<liferay-ui:error exception="<%= NoSuchFileException.class %>" message="the-document-could-not-be-found" />
 
 				<liferay-ui:error exception="<%= UploadRequestSizeException.class %>">
-					<liferay-ui:message arguments="<%= LanguageUtil.formatStorageSize(UploadServletRequestConfigurationHelperUtil.getMaxSize(), locale) %>" key="request-is-larger-than-x-and-could-not-be-processed" translateArguments="<%= false %>" />
+					<liferay-ui:message arguments="<%= LanguageUtil.formatStorageSize(UploadServletRequestConfigurationProviderUtil.getMaxSize(), locale) %>" key="request-is-larger-than-x-and-could-not-be-processed" translateArguments="<%= false %>" />
 				</liferay-ui:error>
 
 				<liferay-asset:asset-categories-error />

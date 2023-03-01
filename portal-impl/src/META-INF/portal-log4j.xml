@@ -22,12 +22,14 @@
 			<DirectWriteRolloverStrategy />
 		</Appender>
 
-		<Appender filePattern="@liferay.home@/logs/companies/@company.id@/liferay-@company.id@.%d{yyyy-MM-dd}.log" ignoreExceptions="false" name="COMPANY_LOG_ROUTING_TEXT_FILE" type="CompanyLogRouting">
-			<Layout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p [%t][%c{1}:%L] %m%n" type="PatternLayout" />
-
+		<Appender dirPattern="@liferay.home@/logs/companies/@company.id@" ignoreExceptions="false" name="COMPANY_LOG_ROUTING_TEXT_FILE" type="CompanyLogRouting">
 			<TimeBasedTriggeringPolicy />
 
 			<DirectWriteRolloverStrategy />
+
+			<FilePattern fileNamePattern="liferay-@company.id@.%d{yyyy-MM-dd}.log">
+				<Layout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p [%t][%c{1}:%L] %m%n" type="PatternLayout" />
+			</FilePattern>
 		</Appender>
 	</Appenders>
 
@@ -51,7 +53,6 @@
 		<Logger level="INFO" name="com.liferay.portal.dao.db.BaseDB" />
 		<Logger level="INFO" name="com.liferay.portal.dao.init.DBInitUtil" />
 		<Logger level="INFO" name="com.liferay.portal.dao.jdbc.DataSourceFactoryImpl" />
-		<Logger level="ERROR" name="com.liferay.portal.dao.jdbc.aop" />
 		<Logger level="ERROR" name="com.liferay.portal.dao.jdbc.pool" />
 		<Logger level="ERROR" name="com.liferay.portal.dao.orm.common.SQLTransformer" />
 		<Logger level="ERROR" name="com.liferay.portal.dao.orm.hibernate.SessionFactoryImpl" />

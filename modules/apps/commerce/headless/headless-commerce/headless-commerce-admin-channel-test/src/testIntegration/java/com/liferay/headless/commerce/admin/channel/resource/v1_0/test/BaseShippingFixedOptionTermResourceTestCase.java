@@ -245,7 +245,10 @@ public abstract class BaseShippingFixedOptionTermResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantShippingFixedOptionTerm),
 				(List<ShippingFixedOptionTerm>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetShippingFixedOptionIdShippingFixedOptionTermsPage_getExpectedActions(
+					irrelevantId));
 		}
 
 		ShippingFixedOptionTerm shippingFixedOptionTerm1 =
@@ -266,7 +269,20 @@ public abstract class BaseShippingFixedOptionTermResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(shippingFixedOptionTerm1, shippingFixedOptionTerm2),
 			(List<ShippingFixedOptionTerm>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetShippingFixedOptionIdShippingFixedOptionTermsPage_getExpectedActions(
+				id));
+	}
+
+	protected Map<String, Map>
+			testGetShippingFixedOptionIdShippingFixedOptionTermsPage_getExpectedActions(
+				Long id)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -808,6 +824,12 @@ public abstract class BaseShippingFixedOptionTermResourceTestCase {
 	}
 
 	protected void assertValid(Page<ShippingFixedOptionTerm> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<ShippingFixedOptionTerm> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<ShippingFixedOptionTerm> shippingFixedOptionTerms =
@@ -823,6 +845,20 @@ public abstract class BaseShippingFixedOptionTermResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1030,6 +1066,10 @@ public abstract class BaseShippingFixedOptionTermResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

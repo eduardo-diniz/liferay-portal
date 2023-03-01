@@ -22,19 +22,6 @@ import org.junit.Test;
 public class JavaSourceProcessorTest extends BaseSourceProcessorTestCase {
 
 	@Test
-	public void testAttributeOrder() throws Exception {
-		test(
-			"AttributeOrder.testjava",
-			new String[] {
-				"Attribute 'dataDefinitionId' should come after attribute " +
-					"'appDeployments'",
-				"Attribute 'type' should come after attribute 'settings'",
-				"Attribute 'type' should come after attribute 'settings'"
-			},
-			new Integer[] {29, 33, 45});
-	}
-
-	@Test
 	public void testAnnotationParameterImports() throws Exception {
 		test("AnnotationParameterImports.testjava");
 	}
@@ -44,6 +31,20 @@ public class JavaSourceProcessorTest extends BaseSourceProcessorTestCase {
 		test(
 			"AssertUsage.testjava",
 			"Use org.junit.Assert instead of org.testng.Assert, see LPS-55690");
+	}
+
+	@Test
+	public void testAssignmentsAndSetCallsOrder() throws Exception {
+		test(
+			"AssignmentsAndSetCallsOrder.testjava",
+			new String[] {
+				"The variable assignment for 'appDeployments' should come before the variable assignment for 'dataDefinitionId'",
+				"The variable assignment for 'settings' should come before the variable assignment for 'type'",
+				"The variable assignment for 'type' shoud come before the method calling 'setName'",
+				"The variable assignment for 'settings' should come before the variable assignment for 'type'",
+				"The method calling 'setCompany' should come before the method calling 'setName'"
+			},
+			new Integer[] {29, 33, 42, 48, 54});
 	}
 
 	@Test
@@ -183,6 +184,14 @@ public class JavaSourceProcessorTest extends BaseSourceProcessorTestCase {
 	@Test
 	public void testFormatReturnStatements() throws Exception {
 		test("FormatReturnStatements.testjava");
+	}
+
+	@Test
+	public void testGetFeatureFlag() throws Exception {
+		test(
+			"GetFeatureFlag.testjava",
+			"Use 'FeatureFlagManagerUtil.isEnabled' instead of " +
+				"'PropsUtil.get' for feature flag" ,26);
 	}
 
 	@Test

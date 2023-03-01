@@ -68,7 +68,7 @@ public abstract class BaseAnalyticsDXPEntityBatchExporterResourceImpl
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -X 'POST' 'http://localhost:8080/o/analytics-settings-rest/v1.0/analytics-dxp-entity-batch-exporter'  -u 'test@liferay.com:test'
+	 * curl -X 'POST' 'http://localhost:8080/o/analytics-settings-rest/v1.0/configuration/wizard-mode'  -u 'test@liferay.com:test'
 	 */
 	@io.swagger.v3.oas.annotations.tags.Tags(
 		value = {
@@ -77,11 +77,11 @@ public abstract class BaseAnalyticsDXPEntityBatchExporterResourceImpl
 			)
 		}
 	)
-	@javax.ws.rs.Path("/analytics-dxp-entity-batch-exporter")
+	@javax.ws.rs.Path("/configuration/wizard-mode")
 	@javax.ws.rs.POST
 	@javax.ws.rs.Produces({"application/json", "application/xml"})
 	@Override
-	public void postAnalyticsDXPEntityBatchExporter() throws Exception {
+	public void postConfigurationWizardMode() throws Exception {
 	}
 
 	public void setContextAcceptLanguage(AcceptLanguage contextAcceptLanguage) {
@@ -314,7 +314,9 @@ public abstract class BaseAnalyticsDXPEntityBatchExporterResourceImpl
 						permission = _toPermission(
 							resourceActions, resourcePermission, role);
 
-						permissions.put(role.getName(), permission);
+						if (permission != null) {
+							permissions.put(role.getName(), permission);
+						}
 					}
 					else {
 						Set<String> actionsIdsSet = new HashSet<>();
@@ -353,6 +355,10 @@ public abstract class BaseAnalyticsDXPEntityBatchExporterResourceImpl
 			if ((actionIds & bitwiseValue) == bitwiseValue) {
 				actionsIdsSet.add(resourceAction.getActionId());
 			}
+		}
+
+		if (actionsIdsSet.isEmpty()) {
+			return null;
 		}
 
 		return new Permission() {

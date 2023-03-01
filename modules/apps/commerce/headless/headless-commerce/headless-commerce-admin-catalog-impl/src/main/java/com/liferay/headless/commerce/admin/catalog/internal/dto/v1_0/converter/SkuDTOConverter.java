@@ -80,6 +80,23 @@ public class SkuDTOConverter implements DTOConverter<CPInstance, Sku> {
 				weight = cpInstance.getWeight();
 				width = cpInstance.getWidth();
 
+				setReplacementSkuExternalReferenceCode(
+					() -> {
+						if (replacementCPInstance != null) {
+							return replacementCPInstance.
+								getExternalReferenceCode();
+						}
+
+						return null;
+					});
+				setReplacementSkuId(
+					() -> {
+						if (replacementCPInstance != null) {
+							return replacementCPInstance.getCPInstanceId();
+						}
+
+						return null;
+					});
 				setSkuOptions(
 					() -> {
 						List<SkuOption> skuOptions = new ArrayList<>();
@@ -108,25 +125,6 @@ public class SkuDTOConverter implements DTOConverter<CPInstance, Sku> {
 						}
 
 						return skuOptions.toArray(new SkuOption[0]);
-					});
-
-				setReplacementSkuId(
-					() -> {
-						if (replacementCPInstance != null) {
-							return replacementCPInstance.getCPInstanceId();
-						}
-
-						return null;
-					});
-
-				setReplacementSkuExternalReferenceCode(
-					() -> {
-						if (replacementCPInstance != null) {
-							return replacementCPInstance.
-								getExternalReferenceCode();
-						}
-
-						return null;
 					});
 			}
 		};

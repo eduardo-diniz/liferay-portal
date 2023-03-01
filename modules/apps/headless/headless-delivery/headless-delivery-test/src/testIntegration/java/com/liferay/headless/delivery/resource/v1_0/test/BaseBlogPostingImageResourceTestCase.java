@@ -376,7 +376,10 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantBlogPostingImage),
 				(List<BlogPostingImage>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetSiteBlogPostingImagesPage_getExpectedActions(
+					irrelevantSiteId));
 		}
 
 		BlogPostingImage blogPostingImage1 =
@@ -395,13 +398,32 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(blogPostingImage1, blogPostingImage2),
 			(List<BlogPostingImage>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page, testGetSiteBlogPostingImagesPage_getExpectedActions(siteId));
 
 		blogPostingImageResource.deleteBlogPostingImage(
 			blogPostingImage1.getId());
 
 		blogPostingImageResource.deleteBlogPostingImage(
 			blogPostingImage2.getId());
+	}
+
+	protected Map<String, Map>
+			testGetSiteBlogPostingImagesPage_getExpectedActions(Long siteId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/headless-delivery/v1.0/sites/{siteId}/blog-posting-images/batch".
+				replace("{siteId}", String.valueOf(siteId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	@Test
@@ -1064,6 +1086,12 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 	}
 
 	protected void assertValid(Page<BlogPostingImage> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<BlogPostingImage> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<BlogPostingImage> blogPostingImages =
@@ -1079,6 +1107,20 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1297,6 +1339,10 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

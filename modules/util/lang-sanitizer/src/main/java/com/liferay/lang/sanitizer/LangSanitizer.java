@@ -31,6 +31,8 @@ import java.nio.file.attribute.BasicFileAttributes;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -60,8 +62,10 @@ public class LangSanitizer {
 
 		long endTime = System.currentTimeMillis();
 
-		for (int i = 0; i < _messages.size(); i++) {
-			System.out.println((i + 1) + ": " + _messages.get(i));
+		Collections.sort(_sanitizedMessage, new SanitizedMessageComparator());
+
+		for (int i = 0; i < _sanitizedMessage.size(); i++) {
+			System.out.println((i + 1) + ": " + _sanitizedMessage.get(i));
 		}
 
 		System.out.println(
@@ -78,14 +82,15 @@ public class LangSanitizer {
 	public void sanitize(String baseDirName) throws Exception {
 		ExecutorService executorService = Executors.newFixedThreadPool(10);
 
-		List<Future<List<String>>> futures = new CopyOnWriteArrayList<>();
+		List<Future<List<SanitizedMessage>>> futures =
+			new CopyOnWriteArrayList<>();
 
 		for (File file : _getPropertiesFiles(baseDirName)) {
-			Future<List<String>> future = executorService.submit(
-				new Callable<List<String>>() {
+			Future<List<SanitizedMessage>> future = executorService.submit(
+				new Callable<List<SanitizedMessage>>() {
 
 					@Override
-					public List<String> call() throws Exception {
+					public List<SanitizedMessage> call() throws Exception {
 						return _sanitizeProperites(file);
 					}
 
@@ -94,8 +99,8 @@ public class LangSanitizer {
 			futures.add(future);
 		}
 
-		for (Future<List<String>> future : futures) {
-			_messages.addAll(future.get());
+		for (Future<List<SanitizedMessage>> future : futures) {
+			_sanitizedMessage.addAll(future.get());
 		}
 
 		executorService.shutdown();
@@ -139,10 +144,9 @@ public class LangSanitizer {
 
 					String fileName = String.valueOf(file.getFileName());
 
-					if ((fileName.endsWith(".properties") &&
-						 fileName.startsWith("Language")) ||
-						(fileName.endsWith(".properties") &&
-						 fileName.startsWith("bundle"))) {
+					if (fileName.endsWith(".properties") &&
+						(fileName.startsWith("bundle") ||
+						 fileName.startsWith("Language"))) {
 
 						files.add(file.toFile());
 					}
@@ -155,7 +159,8 @@ public class LangSanitizer {
 		return files;
 	}
 
-	private String _sanitizeContent(File file, String key, String originalValue)
+	private SanitizedMessage _sanitizeContent(
+			File file, String key, String originalValue)
 		throws Exception {
 
 		AntiSamy antiSamy = new AntiSamy();
@@ -168,28 +173,26 @@ public class LangSanitizer {
 			sanitizedValue = EscapeUtil.unescape(cleanResults.getCleanHTML());
 		}
 		catch (ScanException scanException) {
-			return StringBundler.concat(
-				"File: ", file.getAbsolutePath(), System.lineSeparator(),
-				"\tKey: ", key, System.lineSeparator(), "\tOriginal Content: ",
-				originalValue, System.lineSeparator(), "\tSantized Content: ",
+			return new SanitizedMessage(
+				file.getAbsolutePath(), key, originalValue,
 				EscapeUtil.escapeTag(originalValue));
 		}
 
 		if (!sanitizedValue.equals(
 				EscapeUtil.formatTag(EscapeUtil.unescape(originalValue)))) {
 
-			return StringBundler.concat(
-				"File: ", file.getAbsolutePath(), System.lineSeparator(),
-				"\tKey: ", key, System.lineSeparator(), "\tOriginal Content: ",
-				originalValue, System.lineSeparator(), "\tSantized Content: ",
+			return new SanitizedMessage(
+				file.getAbsolutePath(), key, originalValue,
 				EscapeUtil.unescapeTag(sanitizedValue));
 		}
 
 		return null;
 	}
 
-	private List<String> _sanitizeProperites(File file) throws Exception {
-		List<String> messages = new CopyOnWriteArrayList<>();
+	private List<SanitizedMessage> _sanitizeProperites(File file)
+		throws Exception {
+
+		List<SanitizedMessage> sanitizedMessages = new ArrayList<>();
 
 		Properties properties = new Properties();
 
@@ -200,26 +203,100 @@ public class LangSanitizer {
 		}
 
 		for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-			String message = _sanitizeContent(
+			SanitizedMessage sanitizedMessage = _sanitizeContent(
 				file, (String)entry.getKey(), (String)entry.getValue());
 
-			if (message != null) {
-				messages.add(message);
+			if (sanitizedMessage != null) {
+				sanitizedMessages.add(sanitizedMessage);
 			}
 		}
 
-		return messages;
+		return sanitizedMessages;
 	}
 
 	private static final String[] _SKIP_DIR_NAMES = {
-		".git", ".github", ".gradle", ".idea", ".m2", ".settings", "bin",
-		"build", "classes", "dependencies", "node_modules",
+		"bin", "build", "classes", "dependencies", "node_modules",
 		"node_modules_cache", "sql", "test-classes", "test-coverage",
 		"test-results", "tmp"
 	};
 
-	private static final List<String> _messages = new CopyOnWriteArrayList<>();
+	private static final List<SanitizedMessage> _sanitizedMessage =
+		new CopyOnWriteArrayList<>();
 
 	private final Policy _policy;
+
+	private static class SanitizedMessage
+		implements Comparable<SanitizedMessage> {
+
+		public SanitizedMessage(
+			String fileName, String languageKey, String originalContent,
+			String santizedContent) {
+
+			_fileName = fileName;
+			_languageKey = languageKey;
+			_originalContent = originalContent;
+			_santizedContent = santizedContent;
+		}
+
+		@Override
+		public int compareTo(SanitizedMessage sanitizedMessage) {
+			if (!_fileName.equals(sanitizedMessage.getFileName())) {
+				return _fileName.compareTo(sanitizedMessage.getFileName());
+			}
+
+			if (!_languageKey.equals(sanitizedMessage.getLanguageKey())) {
+				return _languageKey.compareTo(
+					sanitizedMessage.getLanguageKey());
+			}
+
+			return 0;
+		}
+
+		public String getFileName() {
+			return _fileName;
+		}
+
+		public String getLanguageKey() {
+			return _languageKey;
+		}
+
+		@Override
+		public String toString() {
+			StringBundler sb = new StringBundler(11);
+
+			sb.append("File: ");
+			sb.append(_fileName);
+			sb.append(System.lineSeparator());
+			sb.append("\tKey: ");
+			sb.append(_languageKey);
+			sb.append(System.lineSeparator());
+			sb.append("\tOriginal Content: ");
+			sb.append(_originalContent);
+			sb.append(System.lineSeparator());
+			sb.append("\tSanitized Content: ");
+			sb.append(_santizedContent);
+
+			return sb.toString();
+		}
+
+		private final String _fileName;
+		private final String _languageKey;
+		private final String _originalContent;
+		private final String _santizedContent;
+
+	}
+
+	private static class SanitizedMessageComparator
+		implements Comparator<SanitizedMessage> {
+
+		@Override
+		public int compare(
+			SanitizedMessage sanitizedMessage1,
+			SanitizedMessage sanitizedMessage2) {
+
+			return sanitizedMessage1.compareTo(sanitizedMessage2);
+		}
+
+	}
 
 }

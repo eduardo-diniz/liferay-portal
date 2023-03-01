@@ -1,0 +1,16 @@
+assemble:
+    - from: build
+      include: "static/**/*"
+      into: static
+liferay-marketplace-custom-element:
+    cssURLs:
+        - .*.css
+    friendlyURLMapping: liferay-marketplace-custom-element
+    htmlElementName: liferay-marketplace-custom-element
+    instanceable: false
+    name: Publisher Dashboard
+    portletCategoryName: category.client-extensions
+    type: customElement
+    urls:
+        - .*.js
+    useESM: true

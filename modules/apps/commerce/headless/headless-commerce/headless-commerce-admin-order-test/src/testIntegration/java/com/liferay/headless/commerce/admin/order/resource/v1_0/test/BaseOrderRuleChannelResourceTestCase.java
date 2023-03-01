@@ -242,7 +242,10 @@ public abstract class BaseOrderRuleChannelResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantOrderRuleChannel),
 				(List<OrderRuleChannel>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetOrderRuleByExternalReferenceCodeOrderRuleChannelsPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		OrderRuleChannel orderRuleChannel1 =
@@ -263,7 +266,20 @@ public abstract class BaseOrderRuleChannelResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(orderRuleChannel1, orderRuleChannel2),
 			(List<OrderRuleChannel>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetOrderRuleByExternalReferenceCodeOrderRuleChannelsPage_getExpectedActions(
+				externalReferenceCode));
+	}
+
+	protected Map<String, Map>
+			testGetOrderRuleByExternalReferenceCodeOrderRuleChannelsPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -392,7 +408,10 @@ public abstract class BaseOrderRuleChannelResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantOrderRuleChannel),
 				(List<OrderRuleChannel>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetOrderRuleIdOrderRuleChannelsPage_getExpectedActions(
+					irrelevantId));
 		}
 
 		OrderRuleChannel orderRuleChannel1 =
@@ -411,7 +430,18 @@ public abstract class BaseOrderRuleChannelResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(orderRuleChannel1, orderRuleChannel2),
 			(List<OrderRuleChannel>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetOrderRuleIdOrderRuleChannelsPage_getExpectedActions(id));
+	}
+
+	protected Map<String, Map>
+			testGetOrderRuleIdOrderRuleChannelsPage_getExpectedActions(Long id)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -918,6 +948,12 @@ public abstract class BaseOrderRuleChannelResourceTestCase {
 	}
 
 	protected void assertValid(Page<OrderRuleChannel> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<OrderRuleChannel> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<OrderRuleChannel> orderRuleChannels =
@@ -933,6 +969,20 @@ public abstract class BaseOrderRuleChannelResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1150,6 +1200,10 @@ public abstract class BaseOrderRuleChannelResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

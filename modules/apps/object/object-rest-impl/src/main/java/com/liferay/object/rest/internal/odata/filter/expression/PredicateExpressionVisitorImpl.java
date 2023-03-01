@@ -26,6 +26,7 @@ import com.liferay.object.rest.internal.odata.entity.v1_0.ObjectEntryEntityModel
 import com.liferay.object.service.ObjectDefinitionLocalServiceUtil;
 import com.liferay.object.service.ObjectFieldLocalService;
 import com.liferay.object.service.ObjectRelationshipLocalServiceUtil;
+import com.liferay.petra.function.UnsafeBiFunction;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.sql.dsl.Column;
 import com.liferay.petra.sql.dsl.expression.Predicate;
@@ -43,7 +44,6 @@ import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.odata.entity.ComplexEntityField;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.odata.filter.expression.BinaryExpression;
@@ -59,7 +59,6 @@ import com.liferay.portal.odata.filter.expression.LiteralExpression;
 import com.liferay.portal.odata.filter.expression.MemberExpression;
 import com.liferay.portal.odata.filter.expression.MethodExpression;
 import com.liferay.portal.odata.filter.expression.PrimitivePropertyExpression;
-import com.liferay.portal.odata.filter.expression.PropertyExpression;
 import com.liferay.portal.odata.filter.expression.UnaryExpression;
 
 import java.text.DateFormat;
@@ -96,7 +95,19 @@ public class PredicateExpressionVisitorImpl
 	public Predicate visitBinaryExpressionOperation(
 		BinaryExpression.Operation operation, Object left, Object right) {
 
-		Predicate predicate = _getPredicate(operation, left, right);
+		Predicate predicate = null;
+
+		if (_isComplexProperExpression(left)) {
+			predicate = _getPredicateForRelationships(
+				left,
+				(objectFieldName, relatedObjectDefinitionId) -> _getPredicate(
+					objectFieldName, relatedObjectDefinitionId, operation,
+					right));
+		}
+		else {
+			predicate = _getPredicate(
+				left, _objectDefinitionId, operation, right);
+		}
 
 		if (predicate != null) {
 			return predicate;
@@ -131,31 +142,7 @@ public class PredicateExpressionVisitorImpl
 			ComplexPropertyExpression complexPropertyExpression)
 		throws ExpressionVisitException {
 
-		_objectRelationship = _fetchObjectRelationship(
-			complexPropertyExpression.getName());
-
-		EntityModel entityModel = _getObjectDefinitionEntityModel(
-			_objectDefinitionId);
-
-		Map<String, EntityField> entityFieldsMap =
-			entityModel.getEntityFieldsMap();
-
-		ComplexEntityField complexEntityField =
-			(ComplexEntityField)entityFieldsMap.get(
-				complexPropertyExpression.getName());
-
-		Map<String, EntityField> complexEntityFieldEntityFieldsMap =
-			complexEntityField.getEntityFieldsMap();
-
-		PropertyExpression propertyExpression =
-			complexPropertyExpression.getPropertyExpression();
-
-		EntityField entityField = complexEntityFieldEntityFieldsMap.get(
-			propertyExpression.getName());
-
-		_relatedFieldName = entityField.getName();
-
-		return entityField.getName();
+		return complexPropertyExpression.toString();
 	}
 
 	@Override
@@ -182,13 +169,21 @@ public class PredicateExpressionVisitorImpl
 		throws ExpressionVisitException {
 
 		if (Objects.equals(ListExpression.Operation.IN, operation)) {
-			Column<?, Object> column = _getColumn(left, _objectDefinitionId);
+			Predicate predicate = null;
 
-			return column.in(
-				TransformUtil.transformToArray(
-					rights,
-					right -> _getValue(left, _objectDefinitionId, right),
-					Object.class));
+			if (_isComplexProperExpression(left)) {
+				predicate = _getPredicateForRelationships(
+					left,
+					(objectFieldName, relatedObjectDefinitionId) ->
+						_getInPredicate(
+							objectFieldName, relatedObjectDefinitionId,
+							rights));
+			}
+			else {
+				predicate = _getInPredicate(left, _objectDefinitionId, rights);
+			}
+
+			return predicate;
 		}
 
 		throw new UnsupportedOperationException(
@@ -252,31 +247,54 @@ public class PredicateExpressionVisitorImpl
 	public Object visitMethodExpression(
 		List<Object> expressions, MethodExpression.Type type) {
 
-		if (type == MethodExpression.Type.CONTAINS) {
-			if (expressions.size() != 2) {
-				throw new UnsupportedOperationException(
-					StringBundler.concat(
-						"Unsupported method visitMethodExpression with method ",
-						"type ", type, " and ", expressions.size(), "params"));
+		if (expressions.size() == 2) {
+			String left = (String)expressions.get(0);
+			Object fieldValue = expressions.get(1);
+
+			Predicate predicate = null;
+
+			if (type == MethodExpression.Type.CONTAINS) {
+				if (_isComplexProperExpression(left)) {
+					predicate = _getPredicateForRelationships(
+						left,
+						(objectFieldName, relatedObjectDefinitionId) ->
+							_contains(
+								objectFieldName, fieldValue,
+								relatedObjectDefinitionId));
+				}
+				else {
+					predicate = _contains(
+						left, fieldValue, _objectDefinitionId);
+				}
+
+				if (predicate != null) {
+					return predicate;
+				}
 			}
+			else if (type == MethodExpression.Type.STARTS_WITH) {
+				if (_isComplexProperExpression(left)) {
+					predicate = _getPredicateForRelationships(
+						left,
+						(objectFieldName, relatedObjectDefinitionId) ->
+							_startsWith(
+								objectFieldName, fieldValue,
+								relatedObjectDefinitionId));
+				}
+				else {
+					predicate = _startsWith(
+						left, fieldValue, _objectDefinitionId);
+				}
 
-			return _contains(expressions.get(0), expressions.get(1));
-		}
-
-		if (type == MethodExpression.Type.STARTS_WITH) {
-			if (expressions.size() != 2) {
-				throw new UnsupportedOperationException(
-					StringBundler.concat(
-						"Unsupported method visitMethodExpression with method",
-						"type ", type, " and ", expressions.size(), "params"));
+				if (predicate != null) {
+					return predicate;
+				}
 			}
-
-			return _startsWith(expressions.get(0), expressions.get(1));
 		}
 
 		throw new UnsupportedOperationException(
-			"Unsupported method visitMethodExpression with method type " +
-				type);
+			StringBundler.concat(
+				"Unsupported method visitMethodExpression with method type ",
+				type, " and ", expressions.size(), " parameters"));
 	}
 
 	@Override
@@ -326,12 +344,14 @@ public class PredicateExpressionVisitorImpl
 			objectRelatedModelsPredicateProviderRegistry;
 	}
 
-	private Predicate _contains(Object fieldName, Object fieldValue) {
-		Column<?, Object> column = _getColumn(fieldName, _objectDefinitionId);
+	private Predicate _contains(
+		Object fieldName, Object fieldValue, long objectDefinitionId) {
+
+		Column<?, Object> column = _getColumn(fieldName, objectDefinitionId);
 
 		return column.like(
 			StringPool.PERCENT +
-				_getValue(fieldName, _objectDefinitionId, fieldValue) +
+				_getValue(fieldName, objectDefinitionId, fieldValue) +
 					StringPool.PERCENT);
 	}
 
@@ -423,6 +443,18 @@ public class PredicateExpressionVisitorImpl
 		return null;
 	}
 
+	private Predicate _getInPredicate(
+		Object left, long objectDefinitionId, List<Object> rights) {
+
+		return _getColumn(
+			left, objectDefinitionId
+		).in(
+			TransformUtil.transformToArray(
+				rights, right -> _getValue(left, objectDefinitionId, right),
+				Object.class)
+		);
+	}
+
 	private EntityModel _getObjectDefinitionEntityModel(
 		long objectDefinitionId) {
 
@@ -438,7 +470,8 @@ public class PredicateExpressionVisitorImpl
 	}
 
 	private Predicate _getPredicate(
-		BinaryExpression.Operation operation, Object left, Object right) {
+		Object left, long objectDefinitionId,
+		BinaryExpression.Operation operation, Object right) {
 
 		Predicate predicate = null;
 
@@ -454,14 +487,14 @@ public class PredicateExpressionVisitorImpl
 		}
 		else {
 			ObjectField objectField = _objectFieldLocalService.fetchObjectField(
-				_objectDefinitionId, String.valueOf(left));
+				objectDefinitionId, String.valueOf(left));
 
 			if ((objectField != null) &&
 				StringUtil.equals(
 					objectField.getBusinessType(),
 					ObjectFieldConstants.BUSINESS_TYPE_MULTISELECT_PICKLIST)) {
 
-				predicate = _contains(left, right);
+				predicate = _contains(left, right, objectDefinitionId);
 			}
 		}
 
@@ -469,29 +502,48 @@ public class PredicateExpressionVisitorImpl
 			return predicate;
 		}
 
-		if (_objectRelationship != null) {
-			try {
-				return _getPredicateForRelationships(operation, left, right);
-			}
-			catch (Exception exception) {
-				if (_log.isDebugEnabled()) {
-					_log.debug(exception);
-				}
-
-				return null;
-			}
-		}
-
 		return _getExpressionPredicate(
-			_getColumn(left, _objectDefinitionId), operation,
-			_getValue(left, _objectDefinitionId, right));
+			_getColumn(left, objectDefinitionId), operation,
+			_getValue(left, objectDefinitionId, right));
 	}
 
 	private Predicate _getPredicateForRelationships(
-			BinaryExpression.Operation operation, Object left, Object right)
+		Object left,
+		UnsafeBiFunction<String, Long, Predicate, Exception> unsafeBiFunction) {
+
+		String leftString = (String)left;
+
+		String[] leftStringParts = leftString.split(StringPool.SLASH);
+
+		String relationshipName = leftStringParts[0];
+
+		ObjectRelationship objectRelationship = _fetchObjectRelationship(
+			relationshipName);
+
+		if (objectRelationship != null) {
+			String objectFieldName = leftStringParts[1];
+
+			try {
+				return _getPredicateForRelationships(
+					objectRelationship,
+					unsafeBiFunction.apply(
+						objectFieldName,
+						_getRelatedObjectDefinitionId(
+							_objectDefinitionId, objectRelationship)));
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		}
+
+		return null;
+	}
+
+	private Predicate _getPredicateForRelationships(
+			ObjectRelationship objectRelationship, Predicate predicate)
 		throws Exception {
 
-		ObjectDefinition objectDefinition1 =
+		ObjectDefinition objectDefinition =
 			ObjectDefinitionLocalServiceUtil.getObjectDefinition(
 				_objectDefinitionId);
 
@@ -499,17 +551,11 @@ public class PredicateExpressionVisitorImpl
 			objectRelatedModelsPredicateProvider =
 				_objectRelatedModelsPredicateProviderRegistry.
 					getObjectRelatedModelsPredicateProvider(
-						objectDefinition1.getClassName(),
-						_objectRelationship.getType());
-
-		long relatedObjectDefinitionId = _getRelatedObjectDefinitionId(
-			_objectDefinitionId, _objectRelationship);
+						objectDefinition.getClassName(),
+						objectRelationship.getType());
 
 		return objectRelatedModelsPredicateProvider.getPredicate(
-			_objectRelationship,
-			_getExpressionPredicate(
-				_getColumn(_relatedFieldName, relatedObjectDefinitionId),
-				operation, _getValue(left, relatedObjectDefinitionId, right)));
+			objectRelationship, predicate);
 	}
 
 	private long _getRelatedObjectDefinitionId(
@@ -587,11 +633,23 @@ public class PredicateExpressionVisitorImpl
 		}
 	}
 
-	private Predicate _startsWith(Object fieldName, Object fieldValue) {
-		Column<?, Object> column = _getColumn(fieldName, _objectDefinitionId);
+	private boolean _isComplexProperExpression(Object object) {
+		if (object instanceof String) {
+			String string = (String)object;
+
+			return string.contains(StringPool.SLASH);
+		}
+
+		return false;
+	}
+
+	private Predicate _startsWith(
+		Object fieldName, Object fieldValue, long objectDefinitionId) {
+
+		Column<?, Object> column = _getColumn(fieldName, objectDefinitionId);
 
 		return column.like(
-			_getValue(fieldName, _objectDefinitionId, fieldValue) +
+			_getValue(fieldName, objectDefinitionId, fieldValue) +
 				StringPool.PERCENT);
 	}
 
@@ -606,7 +664,5 @@ public class PredicateExpressionVisitorImpl
 	private final ObjectFieldLocalService _objectFieldLocalService;
 	private final ObjectRelatedModelsPredicateProviderRegistry
 		_objectRelatedModelsPredicateProviderRegistry;
-	private ObjectRelationship _objectRelationship;
-	private String _relatedFieldName;
 
 }

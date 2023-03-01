@@ -40,8 +40,6 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Stream;
 
 import javax.portlet.PortletURL;
 import javax.portlet.WindowStateException;
@@ -169,31 +167,24 @@ public class CollectionItemsDetailDisplayContext {
 	}
 
 	private long _getInfoCollectionProviderItemCount(String collectionPK) {
-		List<InfoCollectionProvider<?>> infoCollectionProviders =
-			(List<InfoCollectionProvider<?>>)
-				(List<?>)_infoItemServiceRegistry.getAllInfoItemServices(
-					InfoCollectionProvider.class);
+		for (InfoCollectionProvider<?> infoCollectionProvider :
+				(List<InfoCollectionProvider<?>>)
+					(List<?>)_infoItemServiceRegistry.getAllInfoItemServices(
+						InfoCollectionProvider.class)) {
 
-		Stream<InfoCollectionProvider<?>> stream =
-			infoCollectionProviders.stream();
+			if (!Objects.equals(
+					infoCollectionProvider.getKey(), collectionPK)) {
 
-		Optional<InfoCollectionProvider<?>> infoCollectionProviderOptional =
-			stream.filter(
-				infoCollectionProvider -> Objects.equals(
-					infoCollectionProvider.getKey(), collectionPK)
-			).findFirst();
+				continue;
+			}
 
-		if (!infoCollectionProviderOptional.isPresent()) {
-			return 0;
+			InfoPage<?> infoPage = infoCollectionProvider.getCollectionInfoPage(
+				new CollectionQuery());
+
+			return infoPage.getTotalCount();
 		}
 
-		InfoCollectionProvider<?> infoCollectionProvider =
-			infoCollectionProviderOptional.get();
-
-		InfoPage<?> infoPage = infoCollectionProvider.getCollectionInfoPage(
-			new CollectionQuery());
-
-		return infoPage.getTotalCount();
+		return 0;
 	}
 
 	private final AssetListAssetEntryProvider _assetListAssetEntryProvider;

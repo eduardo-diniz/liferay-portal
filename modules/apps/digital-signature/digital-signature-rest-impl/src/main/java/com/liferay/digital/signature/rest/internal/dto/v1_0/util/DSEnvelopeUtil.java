@@ -19,6 +19,7 @@ import com.liferay.digital.signature.rest.dto.v1_0.DSEnvelope;
 import com.liferay.digital.signature.rest.dto.v1_0.DSRecipient;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 
 import java.util.Map;
 
@@ -75,10 +76,13 @@ public class DSEnvelopeUtil {
 
 		return new DSDocument() {
 			{
+				assignTabsToDSRecipientId =
+					dsDocument.getAssignTabsToDSRecipientId();
 				data = dsDocument.getData();
 				fileExtension = dsDocument.getFileExtension();
 				id = dsDocument.getDSDocumentId();
 				name = dsDocument.getName();
+				transformPDFFields = dsDocument.isTransformPDFFields();
 				uri = dsDocument.getURI();
 			}
 		};
@@ -89,10 +93,14 @@ public class DSEnvelopeUtil {
 
 		return new com.liferay.digital.signature.model.DSDocument() {
 			{
+				assignTabsToDSRecipientId =
+					dsDocument.getAssignTabsToDSRecipientId();
 				data = dsDocument.getData();
 				dsDocumentId = dsDocument.getId();
 				fileExtension = dsDocument.getFileExtension();
 				name = dsDocument.getName();
+				transformPDFFields = GetterUtil.getBoolean(
+					dsDocument.getTransformPDFFields());
 				uri = dsDocument.getUri();
 			}
 		};

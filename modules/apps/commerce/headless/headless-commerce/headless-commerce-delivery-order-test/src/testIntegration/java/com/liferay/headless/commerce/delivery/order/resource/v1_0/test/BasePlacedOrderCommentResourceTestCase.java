@@ -55,6 +55,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -297,7 +298,10 @@ public abstract class BasePlacedOrderCommentResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantPlacedOrderComment),
 				(List<PlacedOrderComment>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetPlacedOrderPlacedOrderCommentsPage_getExpectedActions(
+					irrelevantPlacedOrderId));
 		}
 
 		PlacedOrderComment placedOrderComment1 =
@@ -316,7 +320,20 @@ public abstract class BasePlacedOrderCommentResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(placedOrderComment1, placedOrderComment2),
 			(List<PlacedOrderComment>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetPlacedOrderPlacedOrderCommentsPage_getExpectedActions(
+				placedOrderId));
+	}
+
+	protected Map<String, Map>
+			testGetPlacedOrderPlacedOrderCommentsPage_getExpectedActions(
+				Long placedOrderId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -534,6 +551,12 @@ public abstract class BasePlacedOrderCommentResourceTestCase {
 	}
 
 	protected void assertValid(Page<PlacedOrderComment> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<PlacedOrderComment> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<PlacedOrderComment> placedOrderComments =
@@ -549,6 +572,20 @@ public abstract class BasePlacedOrderCommentResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -735,6 +772,10 @@ public abstract class BasePlacedOrderCommentResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

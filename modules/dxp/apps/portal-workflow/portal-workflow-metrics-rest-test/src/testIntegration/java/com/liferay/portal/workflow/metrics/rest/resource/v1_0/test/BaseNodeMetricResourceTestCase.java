@@ -217,7 +217,10 @@ public abstract class BaseNodeMetricResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantNodeMetric),
 				(List<NodeMetric>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetProcessNodeMetricsPage_getExpectedActions(
+					irrelevantProcessId));
 		}
 
 		NodeMetric nodeMetric1 = testGetProcessNodeMetricsPage_addNodeMetric(
@@ -235,7 +238,17 @@ public abstract class BaseNodeMetricResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(nodeMetric1, nodeMetric2),
 			(List<NodeMetric>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page, testGetProcessNodeMetricsPage_getExpectedActions(processId));
+	}
+
+	protected Map<String, Map> testGetProcessNodeMetricsPage_getExpectedActions(
+			Long processId)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -578,6 +591,12 @@ public abstract class BaseNodeMetricResourceTestCase {
 	}
 
 	protected void assertValid(Page<NodeMetric> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<NodeMetric> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<NodeMetric> nodeMetrics = page.getItems();
@@ -592,6 +611,20 @@ public abstract class BaseNodeMetricResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -804,6 +837,10 @@ public abstract class BaseNodeMetricResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

@@ -1463,6 +1463,11 @@ components:
                     description:
                         The folder's description.
                     type: string
+                externalReferenceCode:
+                    # @review
+                    description:
+                        The document folder's external reference code.
+                    type: string
                 id:
                     description:
                         The folder's ID.
@@ -2556,6 +2561,16 @@ components:
             description:
                 A binary file attached to a message on a message board (`MessageBoardMessage`).
             properties:
+                actions:
+                    additionalProperties:
+                        additionalProperties:
+                            type: string
+                        type: object
+                    # @review
+                    description:
+                        Block of actions allowed by the user making the request.
+                    readOnly: true
+                    type: object
                 contentUrl:
                     description:
                         The file's relative URL.
@@ -5331,6 +5346,16 @@ components:
             description:
                 A binary file attached to a wiki page.
             properties:
+                actions:
+                    additionalProperties:
+                        additionalProperties:
+                            type: string
+                        type: object
+                    # @review
+                    description:
+                        Block of actions allowed by the user making the request.
+                    readOnly: true
+                    type: object
                 contentUrl:
                     description:
                         The file's relative URL.
@@ -5374,7 +5399,7 @@ components:
 info:
     description:
         "A Java client JAR is available for use with the group ID 'com.liferay', artifact ID
-        'com.liferay.headless.delivery.client', and version '4.0.47'."
+        'com.liferay.headless.delivery.client', and version '4.0.48'."
     license:
         name: "Apache 2.0"
         url: "http://www.apache.org/licenses/LICENSE-2.0.html"
@@ -11802,6 +11827,93 @@ paths:
                             schema:
                                 $ref: "#/components/schemas/Document"
             tags: ["Document"]
+    "/sites/{siteId}/documents-folder/by-external-reference-code/{externalReferenceCode}":
+        delete:
+            # @review
+            description:
+                Deletes the site's document folder by external reference code returns a 204 if the operation succeeds.
+            operationId: deleteSiteDocumentsFolderByExternalReferenceCode
+            parameters:
+                - in: path
+                  name: siteId
+                  required: true
+                  schema:
+                      format: int64
+                      type: integer
+                - in: path
+                  name: externalReferenceCode
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                204:
+                    content:
+                        application/json: {}
+                        application/xml: {}
+            tags: ["DocumentFolder"]
+        get:
+            # @review
+            description:
+                Retrieves the site's document folder by external reference code.
+            operationId: getSiteDocumentsFolderByExternalReferenceCode
+            parameters:
+                - in: path
+                  name: siteId
+                  required: true
+                  schema:
+                      format: int64
+                      type: integer
+                - in: path
+                  name: externalReferenceCode
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/DocumentFolder"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/DocumentFolder"
+            tags: ["DocumentFolder"]
+        put:
+            # @review
+            description:
+                Replaces the document folder by external reference code with the information sent in the request body,
+                or replaces it if it not exists.
+            operationId: putSiteDocumentsFolderByExternalReferenceCode
+            parameters:
+                - in: path
+                  name: siteId
+                  required: true
+                  schema:
+                      format: int64
+                      type: integer
+                - in: path
+                  name: externalReferenceCode
+                  required: true
+                  schema:
+                      type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/DocumentFolder"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/DocumentFolder"
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/DocumentFolder"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/DocumentFolder"
+            tags: ["DocumentFolder"]
     "/sites/{siteId}/documents/by-external-reference-code/{documentExternalReferenceCode}/comments/by-external-reference-code/{externalReferenceCode}":
         delete:
             # @review

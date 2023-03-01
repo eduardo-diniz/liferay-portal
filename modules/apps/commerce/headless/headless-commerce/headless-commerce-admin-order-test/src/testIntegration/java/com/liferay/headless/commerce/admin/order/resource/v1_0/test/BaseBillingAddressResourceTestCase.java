@@ -54,6 +54,7 @@ import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -222,10 +223,19 @@ public abstract class BaseBillingAddressResourceTestCase {
 		BillingAddress getBillingAddress =
 			billingAddressResource.
 				getOrderByExternalReferenceCodeBillingAddress(
-					postBillingAddress.getExternalReferenceCode());
+					testGetOrderByExternalReferenceCodeBillingAddress_getExternalReferenceCode(
+						postBillingAddress));
 
 		assertEquals(postBillingAddress, getBillingAddress);
 		assertValid(getBillingAddress);
+	}
+
+	protected String
+			testGetOrderByExternalReferenceCodeBillingAddress_getExternalReferenceCode(
+				BillingAddress billingAddress)
+		throws Exception {
+
+		return billingAddress.getExternalReferenceCode();
 	}
 
 	protected BillingAddress
@@ -256,14 +266,21 @@ public abstract class BaseBillingAddressResourceTestCase {
 										put(
 											"externalReferenceCode",
 											"\"" +
-												billingAddress.
-													getExternalReferenceCode() +
-														"\"");
+												testGraphQLGetOrderByExternalReferenceCodeBillingAddress_getExternalReferenceCode(
+													billingAddress) + "\"");
 									}
 								},
 								getGraphQLFields())),
 						"JSONObject/data",
 						"Object/orderByExternalReferenceCodeBillingAddress"))));
+	}
+
+	protected String
+			testGraphQLGetOrderByExternalReferenceCodeBillingAddress_getExternalReferenceCode(
+				BillingAddress billingAddress)
+		throws Exception {
+
+		return billingAddress.getExternalReferenceCode();
 	}
 
 	@Test
@@ -312,10 +329,17 @@ public abstract class BaseBillingAddressResourceTestCase {
 
 		BillingAddress getBillingAddress =
 			billingAddressResource.getOrderIdBillingAddress(
-				postBillingAddress.getId());
+				testGetOrderIdBillingAddress_getId(postBillingAddress));
 
 		assertEquals(postBillingAddress, getBillingAddress);
 		assertValid(getBillingAddress);
+	}
+
+	protected Long testGetOrderIdBillingAddress_getId(
+			BillingAddress billingAddress)
+		throws Exception {
+
+		return billingAddress.getId();
 	}
 
 	protected BillingAddress testGetOrderIdBillingAddress_addBillingAddress()
@@ -340,11 +364,21 @@ public abstract class BaseBillingAddressResourceTestCase {
 								"orderIdBillingAddress",
 								new HashMap<String, Object>() {
 									{
-										put("id", billingAddress.getId());
+										put(
+											"id",
+											testGraphQLGetOrderIdBillingAddress_getId(
+												billingAddress));
 									}
 								},
 								getGraphQLFields())),
 						"JSONObject/data", "Object/orderIdBillingAddress"))));
+	}
+
+	protected Long testGraphQLGetOrderIdBillingAddress_getId(
+			BillingAddress billingAddress)
+		throws Exception {
+
+		return billingAddress.getId();
 	}
 
 	@Test
@@ -589,6 +623,12 @@ public abstract class BaseBillingAddressResourceTestCase {
 	}
 
 	protected void assertValid(Page<BillingAddress> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<BillingAddress> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<BillingAddress> billingAddresses = page.getItems();
@@ -603,6 +643,20 @@ public abstract class BaseBillingAddressResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -896,6 +950,10 @@ public abstract class BaseBillingAddressResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();

@@ -246,7 +246,10 @@ public abstract class BaseDiscountAccountGroupResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantDiscountAccountGroup),
 				(List<DiscountAccountGroup>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetDiscountByExternalReferenceCodeDiscountAccountGroupsPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		DiscountAccountGroup discountAccountGroup1 =
@@ -267,7 +270,20 @@ public abstract class BaseDiscountAccountGroupResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(discountAccountGroup1, discountAccountGroup2),
 			(List<DiscountAccountGroup>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetDiscountByExternalReferenceCodeDiscountAccountGroupsPage_getExpectedActions(
+				externalReferenceCode));
+	}
+
+	protected Map<String, Map>
+			testGetDiscountByExternalReferenceCodeDiscountAccountGroupsPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -403,7 +419,10 @@ public abstract class BaseDiscountAccountGroupResourceTestCase {
 			assertEquals(
 				Arrays.asList(irrelevantDiscountAccountGroup),
 				(List<DiscountAccountGroup>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetDiscountIdDiscountAccountGroupsPage_getExpectedActions(
+					irrelevantId));
 		}
 
 		DiscountAccountGroup discountAccountGroup1 =
@@ -423,7 +442,19 @@ public abstract class BaseDiscountAccountGroupResourceTestCase {
 		assertEqualsIgnoringOrder(
 			Arrays.asList(discountAccountGroup1, discountAccountGroup2),
 			(List<DiscountAccountGroup>)page.getItems());
-		assertValid(page);
+		assertValid(
+			page,
+			testGetDiscountIdDiscountAccountGroupsPage_getExpectedActions(id));
+	}
+
+	protected Map<String, Map>
+			testGetDiscountIdDiscountAccountGroupsPage_getExpectedActions(
+				Long id)
+		throws Exception {
+
+		Map<String, Map> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -952,6 +983,12 @@ public abstract class BaseDiscountAccountGroupResourceTestCase {
 	}
 
 	protected void assertValid(Page<DiscountAccountGroup> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<DiscountAccountGroup> page, Map<String, Map> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<DiscountAccountGroup> discountAccountGroups =
@@ -967,6 +1004,20 @@ public abstract class BaseDiscountAccountGroupResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		Map<String, Map> actions = page.getActions();
+
+		for (String key : expectedActions.keySet()) {
+			Map action = actions.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map expectedAction = expectedActions.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1187,6 +1238,10 @@ public abstract class BaseDiscountAccountGroupResourceTestCase {
 
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
+
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
 
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
