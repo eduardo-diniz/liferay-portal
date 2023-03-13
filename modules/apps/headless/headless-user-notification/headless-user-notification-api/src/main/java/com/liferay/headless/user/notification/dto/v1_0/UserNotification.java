@@ -127,6 +127,34 @@ public class UserNotification implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Date dateCreated;
 
+	@Schema(description = "The user notification's entry title.")
+	public String getEntryTitle() {
+		return entryTitle;
+	}
+
+	public void setEntryTitle(String entryTitle) {
+		this.entryTitle = entryTitle;
+	}
+
+	@JsonIgnore
+	public void setEntryTitle(
+		UnsafeSupplier<String, Exception> entryTitleUnsafeSupplier) {
+
+		try {
+			entryTitle = entryTitleUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField(description = "The user notification's entry title.")
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String entryTitle;
+
 	@Schema(description = "The user notification's identifier.")
 	public Long getId() {
 		return id;
@@ -287,6 +315,20 @@ public class UserNotification implements Serializable {
 			sb.append("\"");
 
 			sb.append(liferayToJSONDateFormat.format(dateCreated));
+
+			sb.append("\"");
+		}
+
+		if (entryTitle != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"entryTitle\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(entryTitle));
 
 			sb.append("\"");
 		}

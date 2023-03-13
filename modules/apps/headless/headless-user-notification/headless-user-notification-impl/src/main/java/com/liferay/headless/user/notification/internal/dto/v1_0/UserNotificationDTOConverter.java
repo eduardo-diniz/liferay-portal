@@ -29,6 +29,7 @@ import com.liferay.portal.kernel.service.UserNotificationEventLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
+import com.liferay.portal.kernel.util.Validator;
 
 import java.util.Date;
 
@@ -74,6 +75,7 @@ public class UserNotificationDTOConverter
 			{
 				dateCreated = new Date(userNotificationEvent.getTimestamp());
 				id = userNotificationEvent.getUserNotificationEventId();
+				entryTitle = _getNotificationEntryTitle(jsonObject);
 				message = _getNotificationMessage(
 					dtoConverterContext, userNotificationEvent);
 				read = userNotificationEvent.isArchived();
@@ -97,6 +99,16 @@ public class UserNotificationDTOConverter
 			}
 		};
 	}
+	private String _getNotificationEntryTitle(
+		JSONObject jsonObject)
+		throws Exception {
+
+		if (Validator.isNull(jsonObject.getString("entryTitle"))) {
+			return null;
+		}
+
+		return jsonObject.getString("entryTitle");
+	}
 
 	@Activate
 	protected void activate(BundleContext bundleContext) {
@@ -108,6 +120,7 @@ public class UserNotificationDTOConverter
 	protected void deactivate() {
 		_serviceTrackerMap.close();
 	}
+
 
 	private String _getNotificationMessage(
 			DTOConverterContext dtoConverterContext,

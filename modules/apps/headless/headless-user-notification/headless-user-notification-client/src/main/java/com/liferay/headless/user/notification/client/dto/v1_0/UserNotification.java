@@ -79,6 +79,27 @@ public class UserNotification implements Cloneable, Serializable {
 
 	protected Date dateCreated;
 
+	public String getEntryTitle() {
+		return entryTitle;
+	}
+
+	public void setEntryTitle(String entryTitle) {
+		this.entryTitle = entryTitle;
+	}
+
+	public void setEntryTitle(
+		UnsafeSupplier<String, Exception> entryTitleUnsafeSupplier) {
+
+		try {
+			entryTitle = entryTitleUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String entryTitle;
+
 	public Long getId() {
 		return id;
 	}

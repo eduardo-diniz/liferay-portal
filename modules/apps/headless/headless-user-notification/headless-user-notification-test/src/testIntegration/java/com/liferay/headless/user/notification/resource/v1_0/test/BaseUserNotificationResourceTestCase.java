@@ -186,6 +186,7 @@ public abstract class BaseUserNotificationResourceTestCase {
 
 		UserNotification userNotification = randomUserNotification();
 
+		userNotification.setEntryTitle(regex);
 		userNotification.setMessage(regex);
 
 		String json = UserNotificationSerDes.toJSON(userNotification);
@@ -194,6 +195,7 @@ public abstract class BaseUserNotificationResourceTestCase {
 
 		userNotification = UserNotificationSerDes.toDTO(json);
 
+		Assert.assertEquals(regex, userNotification.getEntryTitle());
 		Assert.assertEquals(regex, userNotification.getMessage());
 	}
 
@@ -1155,6 +1157,14 @@ public abstract class BaseUserNotificationResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("entryTitle", additionalAssertFieldName)) {
+				if (userNotification.getEntryTitle() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("message", additionalAssertFieldName)) {
 				if (userNotification.getMessage() == null) {
 					valid = false;
@@ -1310,6 +1320,17 @@ public abstract class BaseUserNotificationResourceTestCase {
 				if (!Objects.deepEquals(
 						userNotification1.getDateCreated(),
 						userNotification2.getDateCreated())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("entryTitle", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						userNotification1.getEntryTitle(),
+						userNotification2.getEntryTitle())) {
 
 					return false;
 				}
@@ -1501,6 +1522,14 @@ public abstract class BaseUserNotificationResourceTestCase {
 			return sb.toString();
 		}
 
+		if (entityFieldName.equals("entryTitle")) {
+			sb.append("'");
+			sb.append(String.valueOf(userNotification.getEntryTitle()));
+			sb.append("'");
+
+			return sb.toString();
+		}
+
 		if (entityFieldName.equals("id")) {
 			throw new IllegalArgumentException(
 				"Invalid entity field " + entityFieldName);
@@ -1570,6 +1599,8 @@ public abstract class BaseUserNotificationResourceTestCase {
 		return new UserNotification() {
 			{
 				dateCreated = RandomTestUtil.nextDate();
+				entryTitle = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
 				id = RandomTestUtil.randomLong();
 				message = StringUtil.toLowerCase(RandomTestUtil.randomString());
 				read = RandomTestUtil.randomBoolean();

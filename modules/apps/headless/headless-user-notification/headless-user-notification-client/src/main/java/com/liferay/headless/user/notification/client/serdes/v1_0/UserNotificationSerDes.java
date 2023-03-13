@@ -87,6 +87,20 @@ public class UserNotificationSerDes {
 			sb.append("\"");
 		}
 
+		if (userNotification.getEntryTitle() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"entryTitle\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(userNotification.getEntryTitle()));
+
+			sb.append("\"");
+		}
+
 		if (userNotification.getId() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -170,6 +184,14 @@ public class UserNotificationSerDes {
 					userNotification.getDateCreated()));
 		}
 
+		if (userNotification.getEntryTitle() == null) {
+			map.put("entryTitle", null);
+		}
+		else {
+			map.put(
+				"entryTitle", String.valueOf(userNotification.getEntryTitle()));
+		}
+
 		if (userNotification.getId() == null) {
 			map.put("id", null);
 		}
@@ -230,6 +252,12 @@ public class UserNotificationSerDes {
 				if (jsonParserFieldValue != null) {
 					userNotification.setDateCreated(
 						toDate((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "entryTitle")) {
+				if (jsonParserFieldValue != null) {
+					userNotification.setEntryTitle(
+						(String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "id")) {
