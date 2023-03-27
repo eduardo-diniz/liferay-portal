@@ -682,8 +682,11 @@ public abstract class BaseBuild implements Build {
 			buildResultsJSONObject.put("testResults", testResultsJSONArray);
 		}
 
-		buildResultsJSONObject.put("jobVariant", getJobVariant());
-		buildResultsJSONObject.put("result", getResult());
+		buildResultsJSONObject.put(
+			"jobVariant", getJobVariant()
+		).put(
+			"result", getResult()
+		);
 
 		return buildResultsJSONObject;
 	}
@@ -854,6 +857,10 @@ public abstract class BaseBuild implements Build {
 
 	@Override
 	public long getDuration() {
+		if (_duration != null) {
+			return _duration;
+		}
+
 		JSONObject buildJSONObject = getBuildJSONObject("duration,timestamp");
 
 		if (buildJSONObject == null) {
@@ -869,7 +876,9 @@ public abstract class BaseBuild implements Build {
 				JenkinsResultsParserUtil.getCurrentTimeMillis() - timestamp;
 		}
 
-		return duration;
+		_duration = duration;
+
+		return _duration;
 	}
 
 	@Override
@@ -2099,6 +2108,8 @@ public abstract class BaseBuild implements Build {
 
 	@Override
 	public synchronized void update() {
+		_duration = null;
+
 		String status = getStatus();
 
 		if ((status.equals("completed") &&
@@ -4377,8 +4388,8 @@ public abstract class BaseBuild implements Build {
 
 	private static final MultiPattern _buildURLMultiPattern = new MultiPattern(
 		JenkinsResultsParserUtil.combine(
-			"\\w+://(?<master>[^/]+)/+job/+(?<jobName>[^/]+).*/(?<buildNumber>",
-			"\\d+)/?"));
+			"\\w+://(?<master>[^/]+)/+job/+(?<jobName>[^/]+(/label=[^/]+)?)/",
+			"(?<buildNumber>\\d+)/?"));
 	private static final Pattern _testrayAttachmentURLPattern = Pattern.compile(
 		"\\[beanshell\\] Uploaded (?<url>https://testray.liferay.com/[^\\s]+)");
 	private static final Pattern _testrayS3ObjectURLPattern = Pattern.compile(
@@ -4410,6 +4421,7 @@ public abstract class BaseBuild implements Build {
 	private String _buildDescription;
 	private Boolean _buildDurationsEnabled;
 	private int _buildNumber = -1;
+	private Long _duration;
 	private JenkinsConsoleTextLoader _jenkinsConsoleTextLoader;
 	private JenkinsMaster _jenkinsMaster;
 	private JenkinsSlave _jenkinsSlave;

@@ -14,11 +14,15 @@
 
 package com.liferay.frontend.js.loader.modules.extender.internal.resolution;
 
+import com.liferay.frontend.js.loader.modules.extender.internal.config.generator.JSConfigGeneratorModule;
+import com.liferay.frontend.js.loader.modules.extender.internal.config.generator.JSConfigGeneratorPackage;
 import com.liferay.frontend.js.loader.modules.extender.internal.configuration.Details;
+import com.liferay.frontend.js.loader.modules.extender.internal.resolution.adapter.JSConfigGeneratorBrowserModule;
 import com.liferay.frontend.js.loader.modules.extender.npm.JSModuleAlias;
 import com.liferay.frontend.js.loader.modules.extender.npm.JSPackage;
 import com.liferay.frontend.js.loader.modules.extender.npm.ModuleNameUtil;
-import com.liferay.frontend.js.loader.modules.extender.npm.NPMRegistryStateSnapshot;
+import com.liferay.frontend.js.loader.modules.extender.npm.NPMRegistry;
+import com.liferay.osgi.util.ServiceTrackerFactory;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
@@ -27,17 +31,27 @@ import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.url.builder.AbsolutePortalURLBuilder;
 import com.liferay.portal.url.builder.AbsolutePortalURLBuilderFactory;
 
+import java.net.URL;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.util.tracker.ServiceTracker;
+import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
 /**
  * @author Rodolfo Roza Miranda
@@ -49,44 +63,113 @@ import org.osgi.service.component.annotations.Reference;
 public class BrowserModulesResolver {
 
 	public BrowserModulesResolution resolve(
-		List<String> moduleNames, HttpServletRequest httpServletRequest,
-		NPMRegistryStateSnapshot npmRegistryStateSnapshot) {
+		List<String> moduleNames, HttpServletRequest httpServletRequest) {
 
 		BrowserModulesResolution browserModulesResolution =
 			new BrowserModulesResolution(
 				_jsonFactory, _details.explainResolutions());
 
 		BrowserModulesMap browserModulesMap = new BrowserModulesMap(
-			browserModulesResolution, npmRegistryStateSnapshot);
+			browserModulesResolution, _npmRegistry);
 
 		for (String moduleName : moduleNames) {
 			_resolve(
 				browserModulesMap, moduleName, browserModulesResolution,
-				httpServletRequest, npmRegistryStateSnapshot);
+				httpServletRequest);
 		}
 
-		_populateMappedModuleNames(
-			browserModulesResolution, npmRegistryStateSnapshot);
+		_populateMappedModuleNames(browserModulesResolution);
 
 		return browserModulesResolution;
 	}
 
 	@Activate
-	protected void activate(Map<String, Object> properties) {
+	protected void activate(
+		BundleContext bundleContext, Map<String, Object> properties) {
+
 		_details = ConfigurableUtil.createConfigurable(
 			Details.class, properties);
+
+		_serviceTracker = ServiceTrackerFactory.open(
+			bundleContext,
+			"(&(objectClass=" + ServletContext.class.getName() +
+				")(osgi.web.contextpath=*))",
+			new ServiceTrackerCustomizer
+				<ServletContext, JSConfigGeneratorPackage>() {
+
+				@Override
+				public JSConfigGeneratorPackage addingService(
+					ServiceReference<ServletContext> serviceReference) {
+
+					Bundle bundle = serviceReference.getBundle();
+
+					URL url = bundle.getEntry(Details.CONFIG_JSON);
+
+					if (url == null) {
+						return null;
+					}
+
+					JSConfigGeneratorPackage jsConfigGeneratorPackage =
+						new JSConfigGeneratorPackage(
+							_details.applyVersioning(),
+							serviceReference.getBundle(),
+							(String)serviceReference.getProperty(
+								"osgi.web.contextpath"));
+
+					for (JSConfigGeneratorModule jsConfigGeneratorModule :
+							jsConfigGeneratorPackage.
+								getJSConfigGeneratorModules()) {
+
+						JSConfigGeneratorBrowserModule
+							jsConfigGeneratorBrowserModule =
+								new JSConfigGeneratorBrowserModule(
+									jsConfigGeneratorModule);
+
+						_browserModulesMap.put(
+							jsConfigGeneratorBrowserModule.getName(),
+							jsConfigGeneratorBrowserModule);
+					}
+
+					return jsConfigGeneratorPackage;
+				}
+
+				@Override
+				public void modifiedService(
+					ServiceReference<ServletContext> serviceReference,
+					JSConfigGeneratorPackage jsConfigGeneratorPackage) {
+				}
+
+				@Override
+				public void removedService(
+					ServiceReference<ServletContext> serviceReference,
+					JSConfigGeneratorPackage jsConfigGeneratorPackage) {
+
+					for (JSConfigGeneratorModule jsConfigGeneratorModule :
+							jsConfigGeneratorPackage.
+								getJSConfigGeneratorModules()) {
+
+						_browserModulesMap.remove(
+							jsConfigGeneratorModule.getId());
+					}
+				}
+
+			});
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		_serviceTracker.close();
 	}
 
 	private void _populateMappedModuleNames(
-		BrowserModulesResolution browserModulesResolution,
-		NPMRegistryStateSnapshot npmRegistryStateSnapshot) {
+		BrowserModulesResolution browserModulesResolution) {
 
 		Set<JSPackage> jsPackages = new HashSet<>();
 
 		for (String moduleName :
 				browserModulesResolution.getResolvedModuleNames()) {
 
-			JSPackage jsPackage = npmRegistryStateSnapshot.getResolvedJSPackage(
+			JSPackage jsPackage = _npmRegistry.getResolvedJSPackage(
 				ModuleNameUtil.getPackageName(moduleName));
 
 			if (jsPackage == null) {
@@ -111,8 +194,7 @@ public class BrowserModulesResolver {
 	private boolean _processBrowserModule(
 		BrowserModulesMap browserModulesMap, BrowserModule browserModule,
 		BrowserModulesResolution browserModulesResolution,
-		HttpServletRequest httpServletRequest,
-		NPMRegistryStateSnapshot npmRegistryStateSnapshot) {
+		HttpServletRequest httpServletRequest) {
 
 		String moduleName = browserModule.getName();
 
@@ -135,7 +217,7 @@ public class BrowserModulesResolver {
 				moduleName, dependency);
 
 			dependencyModuleName = BrowserModuleNameMapper.mapModuleName(
-				npmRegistryStateSnapshot, dependencyModuleName,
+				_npmRegistry, dependencyModuleName,
 				browserModule.getDependenciesMap());
 
 			dependenciesMap.put(dependency, dependencyModuleName);
@@ -146,8 +228,7 @@ public class BrowserModulesResolver {
 			if (dependencyBrowserModule != null) {
 				_processBrowserModule(
 					browserModulesMap, dependencyBrowserModule,
-					browserModulesResolution, httpServletRequest,
-					npmRegistryStateSnapshot);
+					browserModulesResolution, httpServletRequest);
 			}
 			else {
 				browserModulesResolution.addError(
@@ -187,11 +268,10 @@ public class BrowserModulesResolver {
 	private void _resolve(
 		BrowserModulesMap browserModulesMap, String moduleName,
 		BrowserModulesResolution browserModulesResolution,
-		HttpServletRequest httpServletRequest,
-		NPMRegistryStateSnapshot npmRegistryStateSnapshot) {
+		HttpServletRequest httpServletRequest) {
 
 		String mappedModuleName = BrowserModuleNameMapper.mapModuleName(
-			npmRegistryStateSnapshot, moduleName);
+			_npmRegistry, moduleName);
 
 		BrowserModule browserModule = browserModulesMap.get(mappedModuleName);
 
@@ -210,15 +290,23 @@ public class BrowserModulesResolver {
 
 		_processBrowserModule(
 			browserModulesMap, browserModule, browserModulesResolution,
-			httpServletRequest, npmRegistryStateSnapshot);
+			httpServletRequest);
 	}
 
 	@Reference
 	private AbsolutePortalURLBuilderFactory _absolutePortalURLBuilderFactory;
 
+	private final Map<String, BrowserModule> _browserModulesMap =
+		new ConcurrentHashMap<>();
 	private Details _details;
 
 	@Reference
 	private JSONFactory _jsonFactory;
+
+	@Reference
+	private NPMRegistry _npmRegistry;
+
+	private ServiceTracker<ServletContext, JSConfigGeneratorPackage>
+		_serviceTracker;
 
 }

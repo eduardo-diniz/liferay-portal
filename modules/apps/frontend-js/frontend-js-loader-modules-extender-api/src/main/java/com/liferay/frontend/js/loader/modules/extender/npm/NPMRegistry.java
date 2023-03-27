@@ -39,8 +39,6 @@ public interface NPMRegistry {
 
 	public Collection<JSPackage> getJSPackages();
 
-	public NPMRegistryStateSnapshot getNPMRegistryStateSnapshot();
-
 	public JSModule getResolvedJSModule(String identifier);
 
 	public Collection<JSModule> getResolvedJSModules();

@@ -38,17 +38,13 @@ const CompareRunsPopover: React.FC<CompareRunsPopoverProps> = ({
 	triggedRef,
 	visible,
 }) => {
+	const ref = useRef<HTMLDivElement>(null);
+
 	const {compareRuns, setRunA, setRunB} = useRuns();
 	const disableButtonA = !(compareRuns?.runId || compareRuns?.runA);
 	const disableButtonB = !(compareRuns?.runId || compareRuns?.runB);
 	const validateCompareButtons = !(compareRuns?.runA && compareRuns?.runB);
 	const navigate = useNavigate();
-
-	useEffect(() => {
-		if (compareRuns?.runA || compareRuns?.runB) {
-			setVisible(true);
-		}
-	}, [compareRuns, setVisible]);
 
 	const onAutoFill = (type: 'Build' | 'Run') => {
 		if (!compareRuns.runA || !compareRuns.runB) {
@@ -73,7 +69,6 @@ const CompareRunsPopover: React.FC<CompareRunsPopoverProps> = ({
 				})
 			);
 	};
-	const ref = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
 		const handleClickOutside = (event: any) => {

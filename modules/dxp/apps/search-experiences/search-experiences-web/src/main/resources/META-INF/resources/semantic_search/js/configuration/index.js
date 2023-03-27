@@ -30,6 +30,7 @@ const DEFAULT_TEXT_EMBEDDING_PROVIDER_CONFIGURATIONS = {
 		maxCharacterCount: 500,
 		model: '',
 		modelTimeout: 25,
+		textTruncationStrategy: 'beginning',
 	},
 	embeddingVectorDimensions: 768,
 	languageIds: ['en_US'],
@@ -217,7 +218,7 @@ export default function ({
 
 	const [showSubmitWarningModal, setShowSubmitWarningModal] = useState(false);
 
-	const _handleFormikSubmit = async (values) => {
+	const _handleFormikSubmit = async (values, actions) => {
 		const {
 			attributes = {},
 			languageIds,
@@ -281,8 +282,14 @@ export default function ({
 				method: 'POST',
 			}
 		)
-			.then((response) => response.json())
+			.then((response) => {
+				actions.setSubmitting(false);
+
+				return response.json();
+			})
 			.catch((error) => {
+				actions.setSubmitting(false);
+
 				setShowSubmitWarningModal(true);
 
 				if (process.env.NODE_ENV === 'development') {
@@ -529,7 +536,12 @@ export default function ({
 	};
 
 	const _handleSubmit = () => {
-		formik.handleSubmit();
+		if (document[formName].checkValidity()) {
+			formik.handleSubmit();
+		}
+		else {
+			document[formName].reportValidity();
+		}
 	};
 
 	const _handleSubmitWarningModalClose = () => {
@@ -1289,7 +1301,6 @@ export default function ({
 				<ClayButton
 					disabled={formik.isSubmitting}
 					onClick={_handleSubmit}
-					type="submit"
 				>
 					{formik.isSubmitting && (
 						<span className="inline-item inline-item-before">

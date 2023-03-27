@@ -17,8 +17,8 @@ package com.liferay.frontend.js.loader.modules.extender.internal.servlet;
 import com.liferay.frontend.js.loader.modules.extender.internal.configuration.Details;
 import com.liferay.frontend.js.loader.modules.extender.internal.resolution.BrowserModulesResolution;
 import com.liferay.frontend.js.loader.modules.extender.internal.resolution.BrowserModulesResolver;
-import com.liferay.frontend.js.loader.modules.extender.npm.NPMRegistry;
-import com.liferay.frontend.js.loader.modules.extender.npm.NPMRegistryStateSnapshot;
+import com.liferay.frontend.js.loader.modules.extender.npm.NPMRegistryUpdatesListener;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.util.ContentTypes;
@@ -35,6 +35,7 @@ import java.net.URLDecoder;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 import javax.servlet.Servlet;
 import javax.servlet.http.HttpServlet;
@@ -54,15 +55,28 @@ import org.osgi.service.component.annotations.Reference;
 		"osgi.http.whiteboard.servlet.pattern=/js_resolve_modules/*",
 		"service.ranking:Integer=" + Details.MAX_VALUE_LESS_1K
 	},
-	service = {JSResolveModulesServlet.class, Servlet.class}
+	service = {
+		JSResolveModulesServlet.class, NPMRegistryUpdatesListener.class,
+		Servlet.class
+	}
 )
-public class JSResolveModulesServlet extends HttpServlet {
+public class JSResolveModulesServlet
+	extends HttpServlet implements NPMRegistryUpdatesListener {
+
+	public JSResolveModulesServlet() {
+		onAfterUpdate();
+	}
 
 	public String getURL() {
-		NPMRegistryStateSnapshot npmRegistryStateSnapshot =
-			_npmRegistry.getNPMRegistryStateSnapshot();
+		return _url;
+	}
 
-		return "/js_resolve_modules/" + npmRegistryStateSnapshot.getDigest();
+	@Override
+	public void onAfterUpdate() {
+		String hash = String.valueOf(UUID.randomUUID());
+
+		_expectedPathInfo = StringPool.SLASH + hash;
+		_url = "/js_resolve_modules/" + hash;
 	}
 
 	@Override
@@ -71,41 +85,28 @@ public class JSResolveModulesServlet extends HttpServlet {
 			HttpServletResponse httpServletResponse)
 		throws IOException {
 
-		NPMRegistryStateSnapshot npmRegistryStateSnapshot =
-			_npmRegistry.getNPMRegistryStateSnapshot();
-
-		String expectedPathInfo =
-			StringPool.SLASH + npmRegistryStateSnapshot.getDigest();
-
-		if (!expectedPathInfo.equals(httpServletRequest.getPathInfo())) {
+		if (!_expectedPathInfo.equals(httpServletRequest.getPathInfo())) {
 			AbsolutePortalURLBuilder absolutePortalURLBuilder =
 				_absolutePortalURLBuilderFactory.getAbsolutePortalURLBuilder(
 					httpServletRequest);
 
-			StringBuilder sb = new StringBuilder();
-
-			sb.append(
-				absolutePortalURLBuilder.forServlet(
-					"/js_resolve_modules/" +
-						npmRegistryStateSnapshot.getDigest()
-				).build());
-
-			sb.append(StringPool.QUESTION);
-
-			sb.append(httpServletRequest.getQueryString());
-
 			// Send a redirect so that the AMD loader knows that it must update
-			// its resolve path to the new URL
+			// its resolvePath to the new URL.
 
-			httpServletResponse.sendRedirect(sb.toString());
+			httpServletResponse.sendRedirect(
+				StringBundler.concat(
+					absolutePortalURLBuilder.forServlet(
+						getURL()
+					).build(),
+					StringPool.QUESTION, httpServletRequest.getQueryString()));
 
 			return;
 		}
 
-		// See https://ashton.codes/set-cache-control-max-age-1-year
+		// See https://ashton.codes/set-cache-control-max-age-1-year/
 
 		httpServletResponse.addHeader(
-			HttpHeaders.CACHE_CONTROL, "immutable, max-age=31536000, public");
+			HttpHeaders.CACHE_CONTROL, "public, max-age=31536000, immutable");
 		httpServletResponse.setCharacterEncoding(StringPool.UTF8);
 		httpServletResponse.setContentType(ContentTypes.APPLICATION_JSON);
 
@@ -114,8 +115,7 @@ public class JSResolveModulesServlet extends HttpServlet {
 
 		BrowserModulesResolution browserModulesResolution =
 			_browserModulesResolver.resolve(
-				_getModuleNames(httpServletRequest), httpServletRequest,
-				npmRegistryStateSnapshot);
+				_getModuleNames(httpServletRequest), httpServletRequest);
 
 		printWriter.write(browserModulesResolution.toJSON());
 
@@ -159,7 +159,7 @@ public class JSResolveModulesServlet extends HttpServlet {
 	@Reference
 	private BrowserModulesResolver _browserModulesResolver;
 
-	@Reference
-	private NPMRegistry _npmRegistry;
+	private volatile String _expectedPathInfo;
+	private volatile String _url;
 
 }

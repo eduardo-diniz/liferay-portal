@@ -258,9 +258,10 @@ public class JournalArticleAssetEntryClassTypeIdUpgradeProcessTest {
 		String message = logEntry2.getMessage();
 
 		Assert.assertTrue(
+			message,
 			message.startsWith(
 				expectedClassTypeId +
-					" has been set as class type ID for the entryIds"));
+					" has been set as class type ID for the entry IDs"));
 
 		List<Long> expectedEntryIds = new ArrayList<>();
 
@@ -282,6 +283,7 @@ public class JournalArticleAssetEntryClassTypeIdUpgradeProcessTest {
 
 		for (String entryId : entryIds) {
 			Assert.assertTrue(
+				expectedEntryIds.toString(),
 				expectedEntryIds.contains(GetterUtil.getLong(entryId)));
 		}
 	}
