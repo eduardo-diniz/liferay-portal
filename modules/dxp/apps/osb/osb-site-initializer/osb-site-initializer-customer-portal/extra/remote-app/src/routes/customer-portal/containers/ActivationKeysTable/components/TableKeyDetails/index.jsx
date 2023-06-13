@@ -34,7 +34,7 @@ const HOST_NAME = i18n.translate('host-name');
 const IP_ADDRESSES = i18n.translate('ip-addresses');
 const MAC_ADDRESSES = i18n.translate('mac-addresses');
 
-const NO_EXPIRATION_DATE = 100;
+const NO_EXPIRATION_DATE = 90;
 
 const TableKeyDetails = ({currentActivationKey, setValueToCopyToClipboard}) => {
 	const [actionToCopy, setActionToCopy] = useState('');
