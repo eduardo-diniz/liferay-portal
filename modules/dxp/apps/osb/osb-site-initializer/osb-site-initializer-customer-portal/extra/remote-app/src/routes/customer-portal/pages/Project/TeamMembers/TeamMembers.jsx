@@ -37,7 +37,11 @@ const TeamMembers = () => {
 		(group) => group.name
 	);
 
-	const targetProducts = ['Liferay Experience Cloud', 'Analytics Cloud'];
+	const targetProducts = [
+		'Liferay Experience Cloud',
+		'Analytics Cloud',
+		'LXC - SM',
+	];
 
 	const hasActiveProduct = accountSubscriptionGroups?.some(
 		(item) =>
