@@ -55,6 +55,7 @@ import {config as stylebookConfig} from './tests/style-book-web/config';
 import {config as usersAdminWebConfig} from './tests/users-admin-web/config';
 import {config as wikiWebConfig} from './tests/wiki-web/config';
 import {config as marketplaceConfig} from './tests/workspaces/liferay-workspace-marketplace/config';
+import {config as partnerConfig} from './tests/workspaces/liferay-workspace-partner/config';
 
 const setupProjects = [wemSiteSetup, wemSiteTeardown];
 
@@ -99,6 +100,7 @@ export default defineConfig({
 		notificationWebConfig,
 		objectWebConfig,
 		osbFaroWebConfig,
+		partnerConfig,
 		portalDefaultPermissionsWebConfig,
 		portalSearchAdminWebConfig,
 		portalSearchWebConfig,
