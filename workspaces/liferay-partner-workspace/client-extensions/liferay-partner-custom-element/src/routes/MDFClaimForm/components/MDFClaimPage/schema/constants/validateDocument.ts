@@ -40,6 +40,9 @@ export const validateDocument = {
 	listOfLeadsDocuments: {
 		message:
 			'Unsupported File Format, upload a valid format *csv *xlsx *xls',
+		templateContent: {
+				message: 'Invalid template content. Please ensure the template matches the required structure.',
+		},
 		types: [
 			'text/csv',
 			'application/vnd.ms-excel',

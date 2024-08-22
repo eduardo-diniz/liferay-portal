@@ -14,6 +14,9 @@ import {eventCollateralsValidation} from './fieldValidation/eventCollateralsVali
 import {eventInvitationsValidation} from './fieldValidation/eventInvitationsValidation';
 import {eventPhotosValidation} from './fieldValidation/eventPhotosValidation';
 import {imagesValidation} from './fieldValidation/imagesValidation';
+import PartnerSpringBootOAuth2 from '../components/ActivityClaimPanel/hooks/PartnerSpringBootOAuth2';
+
+const partnerSpringBootOAuth2 = new PartnerSpringBootOAuth2();
 
 const claimSchema = object({
 	activities: array()
@@ -171,6 +174,18 @@ const claimSchema = object({
 										}
 
 										return true;
+									}
+								)
+								.test('templateValidation', 
+									validateDocument.listOfLeadsDocuments.templateContent.message, 
+									async (listOfQualifiedLeadsFile) => {
+										if (listOfQualifiedLeadsFile && 
+											!listOfQualifiedLeadsFile.documentId
+										) {
+											const result = await partnerSpringBootOAuth2.handleFileUpload(listOfQualifiedLeadsFile);
+											return result.isValid ? true : false
+										}
+										return false;
 									}
 								)
 								.test(
