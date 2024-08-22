@@ -25,6 +25,7 @@ interface IUtil {
 }
 
 interface ILiferay {
+	OAuth2Client: IOAuth2Client;
 	FeatureFlags: {[index: string]: boolean};
 	ThemeDisplay: IThemeDisplay;
 	Util: IUtil;
@@ -35,6 +36,23 @@ declare global {
 		Liferay: ILiferay;
 	}
 }
+
+export type IOAuth2ClientAgentApplication = {
+	authorizeURL: string;
+	clientId: string;
+	encodedRedirectURL: string;
+	fetch: typeof fetch;
+	homePageURL: string;
+	redirectURIs: string[];
+	tokenURL: string;
+};
+
+export type IOAuth2Client = {
+	FromUserAgentApplication: (
+		agentName: string
+	) => IOAuth2ClientAgentApplication;
+};
+
 export const Liferay = window.Liferay || {
 	FeatureFlags: {},
 	ThemeDisplay: {
