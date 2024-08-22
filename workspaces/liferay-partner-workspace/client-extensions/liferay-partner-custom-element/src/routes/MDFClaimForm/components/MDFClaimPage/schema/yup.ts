@@ -8,13 +8,13 @@ import {array, boolean, mixed, number, object, string} from 'yup';
 import {TypeActivityKey} from '../../../../../common/enums/TypeActivityKey';
 import LiferayPicklist from '../../../../../common/interfaces/liferayPicklist';
 import checkRequiredListOfQualifiedLeads from '../../../utils/checkRequiredListOfQualifiedLeads';
+import PartnerSpringBootOAuth2 from '../components/ActivityClaimPanel/hooks/PartnerSpringBootOAuth2';
 import {validateDocument} from './constants/validateDocument';
 import {allContentsFieldsValidation} from './fieldValidation/allContentsFieldsValidation';
 import {eventCollateralsValidation} from './fieldValidation/eventCollateralsValidation';
 import {eventInvitationsValidation} from './fieldValidation/eventInvitationsValidation';
 import {eventPhotosValidation} from './fieldValidation/eventPhotosValidation';
 import {imagesValidation} from './fieldValidation/imagesValidation';
-import PartnerSpringBootOAuth2 from '../components/ActivityClaimPanel/hooks/PartnerSpringBootOAuth2';
 
 const partnerSpringBootOAuth2 = new PartnerSpringBootOAuth2();
 
@@ -176,15 +176,23 @@ const claimSchema = object({
 										return true;
 									}
 								)
-								.test('templateValidation', 
-									validateDocument.listOfLeadsDocuments.templateContent.message, 
+								.test(
+									'templateValidation',
+									validateDocument.listOfLeadsDocuments
+										.templateContent.message,
 									async (listOfQualifiedLeadsFile) => {
-										if (listOfQualifiedLeadsFile && 
+										if (
+											listOfQualifiedLeadsFile &&
 											!listOfQualifiedLeadsFile.documentId
 										) {
-											const result = await partnerSpringBootOAuth2.handleFileUpload(listOfQualifiedLeadsFile);
-											return result.isValid ? true : false
+											const result =
+												await partnerSpringBootOAuth2.handleFileUpload(
+													listOfQualifiedLeadsFile
+												);
+
+											return result.isValid;
 										}
+
 										return false;
 									}
 								)

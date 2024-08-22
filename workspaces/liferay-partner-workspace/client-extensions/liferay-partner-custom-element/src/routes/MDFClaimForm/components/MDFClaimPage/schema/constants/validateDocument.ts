@@ -41,7 +41,8 @@ export const validateDocument = {
 		message:
 			'Unsupported File Format, upload a valid format *csv *xlsx *xls',
 		templateContent: {
-				message: 'Invalid template content. Please ensure the template matches the required structure.',
+			message:
+				'Invalid template content. Please ensure the template matches the required structure.',
 		},
 		types: [
 			'text/csv',

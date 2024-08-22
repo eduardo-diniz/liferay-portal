@@ -14,6 +14,13 @@ liferay-partner-etc-spring-boot-oauth-application-headless-server:
         - c_mdfrequest.everything.write
         - c_proxyaccount.everything.read
     type: oAuthApplicationHeadlessServer
+liferay-partner-etc-spring-boot-oauth-application-user-agent:
+    .serviceAddress: localhost:58081
+    .serviceScheme: http
+    name: Liferay Partner Etc Spring Boot OAuth Application User Agent
+    scopes:
+        - Liferay.Headless.Admin.User.read
+    type: oAuthApplicationUserAgent
 liferay-partner-etc-spring-boot-object-action-mdf-claim-status-management:
     name: Liferay Partner Etc Spring Boot Object Action MDF Claim Status Management
     oAuth2ApplicationExternalReferenceCode: liferay-partner-etc-spring-boot-oauth-application-headless-server
@@ -24,10 +31,3 @@ liferay-partner-etc-spring-boot-object-action-mdf-request-status-management:
     oAuth2ApplicationExternalReferenceCode: liferay-partner-etc-spring-boot-oauth-application-headless-server
     resourcePath: /object/action/mdf/request/status/management
     type: objectAction
-liferay-partner-etc-spring-boot-oauth-application-user-agent:
-    .serviceAddress: localhost:58081
-    .serviceScheme: http
-    name: Liferay Partner Etc Spring Boot OAuth Application User Agent
-    scopes:
-        - Liferay.Headless.Admin.User.read
-    type: oAuthApplicationUserAgent

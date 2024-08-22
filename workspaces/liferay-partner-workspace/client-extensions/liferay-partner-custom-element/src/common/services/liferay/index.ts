@@ -25,8 +25,8 @@ interface IUtil {
 }
 
 interface ILiferay {
-	OAuth2Client: IOAuth2Client;
 	FeatureFlags: {[index: string]: boolean};
+	OAuth2Client: IOAuth2Client;
 	ThemeDisplay: IThemeDisplay;
 	Util: IUtil;
 	authToken: string;
