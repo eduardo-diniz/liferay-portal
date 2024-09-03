@@ -102,11 +102,15 @@ export class MDFClaimListPage {
 	}
 
 	async filterByPartner(partner: string) {
+		const isShowMoreButtonVisible = await this.showMoreButton.isVisible();
+
 		await this.filterButton.click();
 
 		await this.activityPartnerButton.click();
 
-		await this.showMoreButton.click();
+		if (isShowMoreButtonVisible) {
+		  await this.showMoreButton.click();
+		} 
 
 		await this.page.getByLabel(partner).check();
 

@@ -6,12 +6,14 @@
 import moment from 'moment';
 
 import {
+	mdfActivityMock,
+	mdfBudgetMock,
 	mdfClaimDataMock,
 	mdfRequestDataMock,
 	mdfRequestMock,
 } from '../mocks/mdfMock';
 import {TAccount} from '../types/account';
-import {TMDFClaim, TMDFRequest, TMDFRequestDataFromRequest} from '../types/mdf';
+import {TMDFClaim, TMDFRequest, TMDFRequestActivity, TMDFRequestBudget, TMDFRequestDataFromRequest} from '../types/mdf';
 
 export function generateMDFRequestFormData(
 	parnterAccount: TAccount
@@ -28,6 +30,33 @@ export function generateMDFRequestFormData(
 	mdfRequest.submitDate = moment().format('YYYY-MM-DD');
 
 	return mdfRequest;
+}
+
+export function getGeneratedDataFromActivity(
+	parnterAccount: TAccount , mdfRequestId : number
+): TMDFRequestActivity {
+	const mdfActivityData = mdfActivityMock;
+
+		mdfActivityData.endDate = moment()
+		.add(2, 'days')
+		.format('YYYY-MM-DD');
+	mdfActivityData.startDate = moment()
+		.add(1, 'days')
+		.format('YYYY-MM-DD');
+	mdfActivityData.r_mdfReqToActs_c_mdfRequestId = mdfRequestId;
+
+	return mdfActivityData;
+}
+
+export function getGeneratedDataFromBudget(
+	parnterAccount: TAccount , mdfActivityId : number, 
+): TMDFRequestBudget {
+	const mdfBudgetData = mdfBudgetMock;
+
+	mdfBudgetData.r_actToBgts_c_activityId= mdfActivityId;
+	// mdfBudgetData.r_accToBgts_accountEntryERC = parnterAccount.externalReferenceCode;
+
+	return mdfBudgetData;
 }
 
 export function getGeneratedDataFromClaim(parnterAccount: TAccount): TMDFClaim {

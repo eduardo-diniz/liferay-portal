@@ -6,7 +6,7 @@
 import {Page} from '@playwright/test';
 
 import {ApiHelpers} from '../../../../helpers/ApiHelpers';
-import {TMDFClaim, TMDFRequest} from '../types/mdf';
+import {TMDFClaim, TMDFRequest, TMDFRequestActivity, TMDFRequestBudget} from '../types/mdf';
 import {TRole} from '../types/role';
 
 export class PartnerHelper {
@@ -56,7 +56,7 @@ export class PartnerHelper {
 
 	async createMDFCLaim(mdfClaim: TMDFClaim) {
 		try {
-			const mdfClaimData = await this.apiHelpers.post('/o/c/mdfclaims', {
+			const mdfClaimData = await this.apiHelpers.post(' http://localhost:8080/o/c/mdfclaims', {
 				data: mdfClaim,
 			});
 
@@ -72,7 +72,7 @@ export class PartnerHelper {
 	async createMDFRequest(mdfRequest: TMDFRequest) {
 		try {
 			const mdfRequestData = await this.apiHelpers.post(
-				'/o/c/mdfrequests',
+				'http://localhost:8080/o/c/mdfrequests',
 				{
 					data: mdfRequest,
 				}
@@ -87,11 +87,48 @@ export class PartnerHelper {
 		}
 	}
 
+	async createMDFActivity(mdfRequestActivity: TMDFRequestActivity) {
+		try {
+			const mdfActivityData = await this.apiHelpers.post(
+				'http://localhost:8080/o/c/activities',
+				{
+					data: mdfRequestActivity,
+				}
+			);
+
+			return mdfActivityData;
+		}
+		catch (error) {
+			console.error('Error when trying to create an MDF Activity', error);
+
+			throw error;
+		}
+	}
+
+	async createMDFBudget(mdfRequestBudget: TMDFRequestBudget) {
+		try {
+			const mdfBudgetData = await this.apiHelpers.post(
+				'http://localhost:8080/o/c/budgets',
+				{
+					data: mdfRequestBudget,
+				}
+			);
+
+			return mdfBudgetData;
+		}
+		catch (error) {
+			console.error('Error when trying to create an MDF Budget', error);
+
+			throw error;
+		}
+	}
+
+
 	async deleteMDFClaim(mdfClaimId: number) {
-		await this.apiHelpers.delete(`/o/c/mdfclaims/${mdfClaimId}`);
+		await this.apiHelpers.delete(`http://localhost:8080/o/c/mdfclaims/${mdfClaimId}`);
 	}
 
 	async deleteMDFRequest(mdfRequestId: number) {
-		await this.apiHelpers.delete(`/o/c/mdfrequests/${mdfRequestId}`);
+		await this.apiHelpers.delete(`http://localhost:8080/o/c/mdfrequests/${mdfRequestId}`);
 	}
 }

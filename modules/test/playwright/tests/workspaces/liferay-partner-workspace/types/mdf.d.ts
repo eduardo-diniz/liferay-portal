@@ -17,7 +17,14 @@ export type TMDFClaim = {
 	companyName: string;
 	id?: number;
 	submitDate: string;
+	reimbursement?: TMDFClaimReimbursement;
+
 };
+
+export type TMDFClaimReimbursement = {
+	activityName?:string;
+	totalClaimAmount? : number;
+}
 
 export type TMDFRequestActivityExpense = {
 	type: EMDFRequestActivityExpenseTypes;
@@ -27,13 +34,26 @@ export type TMDFRequestActivityExpense = {
 export type TMDFRequestActivity = {
 	activityName: string;
 	claimPercent: number;
+	id?: number;
 	endDate: string;
 	expenses: TMDFRequestActivityExpense[];
 	leadGenerated: boolean;
 	marketingActivity: string;
 	startDate: string;
+	r_mdfReqToActs_c_mdfRequestId?: number,
 	tactic: EMDFRequestActivityTactics;
 	typeOfActivity: EMDFRequestActivityTypes;
+
+};
+
+export type TMDFRequestBudget = {
+	cost: number,
+	expense: {
+	  key: string,
+	  name: string
+	},
+	r_actToBgts_c_activityId: number,
+	r_accToBgts_accountEntryERC: string,
 };
 
 export type TMDFRequestGoal = {

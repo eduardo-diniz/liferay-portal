@@ -132,4 +132,4 @@ export enum ERegularRoles {
 	CHANNEL_OPERATIONS_MANAGER = 'Channel Operations Manager (COM)',
 }
 
-export const PARTNER_SITE_FRIENLY_URL_PATH = '/web/liferay-partner';
+export const PARTNER_SITE_FRIENLY_URL_PATH = 'http://localhost:8080/web/liferay-partner';

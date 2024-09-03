@@ -39,7 +39,7 @@ test.describe('MDF Request List', () => {
 		const mdfRequestData = getGeneratedDataFromRequest(accountPlatinum);
 
 		mdfRequest = await partnerHelper.createMDFRequest(mdfRequestData);
-
+		
 		await mdfRequestListPage.goto();
 	});
 
@@ -54,7 +54,6 @@ test.describe('MDF Request List', () => {
 			await partnerHelper.deleteMDFRequest(mdfRequest.id);
 		}
 	});
-
 	test('Open MDF Request List', async ({mdfRequestListPage}) => {
 		await expect(mdfRequestListPage.heading).toBeTruthy();
 	});
@@ -242,7 +241,7 @@ test.describe('MDF Request List', () => {
 
 		await cleanSearch.click();
 
-		await mdfRequestListPage.filterBySearchInput('Test');
+		await mdfRequestListPage.filterBySearchInput('No entries were found');
 
 		await expect(mdfRequestListPage.noEntriesFoundMessage).toBeVisible();
 	});

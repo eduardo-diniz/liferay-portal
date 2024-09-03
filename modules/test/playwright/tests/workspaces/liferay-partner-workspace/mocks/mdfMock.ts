@@ -18,7 +18,39 @@ const namespace = getRandomInt();
 export const mdfClaimDataMock = {
 	companyName: 'Test Company ' + namespace,
 	submitDate: '2024-08-07T13:27:12.347Z',
+	reimbursement: {
+		activityName: 'Activity Name ' + namespace,
+		totalClaimAmount: 25000,
+	}
 };
+
+export const mdfActivityMock = {
+		activityName: 'Test Activity' + namespace,
+		claimPercent: 0.5,
+		endDate: '2024-07-12',
+		expenses: [
+			{
+				type: EMDFRequestActivityExpenseTypes.BROADCAST_ADVERTISING,
+				value: 500,
+			},
+		],
+		leadGenerated: false,
+		marketingActivity: 'Marketing Description',
+		startDate: '2024-07-11',
+		r_mdfReqToActs_c_mdfRequestId: 0,
+		tactic: EMDFRequestActivityTactics.OTHER,
+		typeOfActivity: EMDFRequestActivityTypes.MISCELLANEOUS_MARKETING,
+}
+
+export const mdfBudgetMock =  {
+	cost: 33,
+	expense: {
+	  key: EMDFRequestActivityExpenseTypes.ROOM_RENTAL,
+	  name: "Room Rental"
+	},
+	r_actToBgts_c_activityId: 47900,
+	r_accToBgts_accountEntryERC: "0017000000b3ScRAAU"
+  }
 
 export const mdfRequestMock = {
 	activities: [
