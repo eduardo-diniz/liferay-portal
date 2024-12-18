@@ -5,10 +5,12 @@
 
 import Autocomplete from '@clayui/autocomplete';
 import ClayButton from '@clayui/button';
-import {ClaySelect} from '@clayui/form';
+import ClayForm, {ClaySelect, ClayToggle} from '@clayui/form';
 import ClayModal, {useModal} from '@clayui/modal';
+import ClayMultiSelect from '@clayui/multi-select';
 import {useMemo, useState} from 'react';
 import useSWR from 'swr';
+import {z} from 'zod';
 
 import {useMarketplaceContext} from '../../../../../context/MarketplaceContext';
 import SearchBuilder from '../../../../../core/SearchBuilder';
@@ -65,73 +67,122 @@ const NewTrialModal: React.FC<NewTrialModalProps> = ({
 		[apps]
 	);
 
+	const [sendNotification, setSendNotification] = useState(false);
+	const [inviteMember, setInviteMember] = useState('');
+	const [inviteMembersList, setInviteMembersList] = useState([]);
+
+	const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+	const emailSchema = z.string().email('Invalid email address');
+
+	const inviteMembersSchema = z.array(emailSchema);
+
+	const handleValidation = () => {
+		try {
+			inviteMembersSchema.parse(
+				inviteMembersList.map(({value}) => value)
+			);
+			setValidationErrors([]);
+
+			return false;
+		}
+		catch (error) {
+			if (error instanceof z.ZodError) {
+				setValidationErrors(error.errors.map((error) => error.message));
+			}
+
+			return true;
+		}
+	};
+
 	const {accountBriefs = []} = myUserAccount;
 
 	const onSubmit = async () => {
-		const accountId = Number(selectedTrial.accountId);
+		const hasValidationErrors = handleValidation();
 
-		const isDXP = selectedTrial.product?.productSpecifications?.some(
-			(spec) =>
-				spec.specificationKey ===
-					PRODUCT_SPECIFICATION_KEY.APP_BUILD_CLOUD_COMPATIBLE &&
-				spec.value.en_US === 'dxp'
-		);
+		if (!hasValidationErrors) {
+			const accountId = Number(selectedTrial.accountId);
 
-		if (isDXP) {
-			return Liferay.Util.openToast({
-				message: 'Not possible to create Trial, for DXP Apps',
-				type: 'danger',
-			});
-		}
-
-		const skus = apps?.items?.find(
-			(app) => app.productId === Number(selectedTrial.product.productId)
-		);
-
-		const sku = skus?.skus?.find((sku) => sku.purchasable);
-
-		try {
-			const cart = await headlessCommerceDeliveryCart.createCart(
-				channel.id,
-				{
-					accountId,
-					cartItems: [
-						{
-							price: {
-								currency: channel.currencyCode,
-								discount: 0,
-							},
-							productId: Number(selectedTrial.product.productId),
-							quantity: 1,
-							settings: {
-								maxQuantity: 1,
-							},
-							skuId: sku?.id as number,
-						},
-					],
-					currencyCode: channel.currencyCode,
-					orderTypeExternalReferenceCode: ORDER_TYPES.SOLUTIONS7,
-				}
+			const isDXP = selectedTrial.product?.productSpecifications?.some(
+				(spec) =>
+					spec.specificationKey ===
+						PRODUCT_SPECIFICATION_KEY.APP_BUILD_CLOUD_COMPATIBLE &&
+					spec.value.en_US === 'dxp'
 			);
 
-			await headlessCommerceDeliveryCart.checkoutCart(cart.id);
+			if (isDXP) {
+				return Liferay.Util.openToast({
+					message: 'Not possible to create Trial, for DXP Apps',
+					type: 'danger',
+				});
+			}
 
-			await trialOAuth2.provisioningTrial(cart.id);
+			const skus = apps?.items?.find(
+				(app) =>
+					app.productId === Number(selectedTrial.product.productId)
+			);
 
-			onOpenChange(false);
+			const sku = skus?.skus?.find((sku) => sku.purchasable);
 
-			await revalidate();
+			try {
+				const cart = await headlessCommerceDeliveryCart.createCart(
+					channel.id,
+					{
+						accountId,
+						cartItems: [
+							{
+								price: {
+									currency: channel.currencyCode,
+									discount: 0,
+								},
+								productId: Number(
+									selectedTrial.product.productId
+								),
+								quantity: 1,
+								settings: {
+									maxQuantity: 1,
+								},
+								skuId: sku?.id as number,
+							},
+						],
+						currencyCode: channel.currencyCode,
+						customFields: {
+							'trial-settings': JSON.stringify({
+								inviteEmailAddresses: inviteMembersList.map(
+									({value}) => value
+								),
+								sendNotificationEmail: sendNotification,
+							}),
+						},
+						orderTypeExternalReferenceCode: ORDER_TYPES.SOLUTIONS7,
+					}
+				);
 
-			setTimeout(() => revalidate(), 5000);
+				await headlessCommerceDeliveryCart.checkoutCart(cart.id);
 
-			Liferay.Util.openToast({
-				message: 'Trial created successfully',
-				type: 'success',
-			});
+				await trialOAuth2.provisioningTrial(cart.id);
+
+				onOpenChange(false);
+
+				await revalidate();
+
+				setTimeout(() => revalidate(), 5000);
+
+				Liferay.Util.openToast({
+					message: 'Trial created successfully',
+					type: 'success',
+				});
+			}
+			catch {
+				Liferay.Util.openToast({
+					message: 'Not possible to create Trial',
+					type: 'danger',
+				});
+			}
 		}
-		catch {
+		else {
 			Liferay.Util.openToast({
-				message: 'Not possible to create Trial',
+				message: 'Please fix the validation errors before proceeding',
 				type: 'danger',
 			});
 		}
@@ -206,6 +257,39 @@ const NewTrialModal: React.FC<NewTrialModalProps> = ({
 							/>
 						))}
 				</ClaySelect>
+
+				<h5 className="mt-5">Invite Members</h5>
+
+				<ClayForm.Group
+					className={validationErrors.length ? 'has-error' : ''}
+				>
+					<ClayMultiSelect
+						inputName="inviteMembers"
+						items={inviteMembersList}
+						onChange={setInviteMember}
+						onItemsChange={setInviteMembersList}
+						value={inviteMember}
+					/>
+
+					{!!validationErrors.length && (
+						<ClayForm.FeedbackGroup>
+							{validationErrors.map((error, index) => (
+								<ClayForm.FeedbackItem key={index}>
+									<ClayForm.FeedbackIndicator symbol="info-circle" />
+									{error}
+								</ClayForm.FeedbackItem>
+							))}
+						</ClayForm.FeedbackGroup>
+					)}
+				</ClayForm.Group>
+
+				<div className="mt-5">
+					<ClayToggle
+						label="Send Notification Email"
+						onToggle={setSendNotification}
+						toggled={sendNotification}
+					/>
+				</div>
 			</ClayModal.Body>
 
 			<ClayModal.Footer

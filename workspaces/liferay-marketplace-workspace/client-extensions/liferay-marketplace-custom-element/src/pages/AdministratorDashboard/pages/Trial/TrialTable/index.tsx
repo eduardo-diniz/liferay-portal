@@ -23,6 +23,7 @@ import trialOAuth2 from '../../../../../services/oauth/Trial';
 import CommerceSelectAccountImpl from '../../../../../services/rest/CommerceSelectAccount';
 import HeadlessCommerceAdminOrderImpl from '../../../../../services/rest/HeadlessCommerceAdminOrder';
 import NewTrialModal from './NewTrialModal';
+import TrialDetailsModal from './TrialDetailsModal';
 
 type TrialTableProps = {
 	items: Order[];
@@ -53,6 +54,7 @@ const TrialTable: React.FC<TrialTableProps> = ({items, revalidate}) => {
 	const [selectedTrial, setSelectedTrial] = useState<Order>();
 	const newTrialModal = useModal();
 	const modal = useModal();
+	const modalDetails = useModal();
 
 	const onDeleteTrial = async (order: Order) => {
 		setProcessing(true);
@@ -70,6 +72,13 @@ const TrialTable: React.FC<TrialTableProps> = ({items, revalidate}) => {
 	};
 
 	const itemsDropdown = [
+		{
+			name: i18n.translate('view-details'),
+			onClick: async (order: Order) => {
+				modalDetails.onOpenChange(true);
+				setSelectedTrial(order);
+			},
+		},
 		{
 			name: i18n.translate('go-to-trial'),
 			onClick: (order: Order) =>
@@ -292,6 +301,29 @@ const TrialTable: React.FC<TrialTableProps> = ({items, revalidate}) => {
 						]}
 						rows={items}
 					/>
+
+					<Modal
+						last={
+							<>
+								<ClayButton
+									displayType="secondary"
+									onClick={modalDetails.onClose}
+									size="sm"
+								>
+									{i18n.translate('back')}
+								</ClayButton>
+							</>
+						}
+						observer={modalDetails.observer}
+						size={'lg' as any}
+						status="info"
+						title={`Trial Details ${selectedTrial?.id}`}
+						visible={modalDetails.open}
+					>
+						<TrialDetailsModal
+							selectedTrial={selectedTrial as Order}
+						/>
+					</Modal>
 
 					<Modal
 						last={

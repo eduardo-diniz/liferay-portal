@@ -19,7 +19,7 @@ const getTrialStatus = (trial: Order) => {
 
 type TrialDetailsModalProps = {
 	selectedTrial: Order;
-}
+};
 
 const TrialDetailsModal = ({selectedTrial}: TrialDetailsModalProps) => {
 	const customFields = selectedTrial?.customFields || {};
