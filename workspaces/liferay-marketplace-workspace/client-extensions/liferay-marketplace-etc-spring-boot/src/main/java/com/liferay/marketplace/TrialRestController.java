@@ -31,6 +31,8 @@ import java.net.URL;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -110,18 +112,19 @@ public class TrialRestController extends BaseRestController {
 			(Map<String, String>)order.getCustomFields();
 
 		_postNotificationQueueEntry(
-			order.getCreatorEmailAddress(), "TRY-IT-NOW-EXPIRING-ORDER",
-			new HashMapBuilder<String, Object>().put(
-				"%TRIAL_CREATOR_FIRST_NAME%", userAccount.getGivenName()
-			).put(
-				"%TRIAL_END_DATE%",
-				ZonedDateTime.parse(
-					customFields.get("trial-end-date")
-				).format(
-					DateTimeFormatter.ofPattern(
-						"MMMM d, yyyy", LocaleUtil.ENGLISH)
-				)
-			).build());
+				order.getCreatorEmailAddress(), "TRY-IT-NOW-EXPIRING-ORDER",
+				new HashMapBuilder<String, Object>().put(
+					"%TRIAL_CREATOR_FIRST_NAME%", userAccount.getGivenName()
+				).put(
+					"%TRIAL_END_DATE%",
+					ZonedDateTime.parse(
+						customFields.get("trial-end-date")
+					).format(
+						DateTimeFormatter.ofPattern(
+							"MMMM d, yyyy", LocaleUtil.ENGLISH)
+					)
+				).build());
+
 
 		customFields.put(
 			"trial-notify-end-date",
@@ -134,6 +137,50 @@ public class TrialRestController extends BaseRestController {
 			customFields, orderId, order.getOrderStatus());
 	}
 
+	public boolean getSendNotificationEmail(Order order) {
+			Map<String, String> customFields = (Map<String, String>) order.getCustomFields();
+
+			String trialSettingsJsonStr = customFields.get("trial-settings");
+
+			if (trialSettingsJsonStr == null || trialSettingsJsonStr.isEmpty()) {
+				_log.info("trialSettingsJsonStr " + order);
+
+				return false;
+			}
+
+			JSONObject trialSettingsJson = new JSONObject(trialSettingsJsonStr);
+
+			boolean sendNotificationEmail = false;
+			if (trialSettingsJson.has("sendNotificationEmail")) {
+			
+				return trialSettingsJson.getBoolean("sendNotificationEmail");
+
+			}
+			
+			return sendNotificationEmail;
+	}
+
+	private String[] _getInviteEmailAddresses(Order order) {
+		 Map<String, String> customFields = (Map<String, String>) order.getCustomFields();
+
+		 String trialSettingsJsonStr = customFields.get("trial-settings");
+		
+		JSONObject customFieldsJson = new JSONObject(trialSettingsJsonStr);
+
+		JSONArray inviteEmailAddresses = customFieldsJson.optJSONArray("inviteEmailAddresses");
+		List<String> emailList = new ArrayList<>();
+		
+		emailList.add(order.getCreatorEmailAddress());
+
+		if (inviteEmailAddresses != null) {
+			for (int i = 0; i < inviteEmailAddresses.length(); i++) {
+				emailList.add(inviteEmailAddresses.getString(i));
+			}
+		}
+		
+		return emailList.toArray(new String[0]);
+	}
+
 	@PostMapping("provisioning")
 	public void postProvisioning(
 			@AuthenticationPrincipal Jwt jwt, @RequestBody String json)
@@ -142,9 +189,12 @@ public class TrialRestController extends BaseRestController {
 		JSONObject jsonObject = new JSONObject(json);
 
 		long orderId = jsonObject.getLong("classPK");
-
+		Order order = _marketplaceService.getOrder(orderId);
+        boolean sendNotificationEmail = getSendNotificationEmail(order)
+		
 		if (_log.isInfoEnabled()) {
 			_log.info("Provisioning order " + orderId);
+			
 		}
 
 		com.liferay.headless.portal.instances.client.pagination.Page
@@ -175,22 +225,29 @@ public class TrialRestController extends BaseRestController {
 		UserAccount userAccount = _marketplaceService.getUserAccount(
 			modelDTOOrderJSONObject.getString("creatorEmailAddress"));
 
-		_postNotificationQueueEntry(
-			modelDTOOrderJSONObject.getString("creatorEmailAddress"),
-			"TRY-IT-NOW-PROCESSING-ORDER",
-			new HashMapBuilder<String, Object>().put(
-				"[%COMMERCEORDER_AUTHOR_FIRST_NAME%]",
-				userAccount.getGivenName()
-			).put(
-				"[%COMMERCEORDER_ID%]", String.valueOf(orderId)
-			).build());
+		if(sendNotificationEmail){
+			
+			_postNotificationQueueEntry(
+				modelDTOOrderJSONObject.getString("creatorEmailAddress"),
+				"TRY-IT-NOW-PROCESSING-ORDER",
+				new HashMapBuilder<String, Object>().put(
+					"[%COMMERCEORDER_AUTHOR_FIRST_NAME%]",
+					userAccount.getGivenName()
+				).put(
+					"[%COMMERCEORDER_ID%]", String.valueOf(orderId)
+				).build());
 
+		}
+		
 		PortalInstance portalInstance = _postPortalInstance(
 			jwt, modelDTOOrderJSONObject.getString("creatorEmailAddress"),
 			orderId);
 
+		String[] emailAddresses = _getInviteEmailAddresses(order);
+
 		try {
-			_consoleService.setUpProject(
+			System.out.println("Entrou no try: " + emailAddresses);
+			_consoleService.setUpProject(emailAddresses,
 				portalInstance.getVirtualHost(), orderId);
 		}
 		catch (Exception exception) {
@@ -237,17 +294,19 @@ public class TrialRestController extends BaseRestController {
 			).build(),
 			orderId, MarketplaceConstants.ORDER_STATUS_IN_PROGRESS);
 
-		_postNotificationQueueEntry(
-			modelDTOOrderJSONObject.getString("creatorEmailAddress"),
-			"TRY-IT-NOW-COMPLETED-ORDER",
-			new HashMapBuilder<String, Object>().put(
-				"%EMAIL%",
-				modelDTOOrderJSONObject.getString("creatorEmailAddress")
-			).put(
-				"%NAME%", userAccount.getGivenName()
-			).put(
-				"%URL%", portalInstance.getVirtualHost()
-			).build());
+		if(sendNotificationEmail){
+			_postNotificationQueueEntry(
+				modelDTOOrderJSONObject.getString("creatorEmailAddress"),
+				"TRY-IT-NOW-COMPLETED-ORDER",
+				new HashMapBuilder<String, Object>().put(
+					"%EMAIL%",
+					modelDTOOrderJSONObject.getString("creatorEmailAddress")
+				).put(
+					"%NAME%", userAccount.getGivenName()
+				).put(
+					"%URL%", portalInstance.getVirtualHost()
+				).build());
+		}
 	}
 
 	@PostMapping("provisioning/{orderId}")
@@ -325,6 +384,8 @@ public class TrialRestController extends BaseRestController {
 			String emailAddress, String externalReferenceCode,
 			Map<String, String> map)
 		throws Exception {
+
+		System.out.println("Entrou no postNotificationQueueEntry");
 
 		String authorization =
 			_liferayOAuth2AccessTokenManager.getAuthorization(

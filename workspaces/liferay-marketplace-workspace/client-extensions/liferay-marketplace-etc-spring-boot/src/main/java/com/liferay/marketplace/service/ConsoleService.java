@@ -102,14 +102,17 @@ public class ConsoleService extends BaseService {
 			).toString());
 	}
 
-	public void setUpProject(String dxpVirtualInstanceId, long orderId)
+	public void setUpProject(String[] emailAddresses, String dxpVirtualInstanceId, long orderId)
 		throws Exception {
 
 		JSONObject jsonObject = _postProject(
 			_consoleProjectPrefix + "-ext" + orderId);
 
-		_inviteProject(
-			_trialAdminEmailAddress, jsonObject.getString("projectId"));
+		for (String emailAddress : emailAddresses) {
+			_inviteProject(emailAddress, jsonObject.getString("projectId"));
+		}
+
+		_inviteProject(_trialAdminEmailAddress, jsonObject.getString("projectId"));
 
 		_linkDXPWithProject(dxpVirtualInstanceId, jsonObject.getString("id"));
 
@@ -157,6 +160,8 @@ public class ConsoleService extends BaseService {
 				"role", "admin"
 			).toString(),
 			"/projects/" + projectId + "/invite");
+
+		System.out.println("emailAddress Enviado para: " + emailAddress);
 
 		if (_log.isInfoEnabled()) {
 			_log.info(
