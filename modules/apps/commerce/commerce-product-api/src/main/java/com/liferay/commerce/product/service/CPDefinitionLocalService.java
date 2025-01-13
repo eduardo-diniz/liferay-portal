@@ -354,6 +354,10 @@ public interface CPDefinitionLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CPDefinition fetchCPDefinitionByCProductId(long cProductId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CPDefinition fetchCPDefinitionByFriendlyURL(
+		String friendlyUrl, long groupId);
+
 	/**
 	 * Returns the cp definition matching the UUID and group.
 	 *

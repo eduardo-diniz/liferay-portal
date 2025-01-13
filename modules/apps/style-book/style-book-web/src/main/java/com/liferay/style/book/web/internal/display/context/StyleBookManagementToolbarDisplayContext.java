@@ -219,24 +219,24 @@ public class StyleBookManagementToolbarDisplayContext
 		List<Map<String, Object>> frontendTokenDefinitionProviders =
 			new ArrayList<>();
 
-		long companyId = _themeDisplay.getCompanyId();
-
 		for (FrontendTokenDefinition frontendTokenDefinition :
 				_frontendTokenDefinitionRegistry.getFrontendTokenDefinitions(
-					companyId)) {
+					_themeDisplay.getCompanyId())) {
 
-			String themeId = frontendTokenDefinition.getThemeId();
+			String name = frontendTokenDefinition.getThemeId();
 
-			String name = themeId;
-
-			Theme theme = ThemeLocalServiceUtil.fetchTheme(companyId, themeId);
+			Theme theme = ThemeLocalServiceUtil.fetchTheme(
+				_themeDisplay.getCompanyId(),
+				frontendTokenDefinition.getThemeId());
 
 			if (theme != null) {
 				name = LanguageUtil.format(
 					httpServletRequest, "x-theme", theme.getName());
 			}
 			else {
-				CET cet = _cetManager.getCET(companyId, themeId);
+				CET cet = _cetManager.getCET(
+					_themeDisplay.getCompanyId(),
+					frontendTokenDefinition.getThemeId());
 
 				if (cet != null) {
 					name = LanguageUtil.format(
@@ -249,7 +249,7 @@ public class StyleBookManagementToolbarDisplayContext
 				HashMapBuilder.<String, Object>put(
 					"name", name
 				).put(
-					"themeId", themeId
+					"themeId", frontendTokenDefinition.getThemeId()
 				).build());
 		}
 

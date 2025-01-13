@@ -56,6 +56,10 @@ public interface ProductResource {
 			Long channelId, Long productId, Long accountId)
 		throws Exception;
 
+	public Product getChannelProductByFriendlyUrlPath(
+			Long channelId, String friendlyUrlPath, Long accountId)
+		throws Exception;
+
 	public default void setContextAcceptLanguage(
 		AcceptLanguage contextAcceptLanguage) {
 	}

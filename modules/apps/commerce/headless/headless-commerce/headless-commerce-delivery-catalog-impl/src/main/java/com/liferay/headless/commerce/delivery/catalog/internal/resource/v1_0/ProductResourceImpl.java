@@ -34,6 +34,7 @@ import com.liferay.headless.commerce.delivery.catalog.resource.v1_0.ProductResou
 import com.liferay.headless.common.spi.odata.entity.EntityFieldsUtil;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.portal.kernel.change.tracking.CTAware;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.search.BooleanClause;
 import com.liferay.portal.kernel.search.BooleanClauseFactoryUtil;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
@@ -47,6 +48,7 @@ import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
 import com.liferay.portal.kernel.search.generic.MatchAllQuery;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
@@ -93,6 +95,45 @@ public class ProductResourceImpl extends BaseProductResourceImpl {
 
 		CommerceChannel commerceChannel =
 			_commerceChannelLocalService.getCommerceChannel(channelId);
+
+		Long commerceAccountId = _getCommerceAccountId(
+			accountId, commerceChannel);
+
+		if (!_isAccountEntryEligible(
+				commerceAccountId, commerceChannel.getCommerceChannelId())) {
+
+			return null;
+		}
+
+		_commerceProductViewPermission.check(
+			PermissionThreadLocal.getPermissionChecker(), commerceAccountId,
+			commerceChannel.getGroupId(), cpDefinition.getCPDefinitionId());
+
+		return _toProduct(
+			_commerceContextFactory.create(
+				contextCompany.getCompanyId(), commerceChannel.getGroupId(),
+				contextUser.getUserId(), 0, commerceAccountId),
+			cpDefinition);
+	}
+
+	@Override
+	public Product getChannelProductByFriendlyUrlPath(
+			Long channelId, String friendlyUrl, Long accountId)
+		throws Exception {
+
+		CommerceChannel commerceChannel =
+			_commerceChannelLocalService.getCommerceChannel(channelId);
+
+		Group companyGroup = _groupLocalService.getCompanyGroup(
+			commerceChannel.getCompanyId());
+
+		CPDefinition cpDefinition =
+			_cpDefinitionLocalService.fetchCPDefinitionByFriendlyURL(
+				friendlyUrl, companyGroup.getGroupId());
+
+		if (cpDefinition == null) {
+			throw new NoSuchCProductException();
+		}
 
 		Long commerceAccountId = _getCommerceAccountId(
 			accountId, commerceChannel);
@@ -335,6 +376,9 @@ public class ProductResourceImpl extends BaseProductResourceImpl {
 
 	@Reference
 	private ExpandoTableLocalService _expandoTableLocalService;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
 
 	@Reference
 	private Portal _portal;
