@@ -54,6 +54,10 @@ const Congratulations = () => {
 						'categoryNames',
 						'Payment Integration'
 					),
+					fragmentsFilter: SearchBuilder.lambda(
+						'categoryNames',
+						'fragments'
+					),
 				},
 				siteId: Liferay.ThemeDisplay.getScopeGroupId(),
 				userAccount: {
