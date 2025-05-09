@@ -10,6 +10,11 @@ import React from 'react';
 
 import EurFlag from '../../../../../../assets/icons/eur_flag.svg';
 import {Section} from '../../../../../../components/Section/Section';
+import {
+	LicensePrice,
+	NewAppTypes,
+	useNewAppContext,
+} from '../../../../../../context/NewAppContext';
 import {LicenseTier} from '../../../../../../enums/licenseTier';
 import {currenciesCode} from '../../../../../../utils/currencies';
 import IconButton from '../IconButton';
@@ -18,10 +23,7 @@ import LicensePriceCard from '../LicensePriceCard';
 type Props = {
 	cloudCompatible: boolean;
 	currencyCode: string;
-	handleAddPriceTier: Function;
-	handleDeletePriceTier: Function;
-	handleEditPriceTier: Function;
-	prices: {
+	tierPrices: {
 		[licenseTier in LicenseTier]?: {[key: number]: number};
 	};
 };
@@ -29,15 +31,57 @@ type Props = {
 const LicensePricePanel: React.FC<Props> = ({
 	cloudCompatible,
 	currencyCode,
-	handleAddPriceTier,
-	handleDeletePriceTier,
-	handleEditPriceTier,
-	prices,
+	tierPrices,
 }) => {
-	const standardPrices = prices[LicenseTier.STANDARD] || {};
-	const developerPrices = prices[LicenseTier.DEVELOPER] || {};
+	const [, dispatch] = useNewAppContext();
+
+	const standardPrices = tierPrices[LicenseTier.STANDARD] || {};
+	const developerPrices = tierPrices[LicenseTier.DEVELOPER] || {};
 
 	const matchedCurrency = currenciesCode.find((c) => c.code === currencyCode);
+
+	const handleAddPriceTier = (licenseTier: LicenseTier, currency: string) => {
+		dispatch({
+			payload: {
+				currency,
+				licenseTier,
+			},
+			type: NewAppTypes.SET_LICENSING_ADD_PRICE,
+		});
+	};
+
+	const handleEditPriceTier = (
+		licenseTier: LicenseTier,
+		index: number,
+		price: LicensePrice,
+		currency: string
+	) => {
+		dispatch({
+			payload: {
+				currency,
+				index,
+				licenseTier,
+				price: price.value,
+				quantity: price.key,
+			},
+			type: NewAppTypes.SET_LICENSING_UPDATE_PRICES,
+		});
+	};
+
+	const handleDeletePriceTier = (
+		licenseTier: LicenseTier,
+		key: number,
+		currency: string
+	) => {
+		dispatch({
+			payload: {
+				currency,
+				key,
+				licenseTier,
+			},
+			type: NewAppTypes.SET_LICENSING_DELETE_PRICE,
+		});
+	};
 
 	const icon =
 		matchedCurrency?.code === 'EUR' ? (
@@ -53,18 +97,12 @@ const LicensePricePanel: React.FC<Props> = ({
 			/>
 		);
 
-	const shouldShowDeveloperCard = () => !!Object.keys(developerPrices).length;
+	const hasDeveloperPrices = () => !!Object.keys(developerPrices).length;
 
 	const handleDeleteAllPricesForCurrency = (currency: string) => {
-		const tiers = [LicenseTier.STANDARD, LicenseTier.DEVELOPER];
-
-		tiers.forEach((tier) => {
-			const pricesByTier = prices[tier] || {};
-			const keys = Object.keys(pricesByTier);
-
-			keys.forEach((key) => {
-				handleDeletePriceTier(tier, Number(key), currency, true);
-			});
+		dispatch({
+			payload: {currency},
+			type: NewAppTypes.SET_LICENSING_DELETE_CURRENCY,
 		});
 	};
 
@@ -135,7 +173,7 @@ const LicensePricePanel: React.FC<Props> = ({
 						tooltip="Developer licenses are limited to 5 unique addresses and should not be used for full scale production deployments."
 						tooltipText="More Info"
 					>
-						{shouldShowDeveloperCard() ? (
+						{hasDeveloperPrices() ? (
 							<LicensePriceCard
 								currency={currencyCode}
 								licensePrices={developerPrices}

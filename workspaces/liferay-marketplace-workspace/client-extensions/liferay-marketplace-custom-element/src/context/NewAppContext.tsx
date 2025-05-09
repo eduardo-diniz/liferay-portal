@@ -15,6 +15,8 @@ import {useParams} from 'react-router-dom';
 import {UploadedFile} from '../components/FileList/FileList';
 import Loading from '../components/Loading';
 import {
+	ProductLicenseType,
+	ProductPriceModel,
 	ProductSpecificationKey,
 	ProductTags,
 	ProductType,
@@ -29,7 +31,7 @@ export type LicenseType = 'Perpetual' | 'Subscription';
 
 type LicensingPrices = {
 	[currency: string]: {
-		developer: {
+		developer?: {
 			[key: number]: number;
 		};
 		standard: {
@@ -56,6 +58,7 @@ export enum NewAppTypes {
 	SET_DELETE_IMAGE = 'SET_DELETE_IMAGE',
 	SET_LICENSING = 'SET_LICENSING',
 	SET_LICENSING_ADD_PRICE = 'SET_LICENSING_ADD_PRICE',
+	SET_LICENSING_DELETE_CURRENCY = 'SET_LICENSING_DELETE_CURRENCY',
 	SET_LICENSING_DELETE_PRICE = 'SET_LICENSING_DELETE_PRICE',
 	SET_LICENSING_UPDATE_PRICES = 'SET_LICENSING_UPDATE_PRICES',
 	SET_LOADING = 'SET_LOADING',
@@ -144,9 +147,11 @@ type NewAppPayload = {
 		currency: string;
 		licenseTier: LicenseTier;
 	};
+	[NewAppTypes.SET_LICENSING_DELETE_CURRENCY]: {
+		currency: string;
+	};
 	[NewAppTypes.SET_LICENSING_DELETE_PRICE]: {
 		currency: string;
-		deleteCurrency?: boolean;
 		key: number;
 		licenseTier: LicenseTier;
 	};
@@ -180,10 +185,9 @@ const newAppInitialState: NewAppInitialState = {
 	},
 	catalogId: 0,
 	licensing: {
-		licenseType: 'Perpetual',
+		licenseType: ProductLicenseType.PERPETUAL,
 		prices: {
 			USD: {
-				developer: {},
 				standard: {
 					1: 0,
 				},
@@ -193,7 +197,7 @@ const newAppInitialState: NewAppInitialState = {
 	},
 	loading: false,
 	pricing: {
-		priceModel: '' as 'Free',
+		priceModel: '' as ProductPriceModel.FREE,
 	},
 	productId: 0,
 	profile: {
@@ -460,24 +464,54 @@ const reducer = (state: NewAppInitialState, action: AppActions) => {
 		}
 
 		case NewAppTypes.SET_LICENSING_ADD_PRICE: {
-			const currency = action.payload.currency;
-			const licenseTier: LicenseTier = action.payload.licenseTier;
+			const {currency, licenseTier} = action.payload;
 
 			const oldPrices = state.licensing.prices;
 
-			if (!oldPrices[currency]) {
-				oldPrices[currency] = {};
-			}
-			if (!oldPrices[currency][licenseTier]) {
-				oldPrices[currency][licenseTier] = {};
-			}
+			const currentPricesForCurrency = oldPrices[currency] || {};
+			const currentPricesForTier =
+				currentPricesForCurrency[licenseTier] || {};
 
-			const currentPrices = oldPrices[currency][licenseTier];
-			const newKey = Object.keys(currentPrices).length
-				? Math.max(...Object.keys(currentPrices).map(Number)) + 1
+			const newKey = Object.keys(currentPricesForTier).length
+				? Math.max(...Object.keys(currentPricesForTier).map(Number)) + 1
 				: 1;
 
-			oldPrices[currency][licenseTier][newKey] = 0;
+			const updatedPrices = {
+				...oldPrices,
+				[currency]: {
+					...currentPricesForCurrency,
+					[licenseTier]: {
+						...currentPricesForTier,
+						[newKey]: 0,
+					},
+				},
+			};
+
+			return {
+				...state,
+				licensing: {
+					...state.licensing,
+					prices: updatedPrices,
+				},
+			};
+		}
+
+		case NewAppTypes.SET_LICENSING_DELETE_PRICE: {
+			const {currency, key, licenseTier} = action.payload;
+
+			const oldPrices = state.licensing.prices;
+
+			if (!oldPrices[currency] || !oldPrices[currency][licenseTier]) {
+				return state;
+			}
+
+			const updatedLicenseTierPrices = {
+				...oldPrices[currency][licenseTier],
+			};
+
+			if (key in updatedLicenseTierPrices) {
+				delete updatedLicenseTierPrices[key];
+			}
 
 			return {
 				...state,
@@ -485,59 +519,28 @@ const reducer = (state: NewAppInitialState, action: AppActions) => {
 					...state.licensing,
 					prices: {
 						...oldPrices,
+						[currency]: {
+							...oldPrices[currency],
+							[licenseTier]: updatedLicenseTierPrices,
+						},
 					},
 				},
 			};
 		}
 
-		case NewAppTypes.SET_LICENSING_DELETE_PRICE: {
-			const {currency, deleteCurrency, key, licenseTier} = action.payload;
+		case NewAppTypes.SET_LICENSING_DELETE_CURRENCY: {
+			const {currency} = action.payload;
 
-			const oldPrices = state.licensing.prices;
+			const updatedPrices = {...state.licensing.prices};
+			delete updatedPrices[currency];
 
-			if (key && licenseTier && !deleteCurrency) {
-				if (!oldPrices[currency] || !oldPrices[currency][licenseTier]) {
-					return state;
-				}
-
-				const updatedLicenseTierPrices = {
-					...oldPrices[currency][licenseTier],
-				};
-
-				if (key in updatedLicenseTierPrices) {
-					delete updatedLicenseTierPrices[key];
-				}
-
-				return {
-					...state,
-					licensing: {
-						...state.licensing,
-						prices: {
-							...oldPrices,
-							[currency]: {
-								...oldPrices[currency],
-								[licenseTier]: updatedLicenseTierPrices,
-							},
-						},
-					},
-				};
-			}
-
-			if (currency && deleteCurrency) {
-				const updatedPrices = {...oldPrices};
-
-				delete updatedPrices[currency];
-
-				return {
-					...state,
-					licensing: {
-						...state.licensing,
-						prices: updatedPrices,
-					},
-				};
-			}
-
-			return state;
+			return {
+				...state,
+				licensing: {
+					...state.licensing,
+					prices: updatedPrices,
+				},
+			};
 		}
 
 		case NewAppTypes.SET_LICENSING_UPDATE_PRICES: {

@@ -5,15 +5,14 @@
 
 import {ClayButtonWithIcon} from '@clayui/button';
 import ClayForm, {ClayInput} from '@clayui/form';
-
-import './LicensePriceCard.scss';
-
 import classNames from 'classnames';
 
 import {FieldBase} from '../../../../../../components/FieldBase';
 import {LicenseTier} from '../../../../../../enums/licenseTier';
 import {currenciesCode} from '../../../../../../utils/currencies';
 import IconButton from '../IconButton';
+
+import './LicensePriceCard.scss';
 
 type LicensePriceCardProps = {
 	currency: string;
@@ -51,7 +50,7 @@ const LicensePriceCard: React.FC<LicensePriceCardProps> = ({
 				/>
 
 				<FieldBase
-					className="col-6 p-0"
+					className="col-3 p-0"
 					label="Unit Price"
 					labelClassName="teste"
 					tooltip="Adding a unit price sets the amount you want to charge for each individual license when the set quantity is chosen."
@@ -71,7 +70,7 @@ const LicensePriceCard: React.FC<LicensePriceCardProps> = ({
 											'disabled': !key,
 										}
 									)}
-									disabled={!key}
+									disabled={key === '1'}
 									min={1}
 									onChange={(event) => {
 										const rawValue = event.target.value;
@@ -92,16 +91,17 @@ const LicensePriceCard: React.FC<LicensePriceCardProps> = ({
 											onChange(
 												Number(key),
 												{
-													key: Number(key),
-													value: Number(
-														event.target.value
-													),
+													key: newQuantity,
+													value: licensePrices[
+														Number(key)
+													],
 												},
 												currency
 											);
 										}
 									}}
 									placeholder="1"
+									readOnly={key === '1'}
 									type="number"
 									value={Number(key)}
 								/>
