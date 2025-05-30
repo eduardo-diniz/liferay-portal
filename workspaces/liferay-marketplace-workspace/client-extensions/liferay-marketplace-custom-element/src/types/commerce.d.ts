@@ -34,3 +34,14 @@ type Channel = {
 	siteGroupId: number;
 	type: string;
 };
+
+type Currency = {
+	active: boolean;
+	code: string;
+	externalReferenceCode: string;
+	id: number;
+	primary: boolean;
+	priority: number;
+	rate: number;
+	symbol: string;
+};

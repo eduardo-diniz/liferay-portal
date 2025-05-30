@@ -101,3 +101,10 @@ export type ProjectDataSource = {
 	}[];
 	total: number;
 };
+
+export type RegionalPrices = {
+	basePrice: number;
+	basePriceFormated: string;
+	developer: {[minimumQuantity: number]: number};
+	standard: {[minimumQuantity: number]: number};
+};

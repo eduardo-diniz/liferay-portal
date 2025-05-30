@@ -39,6 +39,14 @@ export default class HeadlessCommerceAdminPricing {
 		);
 	}
 
+	static getPriceEntriesBySkuId(priceListId: number) {
+		const searchParams = new URLSearchParams();
+
+		return fetcher<APIResponse<PriceEntry>>(
+			`o/headless-commerce-admin-pricing/v2.0/price-lists/${priceListId}/price-entries?${searchParams.toString()}`
+		);
+	}
+
 	static getPriceListEntries(
 		priceListId: number,
 		searchParams = new URLSearchParams()

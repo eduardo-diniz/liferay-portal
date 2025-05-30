@@ -86,12 +86,6 @@ const getProductPrice = async (product) => {
 		)
 	);
 
-	const standardSkuId = standardSku.id;
-
-	const isRegionalPricingArray = await getPrices(product, standardSkuId);
-
-	const isRegionalPricing = isRegionalPricingArray[0];
-
 	const licenseType = productSpecifications.find(
 		(productSpecification) =>
 			productSpecification.specificationKey === 'license-type'
@@ -101,11 +95,29 @@ const getProductPrice = async (product) => {
 		licenseType?.value === 'Perpetual' ? 'One-Time' : 'Annually';
 	const currency = await getCurrentCurrency();
 
+	const oAuth2Client = Liferay.OAuth2Client?.FromUserAgentApplication(
+		'liferay-marketplace-etc-spring-boot-oauth-application-user-agent'
+	);
+
+	let isRegionalPricing = null;
+
+	try {
+		isRegionalPricing = await oAuth2Client?.fetch(
+			`/marketplace/product/${productId}/prices?currencyCode=${Liferay.CommerceContext.currency.currencyCode}`
+		);
+	}
+	catch (error) {
+		console.error('error', error);
+	}
+
 	let displayPrice = '';
 
 	if (currency) {
-		if (isRegionalPricing?.price !== null) {
-			displayPrice = `${currency.symbol} ${isRegionalPricing.price.toFixed(2)}`;
+		if (
+			isRegionalPricing?.basePrice !== null &&
+			isRegionalPricing?.basePriceFormated
+		) {
+			displayPrice = `${currency.symbol} ${isRegionalPricing.basePriceFormated}`;
 		}
 		else {
 			const convertedPrice = standardSku?.price?.price * currency.rate;
@@ -165,61 +177,6 @@ const getCommerceProduct = async (channelId) => {
 	}
 	catch {
 		return {skus: []};
-	}
-};
-
-const getPriceListByCatalogName = async (catalogName) => {
-	try {
-		const response = await Liferay.Util.fetch(
-			`/o/headless-commerce-admin-pricing/v2.0/price-lists?search=catalogName%20eq%20%27${encodeURIComponent(catalogName)}%27`
-		);
-
-		const data = await response.json();
-
-		const filteredItems = (data.items || []).filter(
-			(item) =>
-				item.currencyCode ===
-				Liferay.CommerceContext.currency.currencyCode
-		);
-
-		return filteredItems;
-	}
-	catch (error) {
-		console.error('Erro:', error);
-
-		return [];
-	}
-};
-
-const getPriceEntriesBySkuId = async (priceListId, skuId) => {
-	try {
-		const response = await Liferay.Util.fetch(
-			`/o/headless-commerce-admin-pricing/v2.0/price-lists/${priceListId}/price-entries?filter=skuId%20eq%20${skuId}&pageSize=500`
-		);
-
-		const data = await response.json();
-
-		return data.items || [];
-	}
-	catch (error) {
-		console.error(`Error fetching PriceList ${priceListId}:`, error);
-
-		return [];
-	}
-};
-
-const getPrices = async (product, standardSkuId) => {
-	const catalogName = product.catalogName;
-
-	const priceLists = await getPriceListByCatalogName(catalogName);
-
-	for (const priceList of priceLists) {
-		const entries = await getPriceEntriesBySkuId(
-			priceList.id,
-			standardSkuId
-		);
-
-		return entries;
 	}
 };
 

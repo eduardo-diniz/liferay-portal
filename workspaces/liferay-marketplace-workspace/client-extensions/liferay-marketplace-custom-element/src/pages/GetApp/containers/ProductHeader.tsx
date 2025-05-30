@@ -3,8 +3,11 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import useSWR from 'swr';
+
 import {useMarketplaceContext} from '../../../context/MarketplaceContext';
 import {LicenseType} from '../../../enums/Product';
+import usePrices from '../../../hooks/usePrices';
 import {getValueFromDeliverySpecifications} from '../../../utils/util';
 import AccountEmailInfo from '../../CustomerDashboard/pages/Apps/App/Licenses/CreateLicense/AccountInfo';
 import {useGetAppContext} from '../GetAppContextProvider';
@@ -30,11 +33,16 @@ type ProductHeaderProps = {
 	productBasePriceAndTrial: ReturnType<typeof getProductBasePriceAndTrial>;
 };
 
-const ProductHeader: React.FC<ProductHeaderProps> = ({
-	productBasePriceAndTrial,
-}) => {
+const ProductHeader: React.FC<ProductHeaderProps> = () => {
 	const [{account, product}] = useGetAppContext();
 	const {myUserAccount} = useMarketplaceContext();
+
+	const prices = usePrices(product);
+
+	const {data: productPrice} = useSWR(
+		product && prices ? `/product-price/${product.id}/` : null,
+		() => getProductBasePriceAndTrial(product, false, prices)
+	);
 
 	const productCreatorAccountName = product?.catalogName || '';
 
@@ -50,13 +58,14 @@ const ProductHeader: React.FC<ProductHeaderProps> = ({
 				<div className="align-items-end d-flex flex-column price-text">
 					<strong className="mr-1">Price</strong>
 
-					<div className="mr-1 py-2">
+					<div className="mr-1 py-2 text-nowrap">
 						<ProductHeaderPrice
-							productBasePriceAndTrial={productBasePriceAndTrial}
+							basePrice={productPrice?.basePrice}
+							trialSku={productPrice?.trialSku}
 						/>
 					</div>
 
-					{!!productBasePriceAndTrial.basePrice && (
+					{!!productPrice?.basePrice && (
 						<div className="license-tag px-2">
 							{getLicenseTagText(product as DeliveryProduct)}
 						</div>

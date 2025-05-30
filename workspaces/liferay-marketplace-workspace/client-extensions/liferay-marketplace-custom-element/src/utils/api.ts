@@ -245,12 +245,10 @@ export async function getAccountAddressesFromCommerce(accountId: number) {
 export async function createCart({
 	accountId,
 	channelId,
-	currencyCode = 'USD',
 	orderTypeExternalReferenceCode,
 }: {
 	accountId: number;
 	channelId: number | string;
-	currencyCode?: string;
 	orderTypeExternalReferenceCode: string;
 }) {
 	const response = await fetch(
@@ -258,7 +256,7 @@ export async function createCart({
 		{
 			body: JSON.stringify({
 				accountId,
-				currencyCode,
+				currencyCode: Liferay.CommerceContext.currency.currencyCode,
 				orderTypeExternalReferenceCode,
 			}),
 			headers,
@@ -436,6 +434,18 @@ export async function getPriceListIdPriceEntries(priceListId: number) {
 	return await response.json();
 }
 
+export async function getTierPricesByPriceEntry(priceEntry: number) {
+	const response = await fetch(
+		`${baseURL}/o/headless-commerce-admin-pricing/v2.0/price-entries/${priceEntry}/tier-prices`,
+		{
+			headers,
+			method: 'GET',
+		}
+	);
+
+	return response.json();
+}
+
 export async function getVocabularies() {
 	const response = await fetch(
 		`${baseURL}/o/headless-admin-taxonomy/v1.0/sites/${Liferay.ThemeDisplay.getCompanyGroupId()}/taxonomy-vocabularies`,
@@ -586,7 +596,7 @@ export async function postPriceListEntry(priceListId: number, priceEntry: any) {
 }
 
 export async function postPriceEntryIdTierPrice(
-	priceEntryId: any,
+	priceEntryId: Number,
 	tierPrice: any
 ) {
 	const response = await fetch(
@@ -631,7 +641,7 @@ export async function postProductOption(
 
 	const {
 		items: [{id}],
-	} = (await response.json()) as {items: ProductOptionItem[]};
+	} = (await response.json()) as {items: ProductOption[]};
 
 	return id;
 }

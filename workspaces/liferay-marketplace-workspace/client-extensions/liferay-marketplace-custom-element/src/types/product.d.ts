@@ -162,6 +162,13 @@ type ProductAttachment = {
 	title: {[key: string]: string};
 };
 
+type ProductBasePriceAndTrial = {
+	basePrice?: number;
+	firstSku?: DeliverySKU;
+	prices?: RegionalPrices;
+	trialSku?: DeliverySKU;
+};
+
 type ProductCategories = {
 	externalReferenceCode: string;
 	id: number;
@@ -192,7 +199,7 @@ type ProductOption = {
 	typeSettings: string;
 };
 
-type ProductOptionItem = {
+type ProductOEntryptionItem = {
 	id: number;
 	key: string;
 	name: string;
@@ -207,6 +214,11 @@ type ProductSpecification = {
 	specificationId?: number;
 	specificationKey: string;
 	value: {[key: string]: string};
+};
+
+type RegionalPrices = {
+	developer: {  [minimumQuantity: number]: number;} | undefined;
+	standard: {  [minimumQuantity: number]: number;	} | undefined;
 };
 
 type SKU = {

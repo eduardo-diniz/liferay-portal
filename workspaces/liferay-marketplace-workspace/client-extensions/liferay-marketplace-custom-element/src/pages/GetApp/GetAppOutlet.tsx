@@ -33,16 +33,24 @@ import getReplaceCurrentURL from './utils/getReplaceCurrentURL';
 import {postCartByPaymentMethod} from './utils/postCartByPaymentMethod';
 
 import './styles/index.scss';
-import {SkuOptions} from '../../enums/Product';
 
-const getProductBasePriceAndTrial = (
+import useSWR from 'swr';
+
+import {SkuOptions} from '../../enums/Product';
+import HeadlessCommerceDeliveryCatalog from '../../services/rest/HeadlessCommerceDeliveryCatalog';
+import normalizeTierPrices from './utils/normalizeTierPrices';
+
+const getProductBasePriceAndTrial = async (
 	product: DeliveryProduct,
-	isCloudApp: boolean
+	isCloudApp: boolean,
+	prices?: RegionalPrices
 ) => {
 	const baseValue = {
 		basePrice: 0,
+		developerSku: undefined,
 		firstSku: undefined,
-		isTrial: false,
+		prices: undefined,
+		standardSku: undefined,
 		trialSku: undefined,
 	};
 
@@ -63,8 +71,11 @@ const getProductBasePriceAndTrial = (
 		};
 	}
 
-	let standardSku;
-	let trialSku;
+	let basePrice: number | undefined;
+	let standardSku: DeliverySKU | undefined;
+	let trialSku: DeliverySKU | undefined;
+	let fallbackPrices: RegionalPrices | undefined;
+	let developerSku: DeliverySKU | undefined;
 
 	if (isCloudApp) {
 		trialSku = skus.find(({skuOptions}) =>
@@ -85,29 +96,67 @@ const getProductBasePriceAndTrial = (
 	}
 	else {
 		const skusLicenseUsageTypes = skus
-			.map(({skuOptions, ...sku}) => ({
-				...sku,
-				skuOptions: skuOptions.find((skuOption) =>
-					[SkuOptions.STANDARD, SkuOptions.TRIAL].includes(
-						skuOption.skuOptionValueKey as SkuOptions
-					)
-				),
-			}))
-			.filter(({skuOptions}) => skuOptions);
+			.map((sku) => {
+				const match = sku.skuOptions.find((skuOption) =>
+					[
+						SkuOptions.STANDARD,
+						SkuOptions.TRIAL,
+						SkuOptions.DEVELOPER,
+					].includes(skuOption.skuOptionValueKey as SkuOptions)
+				);
+
+				return match ? {...sku, matchedOption: match} : null;
+			})
+			.filter(Boolean) as (DeliverySKU & {
+			matchedOption: DeliverySKUOption;
+		})[];
 
 		standardSku = skusLicenseUsageTypes.find(
-			({skuOptions}) =>
-				skuOptions?.skuOptionValueKey === SkuOptions.STANDARD
+			({matchedOption}) =>
+				matchedOption.skuOptionValueKey === SkuOptions.STANDARD
+		);
+
+		developerSku = skusLicenseUsageTypes.find(
+			({matchedOption}) =>
+				matchedOption.skuOptionValueKey === SkuOptions.DEVELOPER
 		);
 
 		trialSku = skusLicenseUsageTypes.find(
-			({skuOptions}) => skuOptions?.skuOptionValueKey === SkuOptions.TRIAL
+			({matchedOption}) =>
+				matchedOption.skuOptionValueKey === SkuOptions.TRIAL
 		);
+
+		const currencyResponse =
+			await HeadlessCommerceDeliveryCatalog.getCurrencies(
+				Liferay.CommerceContext.commerceChannelId
+			);
+
+		const currency = currencyResponse.items.find(
+			({code}: {code: String}) =>
+				code === Liferay.CommerceContext.currency.currencyCode
+		);
+
+		if (currency) {
+			basePrice =
+				Object.values(prices?.standard ?? {})[0] ??
+				(standardSku?.price?.price ?? 0) * currency.rate;
+		}
+		else {
+			basePrice = standardSku?.price?.price;
+		}
+
+		if (standardSku?.tierPrices) {
+			fallbackPrices = normalizeTierPrices(
+				standardSku.tierPrices,
+				developerSku?.tierPrices
+			);
+		}
 	}
 
 	return {
-		basePrice: standardSku?.price?.price,
+		basePrice,
 		firstSku: skus[0],
+		prices: prices ?? fallbackPrices,
 		standardSku,
 		trialSku,
 	};
@@ -144,7 +193,12 @@ const GetAppOutlet = () => {
 		isCloudApp
 	);
 
-	const {firstSku, trialSku} = productBasePriceAndTrial;
+	const {data: productPrice} = useSWR(`/product-price/${product?.id}`, () =>
+		getProductBasePriceAndTrial(product, false)
+	);
+
+	const firstSku = productPrice?.firstSku;
+	const trialSku = productPrice?.trialSku;
 
 	const sku = trialSku ?? firstSku;
 
@@ -234,7 +288,6 @@ const GetAppOutlet = () => {
 				selectedSKU,
 				sku: sku as any,
 			});
-
 			const cartResponse = orderId
 				? await cartUtil.updateCart(orderId, {
 						...cart,

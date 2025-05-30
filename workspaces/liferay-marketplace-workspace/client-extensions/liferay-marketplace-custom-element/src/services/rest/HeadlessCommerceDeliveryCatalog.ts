@@ -25,6 +25,12 @@ export default class HeadlessCommerceDeliveryCatalog {
 		);
 	}
 
+	static async getCurrencies(channelId: string | number) {
+		return fetcher<APIResponse<Currency>>(
+			`/o/headless-commerce-delivery-catalog/v1.0/channels/${channelId}/currencies`
+		);
+	}
+
 	static async getChannels(
 		searchParams: URLSearchParams = new URLSearchParams()
 	) {

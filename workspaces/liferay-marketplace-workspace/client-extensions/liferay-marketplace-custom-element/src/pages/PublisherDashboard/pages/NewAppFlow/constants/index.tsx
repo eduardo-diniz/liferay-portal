@@ -119,14 +119,16 @@ export const APP_FLOW_ITEMS = [
 		description: () =>
 			`Inform the support and help references. This will impact how users will experience this app's customer support and learning.`,
 		label: 'Support',
-		parseSchema: (context: NewAppInitialState) => {
-			const schema =
-				context.pricing.priceModel === ProductPriceModel.PAID
-					? zodSchema.appPublishing.support.supportForPaidApp
-					: zodSchema.appPublishing.support.supportForFreeApp;
 
-			return schema.safeParse(context.support);
-		},
+		// parseSchema: (context: NewAppInitialState) => {
+		// 	const schema =
+		// 		context.pricing.priceModel === ProductPriceModel.PAID
+		// 			? zodSchema.appPublishing.support.supportForPaidApp
+		// 			: zodSchema.appPublishing.support.supportForFreeApp;
+
+		// 	return schema.safeParse(context.support);
+		// },
+
 		path: 'support',
 		saveAsDraftRequired: false,
 		title: (isEditing = false) =>

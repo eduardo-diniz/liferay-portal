@@ -9,7 +9,7 @@ import classNames from 'classnames';
 
 import {FieldBase} from '../../../../../../components/FieldBase';
 import {ProductLicenseTier} from '../../../../../../enums/Product';
-import {currenciesCode} from '../../../../../../utils/currencies';
+import {getCurrencySymbol} from '../../../../../GetApp/utils/getCurrencySymbol';
 import IconButton from '../IconButton';
 
 import './LicensePriceCard.scss';
@@ -26,9 +26,6 @@ type LicensePriceCardProps = {
 	) => void;
 	onDelete: (key: number, currency: string) => void;
 };
-
-const getSymbol = (currency: string) =>
-	currenciesCode.find(({code}) => code === currency)?.symbol || '$';
 
 const LicensePriceCard: React.FC<LicensePriceCardProps> = ({
 	currency,
@@ -111,7 +108,7 @@ const LicensePriceCard: React.FC<LicensePriceCardProps> = ({
 									);
 								}
 							}}
-							placeholder={`${getSymbol(currency)}0.00`}
+							placeholder={`${getCurrencySymbol(currency)}0.00`}
 							type="text"
 							value={value || ''}
 						/>
