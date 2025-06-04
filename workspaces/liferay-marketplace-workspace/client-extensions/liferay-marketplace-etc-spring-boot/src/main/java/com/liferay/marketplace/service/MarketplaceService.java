@@ -214,68 +214,6 @@ public class MarketplaceService extends BaseService {
 		return map;
 	}
 
-	public String getProductVersion(Long skuId) {
-		String version = "1.0.0";
-
-		try {
-			SkuResource skuResource = getSkuResource();
-
-			Sku sku = skuResource.getSku(skuId);
-
-			for (CustomField customField : sku.getCustomFields()) {
-				if (Objects.equals(customField.getName(), "Version")) {
-					version = customField.getCustomValue(
-					).getData(
-					).toString();
-
-					break;
-				}
-			}
-		}
-		catch (Exception exception) {
-			_log.error(
-				"Unable to get product version " + exception.getMessage());
-		}
-
-		return version;
-	}
-
-	public String getSkuOptionValue(String key, SkuOption[] skuOptions) {
-		for (SkuOption skuOption : skuOptions) {
-			if (!Objects.equals(key, skuOption.getKey())) {
-				continue;
-			}
-
-			String value = skuOption.getValue();
-
-			String firstCharUpperCase = value.substring(
-				0, 1
-			).toUpperCase();
-
-			return firstCharUpperCase + value.substring(1);
-		}
-
-		return null;
-	}
-
-	public String getSkuOptionValue(String key, String options) {
-		JSONArray optionsJSONArray = new JSONArray(options);
-
-		for (int i = 0; i < optionsJSONArray.length(); i++) {
-			JSONObject jsonObject = optionsJSONArray.getJSONObject(i);
-
-			if (!Objects.equals(key, jsonObject.getString("key"))) {
-				continue;
-			}
-
-			JSONArray jsonArray = jsonObject.getJSONArray("value");
-
-			return jsonArray.getString(0);
-		}
-
-		return null;
-	}
-
 	public SkuResource getSkuResource() throws Exception {
 		return SkuResource.builder(
 		).header(

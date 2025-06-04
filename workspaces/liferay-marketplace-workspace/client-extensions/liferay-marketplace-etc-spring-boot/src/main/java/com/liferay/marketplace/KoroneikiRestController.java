@@ -16,6 +16,7 @@ import com.liferay.headless.commerce.admin.order.client.dto.v1_0.OrderItem;
 import com.liferay.headless.commerce.admin.order.client.resource.v1_0.OrderItemResource;
 import com.liferay.marketplace.service.KoroneikiService;
 import com.liferay.marketplace.service.MarketplaceService;
+import com.liferay.marketplace.util.MarketplaceUtil;
 import com.liferay.osb.koroneiki.phloem.rest.client.dto.v1_0.ExternalLink;
 import com.liferay.osb.koroneiki.phloem.rest.client.dto.v1_0.ProductConsumption;
 import com.liferay.osb.koroneiki.phloem.rest.client.dto.v1_0.ProductPurchase;
@@ -116,7 +117,7 @@ public class KoroneikiRestController extends BaseRestController {
 				);
 			}
 
-			String name = _marketplaceService.getSkuOptionValue(
+			String name = MarketplaceUtil.getSkuOptionValue(
 				"dxp-license-usage-type", orderItem.getOptions());
 
 			if (name == null) {
@@ -146,6 +147,8 @@ public class KoroneikiRestController extends BaseRestController {
 				startDate = order.getCreateDate();
 			}
 
+			SkuResource skuResource = _marketplaceService.getSkuResource();
+
 			jsonArray.put(
 				new JSONObject(
 				).put(
@@ -162,7 +165,8 @@ public class KoroneikiRestController extends BaseRestController {
 					"purchasedCount", orderItem.getQuantity()
 				).put(
 					"productVersion",
-					_marketplaceService.getProductVersion(orderItem.getSkuId())
+					MarketplaceUtil.getProductVersion(
+						skuResource.getSku(orderItem.getSkuId()))
 				).put(
 					"startDate",
 					ZonedDateTime.ofInstant(
@@ -191,7 +195,7 @@ public class KoroneikiRestController extends BaseRestController {
 					product.getProductId(), Pagination.of(1, 10)
 				).getItems()) {
 
-			String dxpLicenseUsageType = _marketplaceService.getSkuOptionValue(
+			String dxpLicenseUsageType = MarketplaceUtil.getSkuOptionValue(
 				"dxp-license-usage-type", sku.getSkuOptions());
 
 			if ((dxpLicenseUsageType == null) ||
