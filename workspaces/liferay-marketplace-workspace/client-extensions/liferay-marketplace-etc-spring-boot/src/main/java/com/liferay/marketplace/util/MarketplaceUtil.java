@@ -5,12 +5,19 @@
 
 package com.liferay.marketplace.util;
 
+import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.CustomField;
+import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.Sku;
+import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.SkuOption;
 import com.liferay.headless.commerce.admin.order.client.dto.v1_0.OrderItem;
 import com.liferay.headless.commerce.admin.order.client.pagination.Page;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -105,5 +112,85 @@ public class MarketplaceUtil {
 
 		return new JSONObject();
 	}
+
+	public static String getProductVersion(Sku sku) {
+		String version = "1.0.0";
+
+		try {
+			for (CustomField customField : sku.getCustomFields()) {
+				if (Objects.equals(customField.getName(), "Version")) {
+					version = customField.getCustomValue(
+					).getData(
+					).toString();
+
+					break;
+				}
+			}
+		}
+		catch (Exception exception) {
+			_log.error(
+				"Unable to get product version " + exception.getMessage());
+		}
+
+		return version;
+	}
+
+	public static Long getSkuIdBySkuOptionValue(
+		Collection<Sku> skus, String skuOptionValue) {
+
+		for (Sku sku : skus) {
+			SkuOption[] skuOptions = sku.getSkuOptions();
+
+			if (skuOptions == null) {
+				continue;
+			}
+
+			for (SkuOption skuOption : skuOptions) {
+				if (Objects.equals(skuOption.getValue(), skuOptionValue)) {
+					return sku.getId();
+				}
+			}
+		}
+
+		return null;
+	}
+
+	public static String getSkuOptionValue(String key, SkuOption[] skuOptions) {
+		for (SkuOption skuOption : skuOptions) {
+			if (!Objects.equals(key, skuOption.getKey())) {
+				continue;
+			}
+
+			String value = skuOption.getValue();
+
+			String firstCharUpperCase = value.substring(
+				0, 1
+			).toUpperCase();
+
+			return firstCharUpperCase + value.substring(1);
+		}
+
+		return null;
+	}
+
+	public static String getSkuOptionValue(String key, String options) {
+		JSONArray optionsJSONArray = new JSONArray(options);
+
+		for (int i = 0; i < optionsJSONArray.length(); i++) {
+			JSONObject jsonObject = optionsJSONArray.getJSONObject(i);
+
+			if (!Objects.equals(key, jsonObject.getString("key"))) {
+				continue;
+			}
+
+			JSONArray jsonArray = jsonObject.getJSONArray("value");
+
+			return jsonArray.getString(0);
+		}
+
+		return null;
+	}
+
+	private static final Log _log = LogFactory.getLog(MarketplaceUtil.class);
 
 }

@@ -114,13 +114,15 @@ public class AssetCategoryServiceTest {
 		try (SafeCloseable safeCloseable =
 				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
 
+			// With permissions
+
 			AssetCategory assetCategory =
 				_assetCategoryService.getOrAddIncompleteCategory(
 					RandomTestUtil.randomString(), _group.getGroupId());
 
 			Assert.assertNotNull(assetCategory);
 
-			// Without resource permission
+			// Without permissions
 
 			User user = UserTestUtil.addGroupUser(
 				_group, RoleConstants.SITE_MEMBER);

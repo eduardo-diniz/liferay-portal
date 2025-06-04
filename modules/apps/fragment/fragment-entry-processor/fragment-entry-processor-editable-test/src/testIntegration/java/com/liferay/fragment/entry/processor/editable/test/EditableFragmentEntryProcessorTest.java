@@ -947,7 +947,7 @@ public class EditableFragmentEntryProcessorTest {
 			LocaleUtil.US, FragmentEntryLinkConstants.VIEW);
 
 		Assert.assertEquals(
-			AnalyticsAttributesUtil.ACTION_VIEW,
+			AnalyticsAttributesUtil.ACTION_IMPRESSION,
 			element.attr("data-analytics-asset-action"));
 		Assert.assertEquals(
 			"title", element.attr("data-analytics-asset-field"));
@@ -1536,7 +1536,7 @@ public class EditableFragmentEntryProcessorTest {
 		ObjectDefinition objectDefinition =
 			_objectDefinitionLocalService.addCustomObjectDefinition(
 				TestPropsValues.getUserId(), 0, null, false, false, true, false,
-				false, false,
+				false, false, null,
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 				ObjectDefinitionTestUtil.getRandomName(), null,
 				"control_panel.sites",

@@ -889,17 +889,14 @@ public class ObjectFieldLocalServiceImpl
 
 		objectField = objectFieldPersistence.update(objectField);
 
-		if (ObjectFieldUtil.isMetadata(name) ||
-			(system && objectDefinition.isUnmodifiableSystemObject())) {
-
-			return objectField;
-		}
-
 		_addOrUpdateObjectFieldSettings(
 			objectField, objectDefinition, objectFieldBusinessType,
 			objectFieldSettings, null);
 
-		if (!objectDefinition.isApproved()) {
+		if (!objectDefinition.isApproved() ||
+			ObjectFieldUtil.isMetadata(name) ||
+			(system && objectDefinition.isUnmodifiableSystemObject())) {
+
 			return objectField;
 		}
 
@@ -962,6 +959,14 @@ public class ObjectFieldLocalServiceImpl
 			List<ObjectFieldSetting> objectFieldSettings,
 			ObjectField oldObjectField)
 		throws PortalException {
+
+		if (ListUtil.isEmpty(objectFieldSettings) &&
+			(ObjectFieldUtil.isMetadata(newObjectField.getName()) ||
+			 (newObjectField.isSystem() &&
+			  objectDefinition.isUnmodifiableSystemObject()))) {
+
+			return;
+		}
 
 		objectFieldBusinessType.validateObjectFieldSettings(
 			newObjectField, objectFieldSettings);
@@ -1915,8 +1920,9 @@ public class ObjectFieldLocalServiceImpl
 		"createDate", "creator", "id", "modifiedDate", "status");
 	private final Set<String> _reservedNames = SetUtil.fromArray(
 		"actions", "companyid", "createdate", "creator", "currentdate",
-		"datecreated", "datemodified", "externalreferencecode", "groupid", "id",
-		"lastpublishdate", "modifieddate", "status", "statusbyuserid",
+		"datecreated", "datemodified", "displaydate", "expirationdate",
+		"externalreferencecode", "groupid", "id", "lastpublishdate",
+		"modifieddate", "reviewdate", "status", "statusbyuserid",
 		"statusbyusername", "statusdate", "userid", "username");
 
 	@Reference

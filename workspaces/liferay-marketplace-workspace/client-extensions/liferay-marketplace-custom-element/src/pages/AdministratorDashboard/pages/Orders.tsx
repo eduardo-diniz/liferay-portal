@@ -9,7 +9,10 @@ import {formatDistance} from 'date-fns';
 import useSWR from 'swr';
 
 import ListView, {ListViewProps} from '../../../components/ListView';
-import {FilterOption} from '../../../components/ListView/components/ManagementToolbar';
+import {
+	FilterOption,
+	ManagementToolbarProps,
+} from '../../../components/ListView/components/ManagementToolbar';
 import {ListViewTypes} from '../../../components/ListView/hooks/ListViewContext';
 import Page from '../../../components/Page';
 import SearchBuilder from '../../../core/SearchBuilder';
@@ -45,7 +48,9 @@ function redirectTo(path: string) {
 }
 
 type AdministratorOrdersListViewProps = {
+	isSortable?: boolean;
 	listViewProps?: Partial<ListViewProps<Order>>;
+	managementToolbarProps?: ManagementToolbarProps & {visible?: boolean};
 };
 
 const orderTypes = [
@@ -74,21 +79,15 @@ const orderTypeFilters: FilterOption[] = orderTypes.map((orderType) => ({
 }));
 
 export function AdministratorOrdersListView({
+	isSortable,
 	listViewProps,
+	managementToolbarProps,
 }: AdministratorOrdersListViewProps) {
 	return (
 		<ListView<Order>
 			emptyStateProps={{title: i18n.translate('no-orders-yet')}}
 			id="administrator-orders"
-			managementToolbarProps={{
-				filterItems: [
-					{
-						children: orderTypeFilters,
-						name: i18n.translate('app-type'),
-					},
-				],
-				visible: true,
-			}}
+			managementToolbarProps={managementToolbarProps}
 			paginationOptions={{displayType: 'always'}}
 			resource={function getAdministratorOrders({
 				filters,
@@ -228,7 +227,7 @@ export function AdministratorOrdersListView({
 								)}
 							</span>
 						),
-						sortable: true,
+						sortable: isSortable,
 					},
 				],
 			}}
@@ -332,7 +331,18 @@ export default function Orders() {
 				pageRendererProps={{className: 'border py-2'}}
 				title={i18n.translate('orders')}
 			>
-				<AdministratorOrdersListView />
+				<AdministratorOrdersListView
+					isSortable
+					managementToolbarProps={{
+						filterItems: [
+							{
+								children: orderTypeFilters,
+								name: i18n.translate('app-type'),
+							},
+						],
+						visible: true,
+					}}
+				/>
 			</Page>
 		</>
 	);

@@ -11,8 +11,15 @@ package com.liferay.portal.verify;
 public class PreupgradeVerifyProcessSuite extends PreupgradeVerifyProcess {
 
 	@Override
-	public void verify() throws VerifyException {
+	public void doVerify() throws Exception {
+		verify(new PreupgradeVerifyDatabaseCharacterSet());
+		verify(new PreupgradeVerifyDefaultUsers());
 		verify(new PreupgradeVerifyProperties());
+	}
+
+	@Override
+	protected boolean isSkipDBPartitions() {
+		return true;
 	}
 
 }

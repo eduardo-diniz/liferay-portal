@@ -8,12 +8,18 @@ package com.liferay.marketplace;
 import com.liferay.client.extension.util.spring.boot3.BaseRestController;
 import com.liferay.headless.admin.user.client.dto.v1_0.Account;
 import com.liferay.headless.admin.user.client.resource.v1_0.AccountResource;
+import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.Currency;
 import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.Product;
+import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.Sku;
 import com.liferay.headless.commerce.admin.catalog.client.resource.v1_0.SkuResource;
 import com.liferay.headless.commerce.admin.order.client.dto.v1_0.Order;
 import com.liferay.headless.commerce.admin.order.client.dto.v1_0.OrderItem;
 import com.liferay.headless.commerce.admin.order.client.pagination.Page;
 import com.liferay.headless.commerce.admin.order.client.pagination.Pagination;
+import com.liferay.headless.commerce.admin.pricing.client.dto.v2_0.PriceEntry;
+import com.liferay.headless.commerce.admin.pricing.client.dto.v2_0.PriceList;
+import com.liferay.headless.commerce.admin.pricing.client.dto.v2_0.TierPrice;
+import com.liferay.headless.commerce.admin.pricing.client.resource.v2_0.TierPriceResource;
 import com.liferay.marketplace.constants.MarketplaceConstants;
 import com.liferay.marketplace.service.KoroneikiService;
 import com.liferay.marketplace.service.MarketplaceService;
@@ -22,12 +28,17 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 
+import java.math.BigDecimal;
+
 import java.net.URL;
 
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -39,9 +50,12 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -50,6 +64,48 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/marketplace")
 @RestController
 public class MarketplaceRestController extends BaseRestController {
+
+	@GetMapping("/product/{productId}/prices")
+	public Map<String, Object> getTierPricesByProductId(
+			@PathVariable Long productId,
+			@RequestParam(defaultValue = "USD") String currencyCode)
+		throws Exception {
+
+		PriceList priceList = _marketplaceService.getPriceListIdsByCatalogName(
+			currencyCode, _marketplaceService.getProduct(productId));
+
+		SkuResource skuResource = _marketplaceService.getSkuResource();
+
+		Collection<Sku> skus = skuResource.getProductIdSkusPage(
+			productId,
+			com.liferay.headless.commerce.admin.catalog.client.pagination.
+				Pagination.of(1, 50)
+		).getItems();
+
+		Map<String, Object> map = new HashMap<>();
+
+		Currency currency = _marketplaceService.getCurrency(currencyCode);
+
+		for (String skuOptionValue : new String[] {"developer", "standard"}) {
+			Long skuId = MarketplaceUtil.getSkuIdBySkuOptionValue(
+				skus, skuOptionValue);
+
+			PriceEntry priceEntry =
+				_marketplaceService.getPriceListIdPriceEntriesPage(
+					"skuId eq " + skuId, priceList.getId()
+				).fetchFirstItem();
+
+			Collection<TierPrice> tierPrice = _getTierPricesByPriceEntryId(
+				priceEntry);
+
+			map.put(
+				skuOptionValue,
+				_getTierPriceValues(
+					currency, currencyCode, priceList, tierPrice));
+		}
+
+		return map;
+	}
 
 	@PostMapping("product/purchase")
 	public void postProductPurchase(
@@ -180,6 +236,50 @@ public class MarketplaceRestController extends BaseRestController {
 			).build());
 	}
 
+	private Collection<TierPrice> _getTierPricesByPriceEntryId(
+			PriceEntry priceEntry)
+		throws Exception {
+
+		if (priceEntry == null) {
+			return Collections.emptyList();
+		}
+
+		TierPriceResource tierPriceResource =
+			_marketplaceService.getTierPriceResource();
+
+		com.liferay.headless.commerce.admin.pricing.client.pagination.Page
+			<TierPrice> tierPricesPage =
+				tierPriceResource.getPriceEntryIdTierPricesPage(
+					priceEntry.getPriceEntryId(),
+					com.liferay.headless.commerce.admin.pricing.client.
+						pagination.Pagination.of(1, 50));
+
+		return tierPricesPage.getItems();
+	}
+
+	private Map<String, Double> _getTierPriceValues(
+		Currency currency, String currencyCode, PriceList priceList,
+		Collection<TierPrice> tierPrices) {
+
+		Map<String, Double> map = new HashMap<>();
+
+		for (TierPrice tierPrice : tierPrices) {
+			BigDecimal price = BigDecimal.valueOf(tierPrice.getPrice());
+
+			BigDecimal convertedPrice = price.multiply(currency.getRate());
+
+			if (Objects.equals(priceList.getCurrencyCode(), currencyCode)) {
+				convertedPrice = price;
+			}
+
+			map.put(
+				String.valueOf(tierPrice.getMinimumQuantity()),
+				convertedPrice.doubleValue());
+		}
+
+		return map;
+	}
+
 	private void _setUpCloudProductPurchase(
 			Order order, Page<OrderItem> orderItemPage)
 		throws Exception {
@@ -243,7 +343,7 @@ public class MarketplaceRestController extends BaseRestController {
 			for (OrderItem orderItem : orderItemPage.getItems()) {
 				_koroneikiService.postAccountAccountKeyProductPurchase(
 					account, jwt,
-					_marketplaceService.getSkuOptionValue(
+					MarketplaceUtil.getSkuOptionValue(
 						"dxp-license-usage-type", orderItem.getOptions()),
 					orderItem, productSpecificationsMap);
 			}

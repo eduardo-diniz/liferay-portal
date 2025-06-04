@@ -259,7 +259,7 @@ public class PortalInstances {
 
 			if (!skipCheck) {
 				try {
-					CompanyLocalServiceUtil.checkCompany(company.getWebId());
+					CompanyLocalServiceUtil.checkCompany(company, false);
 				}
 				catch (Exception exception) {
 					_log.error(exception);
@@ -494,11 +494,7 @@ public class PortalInstances {
 			virtualHostname = "localhost";
 		}
 
-		if (Objects.equals(virtualHostname, serverName)) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(virtualHostname, serverName);
 	}
 
 	private static void _setAttributes(

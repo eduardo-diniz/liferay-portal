@@ -15,7 +15,6 @@ import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.account.service.AccountEntryOrganizationRelLocalService;
 import com.liferay.account.service.AccountEntryService;
 import com.liferay.account.service.AccountEntryUserRelLocalService;
-import com.liferay.account.service.AccountGroupLocalService;
 import com.liferay.account.service.AccountGroupRelService;
 import com.liferay.account.service.AccountGroupService;
 import com.liferay.account.service.AccountRoleLocalService;
@@ -69,7 +68,6 @@ import com.liferay.portal.kernel.service.AddressLocalService;
 import com.liferay.portal.kernel.service.ContactService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ListTypeLocalService;
-import com.liferay.portal.kernel.service.OrganizationLocalService;
 import com.liferay.portal.kernel.service.OrganizationService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
@@ -570,9 +568,8 @@ public class AccountResourceImpl extends BaseAccountResourceImpl {
 
 		try {
 			AccountGroup accountGroup =
-				_accountGroupLocalService.getOrAddIncompleteAccountGroup(
-					externalReferenceCode, accountEntry.getCompanyId(),
-					contextUser.getUserId(), accountGroupBrief.getName());
+				_accountGroupService.getOrAddIncompleteAccountGroup(
+					externalReferenceCode, accountGroupBrief.getName());
 
 			_accountGroupRelService.addAccountGroupRel(
 				accountGroup.getAccountGroupId(), AccountEntry.class.getName(),
@@ -1031,11 +1028,9 @@ public class AccountResourceImpl extends BaseAccountResourceImpl {
 					if (FeatureFlagManagerUtil.isEnabled("LPD-47858")) {
 						com.liferay.portal.kernel.model.Organization
 							organization =
-								_organizationLocalService.
+								_organizationService.
 									getOrAddIncompleteOrganization(
 										externalReferenceCode,
-										contextCompany.getCompanyId(),
-										contextUser.getUserId(),
 										StringPool.BLANK);
 
 						return organization.getOrganizationId();
@@ -1074,9 +1069,8 @@ public class AccountResourceImpl extends BaseAccountResourceImpl {
 				account.getParentAccountExternalReferenceCode())) {
 
 			AccountEntry accountEntry =
-				_accountEntryLocalService.getOrAddIncompleteAccountEntry(
+				_accountEntryService.getOrAddIncompleteAccountEntry(
 					account.getParentAccountExternalReferenceCode(),
-					contextCompany.getCompanyId(), contextUser.getUserId(),
 					account.getParentAccountExternalReferenceCode(),
 					AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS);
 
@@ -1372,9 +1366,6 @@ public class AccountResourceImpl extends BaseAccountResourceImpl {
 	private AccountEntryUserRelLocalService _accountEntryUserRelLocalService;
 
 	@Reference
-	private AccountGroupLocalService _accountGroupLocalService;
-
-	@Reference
 	private AccountGroupRelService _accountGroupRelService;
 
 	@Reference
@@ -1418,9 +1409,6 @@ public class AccountResourceImpl extends BaseAccountResourceImpl {
 
 	@Reference
 	private ListTypeLocalService _listTypeLocalService;
-
-	@Reference
-	private OrganizationLocalService _organizationLocalService;
 
 	@Reference(
 		target = DTOConverterConstants.ORGANIZATION_RESOURCE_DTO_CONVERTER

@@ -522,13 +522,15 @@ public class AssetVocabularyServiceTest {
 		try (SafeCloseable safeCloseable =
 				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
 
+			// With permissions
+
 			AssetVocabulary vocabulary =
 				_assetVocabularyService.getOrAddIncompleteVocabulary(
 					RandomTestUtil.randomString(), _group.getGroupId());
 
 			Assert.assertNotNull(vocabulary);
 
-			// Without resource permission
+			// Without permissions
 
 			User user = UserTestUtil.addGroupUser(
 				_group, RoleConstants.SITE_MEMBER);

@@ -12,19 +12,24 @@ import com.liferay.headless.admin.user.client.resource.v1_0.AccountResource;
 import com.liferay.headless.admin.user.client.resource.v1_0.PostalAddressResource;
 import com.liferay.headless.admin.user.client.resource.v1_0.UserAccountResource;
 import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.Catalog;
-import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.CustomField;
+import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.Currency;
 import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.Product;
 import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.ProductSpecification;
-import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.Sku;
-import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.SkuOption;
+import com.liferay.headless.commerce.admin.catalog.client.pagination.Page;
 import com.liferay.headless.commerce.admin.catalog.client.pagination.Pagination;
 import com.liferay.headless.commerce.admin.catalog.client.resource.v1_0.CatalogResource;
+import com.liferay.headless.commerce.admin.catalog.client.resource.v1_0.CurrencyResource;
 import com.liferay.headless.commerce.admin.catalog.client.resource.v1_0.ProductResource;
 import com.liferay.headless.commerce.admin.catalog.client.resource.v1_0.ProductSpecificationResource;
 import com.liferay.headless.commerce.admin.catalog.client.resource.v1_0.SkuResource;
 import com.liferay.headless.commerce.admin.order.client.dto.v1_0.Order;
 import com.liferay.headless.commerce.admin.order.client.resource.v1_0.OrderItemResource;
 import com.liferay.headless.commerce.admin.order.client.resource.v1_0.OrderResource;
+import com.liferay.headless.commerce.admin.pricing.client.dto.v2_0.PriceEntry;
+import com.liferay.headless.commerce.admin.pricing.client.dto.v2_0.PriceList;
+import com.liferay.headless.commerce.admin.pricing.client.resource.v2_0.PriceEntryResource;
+import com.liferay.headless.commerce.admin.pricing.client.resource.v2_0.PriceListResource;
+import com.liferay.headless.commerce.admin.pricing.client.resource.v2_0.TierPriceResource;
 import com.liferay.marketplace.constants.MarketplaceConstants;
 import com.liferay.marketplace.util.MarketplaceUtil;
 import com.liferay.notification.rest.client.dto.v1_0.NotificationQueueEntry;
@@ -134,9 +139,34 @@ public class MarketplaceService extends BaseService {
 	}
 
 	public Catalog getCatalog(Long catalogId) throws Exception {
-		CatalogResource catalogResource = _getCatalogResource();
+		CatalogResource catalogResource = CatalogResource.builder(
+		).header(
+			HttpHeaders.AUTHORIZATION,
+			_liferayOAuth2AccessTokenManager.getAuthorization(
+				"liferay-marketplace-etc-spring-boot-oauth-application-" +
+					"headless-server")
+		).endpoint(
+			new URL(lxcDXPServerProtocol + "://" + lxcDXPMainDomain)
+		).build();
 
 		return catalogResource.getCatalog(catalogId);
+	}
+
+	public Currency getCurrency(String currencyCode) throws Exception {
+		CurrencyResource currencyResource = CurrencyResource.builder(
+		).header(
+			HttpHeaders.AUTHORIZATION,
+			_liferayOAuth2AccessTokenManager.getAuthorization(
+				"liferay-marketplace-etc-spring-boot-oauth-application-" +
+					"headless-server")
+		).endpoint(
+			new URL(lxcDXPServerProtocol + "://" + lxcDXPMainDomain)
+		).build();
+
+		Page<Currency> currenciesPage = currencyResource.getCurrenciesPage(
+			null, "code eq '" + currencyCode + "'", Pagination.of(1, 50), null);
+
+		return currenciesPage.fetchFirstItem();
 	}
 
 	public Order getOrder(Long id) throws Exception {
@@ -169,6 +199,73 @@ public class MarketplaceService extends BaseService {
 		).build();
 	}
 
+	public PriceEntryResource getPriceEntryResource() throws Exception {
+		return PriceEntryResource.builder(
+		).header(
+			HttpHeaders.AUTHORIZATION,
+			_liferayOAuth2AccessTokenManager.getAuthorization(
+				"liferay-marketplace-etc-spring-boot-oauth-application-" +
+					"headless-server")
+		).endpoint(
+			new URL(lxcDXPServerProtocol + "://" + lxcDXPMainDomain)
+		).parameters(
+			"nestedFields", "product"
+		).build();
+	}
+
+	public com.liferay.headless.commerce.admin.pricing.client.pagination.Page
+		<PriceEntry> getPriceListIdPriceEntriesPage(
+				String filter, Long priceListId)
+			throws Exception {
+
+		PriceEntryResource priceEntryResource = getPriceEntryResource();
+
+		return priceEntryResource.getPriceListIdPriceEntriesPage(
+			priceListId, null, filter,
+			com.liferay.headless.commerce.admin.pricing.client.pagination.
+				Pagination.of(1, -1),
+			null);
+	}
+
+	public PriceList getPriceListIdsByCatalogName(
+			String currencyCode, Product product)
+		throws Exception {
+
+		Catalog catalog = product.getCatalog();
+
+		PriceListResource priceListResource = getPriceListResource();
+
+		com.liferay.headless.commerce.admin.pricing.client.pagination.Page
+			<PriceList> priceListsPage = priceListResource.getPriceListsPage(
+				"\"" + catalog.getName() + "\"", "type eq 'price-list'",
+				com.liferay.headless.commerce.admin.pricing.client.pagination.
+					Pagination.of(1, 50),
+				null);
+
+		for (PriceList priceList : priceListsPage.getItems()) {
+			if (Objects.equals(priceList.getCurrencyCode(), currencyCode) &&
+				Objects.equals(priceList.getCatalogName(), catalog.getName()) &&
+				_priceListHasTierPrices(priceList, product)) {
+
+				return priceList;
+			}
+		}
+
+		return priceListsPage.fetchFirstItem();
+	}
+
+	public PriceListResource getPriceListResource() throws Exception {
+		return PriceListResource.builder(
+		).header(
+			HttpHeaders.AUTHORIZATION,
+			_liferayOAuth2AccessTokenManager.getAuthorization(
+				"liferay-marketplace-etc-spring-boot-oauth-application-" +
+					"headless-server")
+		).endpoint(
+			new URL(lxcDXPServerProtocol + "://" + lxcDXPMainDomain)
+		).build();
+	}
+
 	public Product getProduct(Long id) throws Exception {
 		ProductResource productResource = getProductResource();
 
@@ -184,6 +281,8 @@ public class MarketplaceService extends BaseService {
 					"headless-server")
 		).endpoint(
 			new URL(lxcDXPServerProtocol + "://" + lxcDXPMainDomain)
+		).parameters(
+			"nestedFields", "catalog"
 		).build();
 	}
 
@@ -214,72 +313,22 @@ public class MarketplaceService extends BaseService {
 		return map;
 	}
 
-	public String getProductVersion(Long skuId) {
-		String version = "1.0.0";
-
-		try {
-			SkuResource skuResource = getSkuResource();
-
-			Sku sku = skuResource.getSku(skuId);
-
-			for (CustomField customField : sku.getCustomFields()) {
-				if (Objects.equals(customField.getName(), "Version")) {
-					version = customField.getCustomValue(
-					).getData(
-					).toString();
-
-					break;
-				}
-			}
-		}
-		catch (Exception exception) {
-			_log.error(
-				"Unable to get product version " + exception.getMessage());
-		}
-
-		return version;
-	}
-
-	public String getSkuOptionValue(String key, SkuOption[] skuOptions) {
-		for (SkuOption skuOption : skuOptions) {
-			if (!Objects.equals(key, skuOption.getKey())) {
-				continue;
-			}
-
-			String value = skuOption.getValue();
-
-			String firstCharUpperCase = value.substring(
-				0, 1
-			).toUpperCase();
-
-			return firstCharUpperCase + value.substring(1);
-		}
-
-		return null;
-	}
-
-	public String getSkuOptionValue(String key, String options) {
-		JSONArray optionsJSONArray = new JSONArray(options);
-
-		for (int i = 0; i < optionsJSONArray.length(); i++) {
-			JSONObject jsonObject = optionsJSONArray.getJSONObject(i);
-
-			if (!Objects.equals(key, jsonObject.getString("key"))) {
-				continue;
-			}
-
-			JSONArray jsonArray = jsonObject.getJSONArray("value");
-
-			return jsonArray.getString(0);
-		}
-
-		return null;
-	}
-
 	public SkuResource getSkuResource() throws Exception {
 		return SkuResource.builder(
 		).header(
 			HttpHeaders.AUTHORIZATION,
+			_liferayOAuth2AccessTokenManager.getAuthorization(
+				"liferay-marketplace-etc-spring-boot-oauth-application-" +
+					"headless-server")
+		).endpoint(
+			new URL(lxcDXPServerProtocol + "://" + lxcDXPMainDomain)
+		).build();
+	}
+
+	public TierPriceResource getTierPriceResource() throws Exception {
+		return TierPriceResource.builder(
+		).header(
+			org.apache.http.HttpHeaders.AUTHORIZATION,
 			_liferayOAuth2AccessTokenManager.getAuthorization(
 				"liferay-marketplace-etc-spring-boot-oauth-application-" +
 					"headless-server")
@@ -414,18 +463,6 @@ public class MarketplaceService extends BaseService {
 		orderResource.patchOrder(orderId, order);
 	}
 
-	private CatalogResource _getCatalogResource() throws Exception {
-		return CatalogResource.builder(
-		).header(
-			HttpHeaders.AUTHORIZATION,
-			_liferayOAuth2AccessTokenManager.getAuthorization(
-				"liferay-marketplace-etc-spring-boot-oauth-application-" +
-					"headless-server")
-		).endpoint(
-			new URL(lxcDXPServerProtocol + "://" + lxcDXPMainDomain)
-		).build();
-	}
-
 	private JSONObject _getCloudProvisioningJSONObject(
 		JSONArray jsonArray, long orderItemId) {
 
@@ -478,6 +515,26 @@ public class MarketplaceService extends BaseService {
 				"liferay-marketplace-etc-spring-boot-oauth-application-" +
 					"headless-server")
 		).build();
+	}
+
+	private Boolean _priceListHasTierPrices(
+			PriceList priceList, Product product)
+		throws Exception {
+
+		com.liferay.headless.commerce.admin.pricing.client.pagination.Page
+			<PriceEntry> priceEntryPage = getPriceListIdPriceEntriesPage(
+				"", priceList.getId());
+
+		for (PriceEntry priceEntry : priceEntryPage.getItems()) {
+			com.liferay.headless.commerce.admin.pricing.client.dto.v2_0.Product
+				priceEntryProduct = priceEntry.getProduct();
+
+			if (Objects.equals(product.getId(), priceEntryProduct.getId())) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	private String _replace(String string, Map<String, String> map) {

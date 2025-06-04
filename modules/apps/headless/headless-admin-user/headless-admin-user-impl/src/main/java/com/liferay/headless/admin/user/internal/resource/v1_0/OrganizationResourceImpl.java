@@ -8,7 +8,6 @@ package com.liferay.headless.admin.user.internal.resource.v1_0;
 import com.liferay.account.exception.DuplicateAccountEntryOrganizationRelException;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.model.AccountEntryOrganizationRel;
-import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.account.service.AccountEntryOrganizationRelLocalService;
 import com.liferay.account.service.AccountEntryOrganizationRelService;
 import com.liferay.account.service.AccountEntryService;
@@ -731,9 +730,8 @@ public class OrganizationResourceImpl extends BaseOrganizationResourceImpl {
 
 		try {
 			AccountEntry accountEntry =
-				_accountEntryLocalService.getOrAddIncompleteAccountEntry(
-					externalReferenceCode, organization.getCompanyId(),
-					contextUser.getUserId(), accountBrief.getName(),
+				_accountEntryService.getOrAddIncompleteAccountEntry(
+					externalReferenceCode, accountBrief.getName(),
 					accountBrief.getType());
 
 			_accountEntryOrganizationRelService.addAccountEntryOrganizationRel(
@@ -781,11 +779,13 @@ public class OrganizationResourceImpl extends BaseOrganizationResourceImpl {
 
 		serviceContext.setAssetCategoryIds(_getAssetCategoryIds(organization));
 		serviceContext.setAssetTagNames(organization.getKeywords());
+		serviceContext.setCompanyId(contextCompany.getCompanyId());
 		serviceContext.setExpandoBridgeAttributes(
 			CustomFieldsUtil.toMap(
 				com.liferay.portal.kernel.model.Organization.class.getName(),
 				contextCompany.getCompanyId(), organization.getCustomFields(),
 				contextAcceptLanguage.getPreferredLocale()));
+		serviceContext.setUserId(contextUser.getUserId());
 
 		return serviceContext;
 	}
@@ -1416,9 +1416,6 @@ public class OrganizationResourceImpl extends BaseOrganizationResourceImpl {
 
 	private static final EntityModel _entityModel =
 		new OrganizationEntityModel();
-
-	@Reference
-	private AccountEntryLocalService _accountEntryLocalService;
 
 	@Reference
 	private AccountEntryOrganizationRelLocalService
