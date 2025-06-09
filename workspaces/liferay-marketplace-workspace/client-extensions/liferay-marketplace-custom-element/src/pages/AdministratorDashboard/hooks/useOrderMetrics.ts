@@ -36,74 +36,93 @@ const useOrderMetrics = (param: FilterType) => {
 	return useSWR('metrics/order', async () => {
 		const currentTime = new Date();
 
-		const beforeLastPeriod = addDays(
+		const beforeLastPeriodDate = addDays(
 			currentTime,
-			-METRIC_PARAMETER[param as keyof typeof METRIC_PARAMETER] * 2
+			-METRIC_PARAMETER[param] * 2
 		);
+		const lastPeriodDate = addDays(currentTime, -METRIC_PARAMETER[param]);
 
-		const lastPeriod = addDays(
-			currentTime,
-			-METRIC_PARAMETER[param as keyof typeof METRIC_PARAMETER]
-		);
+		beforeLastPeriodDate.setHours(0, 0, 0);
+		lastPeriodDate.setHours(23, 59, 59);
 
-		beforeLastPeriod.setHours(0, 0, 0);
-		lastPeriod.setHours(23, 59, 59);
+		const filters = {
+			allOrders: orderSearchBuilder.clone().build(),
 
-		const requestsParams = [
-			new URLSearchParams({
-				fields: 'id,orderStatus,totalAmount',
-				filter: orderSearchBuilder.clone().build(),
-				pageSize: '-1',
-				sort: 'createDate:desc',
-			}),
-			new URLSearchParams({
-				fields: 'id',
-				filter: orderSearchBuilder
-					.clone()
-					.gt('createDate', lastPeriod.toISOString())
-					.build(),
-				pageSize: '1',
-			}),
-			new URLSearchParams({
-				fields: 'id',
-				filter: orderSearchBuilder
-					.clone()
-					.lt('createDate', lastPeriod.toISOString())
-					.and()
-					.gt('createDate', beforeLastPeriod.toISOString())
-					.build(),
-				pageSize: '1',
-			}),
-		];
+			allPaidOrders: orderSearchBuilder
+				.clone()
+				.gt('totalAmount', 0)
+				.build(),
 
-		const response = await Promise.all(
-			requestsParams.map((searchParam) =>
-				HeadlessCommerceAdminOrder.getOrders(searchParam)
-			)
-		);
+			beforeLastPeriodOrders: orderSearchBuilder
+				.clone()
+				.lt('createDate', lastPeriodDate.toISOString())
+				.and()
+				.gt('createDate', beforeLastPeriodDate.toISOString())
+				.build(),
 
-		const paidAppsAmount = response[0].items
-			.filter(({orderStatus}) => orderStatus === 0)
-			.map(({totalAmount}) => totalAmount ?? 0)
-			.reduce((prevTotal, currentTotal) => prevTotal + currentTotal, 0);
+			beforeLastPeriodOrdersPaid: orderSearchBuilder
+				.clone()
+				.gt('totalAmount', 0)
+				.and()
+				.lt('createDate', lastPeriodDate.toISOString())
+				.and()
+				.gt('createDate', beforeLastPeriodDate.toISOString())
+				.build(),
 
-		const newOrders = response[1].totalCount - response[2].totalCount;
+			lastPeriodOrders: orderSearchBuilder
+				.clone()
+				.gt('createDate', lastPeriodDate.toISOString())
+				.build(),
 
-		let growth = Number(
-			((newOrders / response[1].totalCount) * 100).toFixed(2)
-		);
+			lastPeriodOrdersPaid: orderSearchBuilder
+				.clone()
+				.gt('totalAmount', 0)
+				.and()
+				.gt('createDate', lastPeriodDate.toISOString())
+				.build(),
+		};
 
-		if (Number.isNaN(growth)) {
-			growth = 0;
-		}
+		const {
+			data: {metrics},
+		} = await HeadlessCommerceAdminOrder.getOrdersDashboardMetrics(filters);
+
+		const paidAmount = (metrics.allPaidOrders?.items)
+			.filter((order) => order.orderStatus === 0)
+			.reduce((sum, order) => sum + (order.totalAmount ?? 0), 0);
+
+		const getCount = (key: keyof typeof metrics) =>
+			metrics[key]?.totalCount ?? 0;
+
+		const beforeCount = getCount('beforeLastPeriodOrders');
+		const beforePaidCount = getCount('beforeLastPeriodOrdersPaid');
+		const lastCount = getCount('lastPeriodOrders');
+		const lastPaidCount = getCount('lastPeriodOrdersPaid');
+
+		const growth =
+			Number(
+				(
+					((lastCount - beforeCount) / (beforeCount || 1)) *
+					100
+				).toFixed(2)
+			) || 0;
+		const growthPaidOrders =
+			Number(
+				(
+					((lastPaidCount - beforePaidCount) /
+						(beforePaidCount || 1)) *
+					100
+				).toFixed(2)
+			) || 0;
 
 		return {
-			beforeLastPeriod: response[2].totalCount,
+			beforeLastPeriod: beforeCount,
 			growth,
-			lastPeriod: response[1].totalCount,
-			paidAmount: paidAppsAmount,
+			growthPaidOrders,
+			lastPeriod: lastCount,
+			lastPeriodCountPaid: lastPaidCount,
+			paidAmount,
 			param,
-			totalCount: response[0].totalCount,
+			totalCount: getCount('allOrders'),
 		};
 	});
 };

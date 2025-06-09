@@ -33,14 +33,11 @@ export default function AdministratorSummary() {
 				value: accounts?.totalCount ?? 0,
 			},
 			{
+				growth: orderMetrics?.growthPaidOrders ?? 0,
+				growthContext: `+${orderMetrics?.lastPeriodCountPaid ?? 0} this week `,
 				symbol: 'dollar-symbol',
-				title: (
-					<span>
-						{i18n.translate('income')}{' '}
-						&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;
-					</span>
-				),
-				value: formatCurrency(orderMetrics?.paidAmount),
+				title: i18n.translate('income'),
+				value: formatCurrency(orderMetrics?.paidAmount ?? 0),
 			},
 			{
 				growth: orderMetrics?.growth ?? 0,
@@ -60,7 +57,9 @@ export default function AdministratorSummary() {
 			accounts?.lastPeriod,
 			accounts?.totalCount,
 			orderMetrics?.growth,
+			orderMetrics?.growthPaidOrders,
 			orderMetrics?.lastPeriod,
+			orderMetrics?.lastPeriodCountPaid,
 			orderMetrics?.paidAmount,
 			orderMetrics?.totalCount,
 			visitorsMetric,

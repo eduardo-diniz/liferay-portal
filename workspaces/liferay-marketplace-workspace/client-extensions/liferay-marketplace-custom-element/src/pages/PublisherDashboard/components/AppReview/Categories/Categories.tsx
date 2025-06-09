@@ -17,7 +17,7 @@ const Categories = ({
 		<>
 			<AppReviewSection title={i18n.translate('category')}>
 				<div className="app-review-section-body">
-					{context.profile.categories.label && (
+					{context.profile?.categories?.label && (
 						<Tag label={context.profile.categories.label} />
 					)}
 				</div>
@@ -29,7 +29,7 @@ const Categories = ({
 				title={i18n.translate('areas')}
 			>
 				<div className="app-review-section-body-tags">
-					{context.profile.areas.map((area, index) => (
+					{context.profile?.areas.map((area, index) => (
 						<Tag key={index} label={area.label} />
 					))}
 				</div>
@@ -41,7 +41,7 @@ const Categories = ({
 				title={i18n.translate('tags')}
 			>
 				<div className="app-review-section-body-tags">
-					{context.profile.tags.map((tag, index) => (
+					{context.profile?.tags.map((tag, index) => (
 						<Tag key={index} label={tag.label} />
 					))}
 				</div>
