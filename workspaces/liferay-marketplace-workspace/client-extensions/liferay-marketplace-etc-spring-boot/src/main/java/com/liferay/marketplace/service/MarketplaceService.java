@@ -23,6 +23,7 @@ import com.liferay.headless.commerce.admin.catalog.client.resource.v1_0.ProductR
 import com.liferay.headless.commerce.admin.catalog.client.resource.v1_0.ProductSpecificationResource;
 import com.liferay.headless.commerce.admin.catalog.client.resource.v1_0.SkuResource;
 import com.liferay.headless.commerce.admin.order.client.dto.v1_0.Order;
+import com.liferay.headless.commerce.admin.order.client.pagination.Page;
 import com.liferay.headless.commerce.admin.order.client.resource.v1_0.OrderItemResource;
 import com.liferay.headless.commerce.admin.order.client.resource.v1_0.OrderResource;
 import com.liferay.marketplace.constants.MarketplaceConstants;
@@ -169,6 +170,25 @@ public class MarketplaceService extends BaseService {
 		).parameters(
 			"nestedFields", "account,orderItems"
 		).build();
+	}
+
+	public Collection<Order> getOrdersByExternalReferenceCode(
+			String externalReferenceCode)
+		throws Exception {
+
+		OrderResource orderResource = getOrderResource();
+
+		String filter =
+			"orderTypeExternalReferenceCode eq '" + externalReferenceCode + "'";
+
+		Page<Order> ordersPage = orderResource.getOrdersPage(
+			null,
+			filter,
+			com.liferay.headless.commerce.admin.order.client.pagination.Pagination.of(1, 100), // pagination
+			null
+		);
+
+		return ordersPage.getItems();
 	}
 
 	public PostalAddressResource getPostalAddressResource() throws Exception {
