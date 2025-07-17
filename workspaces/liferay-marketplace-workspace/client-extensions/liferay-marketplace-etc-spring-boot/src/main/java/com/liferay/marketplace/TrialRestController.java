@@ -16,12 +16,12 @@ import com.liferay.headless.portal.instances.client.resource.v1_0.PortalInstance
 import com.liferay.marketplace.constants.MarketplaceConstants;
 import com.liferay.marketplace.service.ConsoleService;
 import com.liferay.marketplace.service.MarketplaceService;
+import com.liferay.marketplace.util.ConsoleProjectContext;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
-
-import java.net.URL;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -39,7 +39,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -60,14 +61,20 @@ public class TrialRestController extends BaseRestController {
 
 	@DeleteMapping("{orderId}")
 	public void delete(@PathVariable long orderId) throws Exception {
-		_consoleService.deleteProject(String.valueOf(orderId));
+		_consoleService.deleteProject(orderId);
 
-		_deletePortalInstance(orderId);
+		ConsoleProjectContext context = _consoleProjectContextFactory.create(
+			orderId);
+
+		_deletePortalInstance(orderId, context);
 	}
 
-	@GetMapping("availability")
-	public String getAvailability() throws Exception {
-		Page<PortalInstance> page = _getPortalInstancesPage();
+	@GetMapping("availability/{orderId}")
+	public String getAvailability(@PathVariable long orderId) throws Exception {
+		ConsoleProjectContext context = _consoleProjectContextFactory.create(
+			orderId);
+
+		Page<PortalInstance> page = _getPortalInstancesPage(context);
 
 		return new JSONObject(
 		).put(
@@ -144,7 +151,13 @@ public class TrialRestController extends BaseRestController {
 			_log.info("Provisioning order " + orderId);
 		}
 
-		Page<PortalInstance> portalInstancesPage = _getPortalInstancesPage();
+		Order order = _marketplaceService.getOrder(orderId);
+
+		ConsoleProjectContext context = _consoleProjectContextFactory.create(
+			orderId);
+
+		Page<PortalInstance> portalInstancesPage = _getPortalInstancesPage(
+			context);
 
 		if (portalInstancesPage.getTotalCount() == _TRIAL_MAX_INSTANCES) {
 			_log.error("Order is on hold");
@@ -167,8 +180,6 @@ public class TrialRestController extends BaseRestController {
 
 		_marketplaceService.updateOrder(
 			null, orderId, MarketplaceConstants.ORDER_STATUS_PROCESSING);
-
-		Order order = _marketplaceService.getOrder(orderId);
 
 		UserAccount userAccount = _marketplaceService.getUserAccount(
 			order.getCreatorEmailAddress());
@@ -196,7 +207,7 @@ public class TrialRestController extends BaseRestController {
 
 		PortalInstance portalInstance = _postPortalInstance(
 			jwt, modelDTOOrderJSONObject.getString("creatorEmailAddress"),
-			orderId);
+			context);
 
 		try {
 			_consoleService.setUpProject(
@@ -210,7 +221,11 @@ public class TrialRestController extends BaseRestController {
 					"trial-end-date",
 					ZonedDateTime.now(
 					).plusDays(
-						7
+						trialSettingsJSONObject.optJSONObject(
+							"ssaSettings"
+						).optInt(
+							"duration", 7
+						)
 					).format(
 						DateTimeFormatter.ISO_INSTANT
 					)
@@ -242,10 +257,11 @@ public class TrialRestController extends BaseRestController {
 		catch (WebClientResponseException webClientResponseException) {
 			_rollBackTrial(
 				webClientResponseException.getResponseBodyAsString(), orderId,
-				portalInstance);
+				portalInstance, context);
 		}
 		catch (Exception exception) {
-			_rollBackTrial(exception.getMessage(), orderId, portalInstance);
+			_rollBackTrial(
+				exception.getMessage(), orderId, portalInstance, null);
 		}
 	}
 
@@ -274,17 +290,96 @@ public class TrialRestController extends BaseRestController {
 			).toString());
 	}
 
-	private void _deletePortalInstance(long orderId) throws Exception {
+	@GetMapping("demo-availability/{projectId}")
+	public ResponseEntity<String> validateProjectId(
+		@PathVariable String projectId) {
+
+		try {
+			if ((projectId == null) || projectId.isBlank()) {
+				return ResponseEntity.status(
+					HttpStatus.BAD_REQUEST
+				).body(
+					new JSONObject(
+					).put(
+						"error", "Missing projectId."
+					).toString()
+				);
+			}
+
+			List<Order> ssaOrders =
+				(List<Order>)
+					_marketplaceService.getOrdersByExternalReferenceCode(
+						"SSA_SAAS");
+
+			for (Order order : ssaOrders) {
+				int orderStatusInfo = order.getOrderStatusInfo(
+				).getCode();
+
+				if (orderStatusInfo == 0) {
+					continue;
+				}
+
+				String trialSettingsJSON = (String)order.getCustomFields(
+				).get(
+					"trial-settings"
+				);
+
+				String existingProjectId = null;
+
+				if (trialSettingsJSON != null) {
+					JSONObject trialSettingsJSONObject = new JSONObject(
+						trialSettingsJSON);
+
+					JSONObject ssaSettingsJSONObject =
+						trialSettingsJSONObject.optJSONObject("ssaSettings");
+
+					if (ssaSettingsJSONObject != null) {
+						existingProjectId = ssaSettingsJSONObject.optString(
+							"projectId", null);
+					}
+				}
+
+				if ((existingProjectId != null) &&
+					StringUtil.equalsIgnoreCase(projectId, existingProjectId)) {
+
+					throw new Exception(
+						"A request with this project ID already exists");
+				}
+			}
+
+			return ResponseEntity.ok(
+			).body(
+				new JSONObject(
+				).put(
+					"message", "Project ID is available."
+				).toString()
+			);
+		}
+		catch (Exception exception) {
+			return ResponseEntity.status(
+				HttpStatus.CONFLICT
+			).body(
+				new JSONObject(
+				).put(
+					"error", exception.getMessage()
+				).toString()
+			);
+		}
+	}
+
+	private void _deletePortalInstance(
+			long orderId, ConsoleProjectContext context)
+		throws Exception {
+
 		PortalInstanceResource portalInstanceResource =
-			_getPortalInstanceResource();
+			_getPortalInstanceResource(context);
 
 		Page<PortalInstance> page =
 			portalInstanceResource.getPortalInstancesPage(true);
 
 		for (PortalInstance portalInstance : page.getItems()) {
 			if (Objects.equals(
-					portalInstance.getVirtualHost(),
-					orderId + "." + _trialDXPDomain)) {
+					portalInstance.getVirtualHost(), context.getDomain())) {
 
 				portalInstanceResource.deletePortalInstance(
 					portalInstance.getPortalInstanceId());
@@ -298,31 +393,38 @@ public class TrialRestController extends BaseRestController {
 		}
 	}
 
-	private PortalInstanceResource _getPortalInstanceResource()
+	private PortalInstanceResource _getPortalInstanceResource(
+			ConsoleProjectContext context)
 		throws Exception {
+
+		System.out.println("OAUTHERC " + context.getOauthERC());
 
 		return PortalInstanceResource.builder(
 		).endpoint(
-			_externalTrialHomePageURL
+			context.getExternalHomePageURL()
 		).header(
 			HttpHeaders.AUTHORIZATION,
-			_liferayOAuth2AccessTokenManager.getAuthorization("external-trial")
+			_liferayOAuth2AccessTokenManager.getAuthorization(
+				context.getOauthERC())
 		).build();
 	}
 
-	private Page<PortalInstance> _getPortalInstancesPage() throws Exception {
+	private Page<PortalInstance> _getPortalInstancesPage(
+			ConsoleProjectContext context)
+		throws Exception {
+
 		PortalInstanceResource portalInstanceResource =
-			_getPortalInstanceResource();
+			_getPortalInstanceResource(context);
 
 		return portalInstanceResource.getPortalInstancesPage(true);
 	}
 
 	private PortalInstance _postPortalInstance(
-			Jwt jwt, String emailAddress, long orderId)
+			Jwt jwt, String emailAddress, ConsoleProjectContext context)
 		throws Exception {
 
 		PortalInstanceResource portalInstanceResource =
-			_getPortalInstanceResource();
+			_getPortalInstanceResource(context);
 
 		PortalInstance portalInstance = new PortalInstance();
 
@@ -342,7 +444,7 @@ public class TrialRestController extends BaseRestController {
 
 		portalInstance.setDomain(() -> "lxc.app");
 
-		String domain = orderId + "." + _trialDXPDomain;
+		String domain = context.getDomain();
 
 		portalInstance.setPortalInstanceId(() -> domain);
 		portalInstance.setVirtualHost(() -> domain);
@@ -358,7 +460,8 @@ public class TrialRestController extends BaseRestController {
 	}
 
 	private void _rollBackTrial(
-			String errorMessage, long orderId, PortalInstance portalInstance)
+			String errorMessage, long orderId, PortalInstance portalInstance,
+			ConsoleProjectContext context)
 		throws Exception {
 
 		_log.error(
@@ -366,7 +469,7 @@ public class TrialRestController extends BaseRestController {
 				"Unable to set up project for order ", orderId, ": \n",
 				errorMessage));
 
-		_deletePortalInstance(orderId);
+		_deletePortalInstance(orderId, context);
 
 		_marketplaceService.updateOrder(
 			HashMapBuilder.put(
@@ -402,18 +505,15 @@ public class TrialRestController extends BaseRestController {
 		TrialRestController.class);
 
 	@Autowired
-	private ConsoleService _consoleService;
+	private ConsoleProjectContext.Factory _consoleProjectContextFactory;
 
-	@Value("${external.trial.oauth2.headless.server.home.page.url}")
-	private URL _externalTrialHomePageURL;
+	@Autowired
+	private ConsoleService _consoleService;
 
 	@Autowired
 	private LiferayOAuth2AccessTokenManager _liferayOAuth2AccessTokenManager;
 
 	@Autowired
 	private MarketplaceService _marketplaceService;
-
-	@Value("${liferay.marketplace.trial.dxp.domain}")
-	private String _trialDXPDomain;
 
 }
