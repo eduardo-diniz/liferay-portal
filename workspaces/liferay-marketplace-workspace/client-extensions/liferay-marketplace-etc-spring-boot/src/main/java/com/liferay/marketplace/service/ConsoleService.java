@@ -6,6 +6,7 @@
 package com.liferay.marketplace.service;
 
 import com.liferay.client.extension.util.spring.boot3.service.BaseService;
+import com.liferay.marketplace.util.MarketplaceConsoleProjectContext;
 import com.liferay.petra.string.StringBundler;
 
 import java.time.Duration;
@@ -18,6 +19,7 @@ import org.apache.commons.logging.LogFactory;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
@@ -31,8 +33,14 @@ import reactor.util.retry.Retry;
 @Component
 public class ConsoleService extends BaseService {
 
-	public void deleteProject(String projectId) throws Exception {
-		String projectName = _consoleProjectPrefix + "-ext" + projectId;
+	public void deleteProject(
+			long orderId,
+			MarketplaceConsoleProjectContext marketplaceConsoleProjectContext)
+		throws Exception {
+
+		String projectName =
+			marketplaceConsoleProjectContext.getConsoleProjectPrefix() +
+				"-ext" + orderId;
 
 		delete(
 			getAuthorization(), "",
@@ -161,8 +169,13 @@ public class ConsoleService extends BaseService {
 			String[] emailAddresses, String dxpVirtualInstanceId, long orderId)
 		throws Exception {
 
+		MarketplaceConsoleProjectContext marketplaceConsoleProjectContext =
+			_marketplaceConsoleProjectContextFactory.create(orderId);
+
 		JSONObject jsonObject = _postProject(
-			_consoleProjectPrefix + "-ext" + orderId);
+			orderId,
+			marketplaceConsoleProjectContext.getConsoleProjectPrefix() +
+				"-ext" + orderId);
 
 		for (String emailAddress : emailAddresses) {
 			_inviteProject(emailAddress, jsonObject.getString("projectId"));
@@ -171,11 +184,14 @@ public class ConsoleService extends BaseService {
 		_inviteProject(
 			_trialAdminEmailAddress, jsonObject.getString("projectId"));
 
-		_linkDXPWithProject(dxpVirtualInstanceId, jsonObject.getString("id"));
+		_linkDXPWithProject(
+			dxpVirtualInstanceId, jsonObject.getString("id"), orderId);
 
-		deployApp(
-			_consoleAuthEmailAddress, String.valueOf(orderId),
-			jsonObject.getString("projectId"));
+		if (marketplaceConsoleProjectContext.isDeployable()) {
+			deployApp(
+				_consoleAuthEmailAddress, String.valueOf(orderId),
+				jsonObject.getString("projectId"));
+		}
 	}
 
 	public void uninstallApp(long orderId) throws Exception {
@@ -237,14 +253,19 @@ public class ConsoleService extends BaseService {
 	}
 
 	private void _linkDXPWithProject(
-			String dxpVirtualInstanceId, String extensionProjectUid)
+			String dxpVirtualInstanceId, String extensionProjectUid,
+			long orderId)
 		throws Exception {
+
+		MarketplaceConsoleProjectContext marketplaceConsoleProjectContext =
+			_marketplaceConsoleProjectContextFactory.create(orderId);
 
 		post(
 			getAuthorization(),
 			new JSONObject(
 			).put(
-				"dxpProjectUid", _consoleProjectUid
+				"dxpProjectUid",
+				marketplaceConsoleProjectContext.getConsoleProjectUid()
 			).put(
 				"dxpVirtualInstanceId", dxpVirtualInstanceId
 			).put(
@@ -265,13 +286,19 @@ public class ConsoleService extends BaseService {
 		}
 	}
 
-	private JSONObject _postProject(String projectId) throws Exception {
+	private JSONObject _postProject(long orderId, String projectId)
+		throws Exception {
+
+		MarketplaceConsoleProjectContext marketplaceConsoleProjectContext =
+			_marketplaceConsoleProjectContextFactory.create(orderId);
+
 		JSONObject jsonObject = new JSONObject(
 			post(
 				getAuthorization(),
 				new JSONObject(
 				).put(
-					"cluster", _consoleCluster
+					"cluster",
+					marketplaceConsoleProjectContext.getConsoleCluster()
 				).put(
 					"environment", true
 				).put(
@@ -310,14 +337,9 @@ public class ConsoleService extends BaseService {
 	@Value("${liferay.marketplace.console.auth.url}")
 	private String _consoleAuthURL;
 
-	@Value("${liferay.marketplace.console.cluster}")
-	private String _consoleCluster;
-
-	@Value("${liferay.marketplace.console.project.prefix}")
-	private String _consoleProjectPrefix;
-
-	@Value("${liferay.marketplace.console.project.uid}")
-	private String _consoleProjectUid;
+	@Autowired
+	private MarketplaceConsoleProjectContext.Factory
+		_marketplaceConsoleProjectContextFactory;
 
 	private long _tokenExpirationMillis;
 
