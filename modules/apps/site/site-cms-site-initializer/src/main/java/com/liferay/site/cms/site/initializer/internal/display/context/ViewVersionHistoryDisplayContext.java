@@ -64,7 +64,7 @@ public class ViewVersionHistoryDisplayContext {
 			new FDSActionDropdownItem(
 				"{actions.copy.href}", "copy", "copy",
 				_language.get(_httpServletRequest, "make-a-copy"), "post",
-				"copy", "headless"),
+				"copy", null),
 			new FDSActionDropdownItem(
 				_language.get(
 					_httpServletRequest,
@@ -74,7 +74,7 @@ public class ViewVersionHistoryDisplayContext {
 				"delete", "headless"));
 	}
 
-	public Map<String, Object> getToolbarReactData() throws PortalException {
+	public Map<String, Object> getProps() throws PortalException {
 		return HashMapBuilder.<String, Object>put(
 			"backURL", ParamUtil.getString(_httpServletRequest, "backURL")
 		).put(

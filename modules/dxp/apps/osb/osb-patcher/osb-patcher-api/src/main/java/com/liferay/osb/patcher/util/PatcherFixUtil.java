@@ -707,10 +707,7 @@ public class PatcherFixUtil {
 		return PatcherBuildLocalServiceUtil.hasPatcherFixes(patcherFixId);
 	}
 
-	public static void notifyUsersInactivePatcherFixes(
-			ThemeDisplay themeDisplay)
-		throws Exception {
-
+	public static void notifyUsersInactivePatcherFixes() throws Exception {
 		Calendar calendar = new GregorianCalendar();
 
 		calendar.add(Calendar.HOUR, -1);
@@ -729,11 +726,9 @@ public class PatcherFixUtil {
 		}
 
 		for (PatcherFix patcherFix : patcherFixes) {
-			User user = UserLocalServiceUtil.getUser(patcherFix.getUserId());
-
 			EmailUtil.sendPatcherTimeoutEmail(
-				patcherFix, user.getEmailAddress(), themeDisplay,
-				patcherFix.getUserId());
+				patcherFix,
+				UserLocalServiceUtil.getUser(patcherFix.getUserId()));
 
 			PatcherFixLocalServiceUtil.updateNotified(
 				patcherFix.getPatcherFixId(), true);
@@ -929,7 +924,8 @@ public class PatcherFixUtil {
 				}
 
 				patcherBuild = PatcherBuildLocalServiceUtil.updateStatus(
-					patcherBuild.getPatcherBuildId(), status);
+					themeDisplay.getUserId(), patcherBuild.getPatcherBuildId(),
+					status);
 
 				PatcherBuildUtil.workflowParentPatcherBuild(
 					themeDisplay.getUser(), patcherBuild);
@@ -956,14 +952,16 @@ public class PatcherFixUtil {
 				}
 
 				patcherBuild = PatcherBuildLocalServiceUtil.updateStatus(
-					patcherBuild.getPatcherBuildId(), status);
+					themeDisplay.getUserId(), patcherBuild.getPatcherBuildId(),
+					status);
 
 				PatcherBuildUtil.workflowParentPatcherBuild(
 					themeDisplay.getUser(), patcherBuild);
 			}
 			else {
 				patcherBuild = PatcherBuildLocalServiceUtil.updateStatus(
-					patcherBuild.getPatcherBuildId(), status);
+					themeDisplay.getUserId(), patcherBuild.getPatcherBuildId(),
+					status);
 
 				PatcherBuildUtil.workflowParentPatcherBuild(
 					themeDisplay.getUser(), patcherBuild);
@@ -1034,18 +1032,21 @@ public class PatcherFixUtil {
 				OSBPatcherServletOutcome.STATUS_SUCCESS) {
 
 			patcherFix = PatcherFixLocalServiceUtil.updatePatcherFix(
-				patcherFixId, osbPatcherServletOutcomeResult,
+				themeDisplay.getUserId(), patcherFixId,
+				osbPatcherServletOutcomeResult,
 				WorkflowConstants.STATUS_FIX_COMPLETE);
 		}
 		else if (osbPatcherServletOutcomeStatus ==
 					OSBPatcherServletOutcome.STATUS_CONFLICT) {
 
 			patcherFix = PatcherFixLocalServiceUtil.updateStatus(
-				patcherFixId, WorkflowConstants.STATUS_FIX_REBASE_CONFLICT);
+				themeDisplay.getUserId(), patcherFixId,
+				WorkflowConstants.STATUS_FIX_REBASE_CONFLICT);
 		}
 		else {
 			patcherFix = PatcherFixLocalServiceUtil.updateStatus(
-				patcherFixId, WorkflowConstants.STATUS_FIX_FAILED);
+				themeDisplay.getUserId(), patcherFixId,
+				WorkflowConstants.STATUS_FIX_FAILED);
 		}
 
 		PatcherUtil.addMessage(
@@ -1069,7 +1070,8 @@ public class PatcherFixUtil {
 				OSBPatcherServletOutcome.STATUS_SUCCESS) {
 
 			PatcherFix patcherFix = PatcherFixLocalServiceUtil.updatePatcherFix(
-				patcherFixId, osbPatcherServletOutcomeResult,
+				themeDisplay.getUserId(), patcherFixId,
+				osbPatcherServletOutcomeResult,
 				WorkflowConstants.STATUS_FIX_COMPLETE);
 
 			PatcherUtil.addMessage(
@@ -1082,7 +1084,8 @@ public class PatcherFixUtil {
 		}
 		else {
 			PatcherFix patcherFix = PatcherFixLocalServiceUtil.updateStatus(
-				patcherFixId, WorkflowConstants.STATUS_FIX_FAILED);
+				themeDisplay.getUserId(), patcherFixId,
+				WorkflowConstants.STATUS_FIX_FAILED);
 
 			PatcherUtil.addMessage(
 				StringBundler.concat(

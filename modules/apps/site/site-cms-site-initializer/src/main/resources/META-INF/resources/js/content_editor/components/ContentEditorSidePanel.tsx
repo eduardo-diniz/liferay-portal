@@ -21,6 +21,8 @@ import {Comment} from './services/CommentService';
 type Props = {
 	addCommentURL: string;
 	comments: Comment[];
+	deleteCommentURL: string;
+	editCommentURL: string;
 	editorConfig: LiferayEditorConfig;
 	id: string;
 	isSubscribed: boolean;
@@ -161,6 +163,17 @@ function SubscribeButton({
 				}
 				else {
 					setSubscribed((subscribed) => !subscribed);
+
+					openToast({
+						message: subscribed
+							? Liferay.Language.get(
+									'you-have-successfully-unsubscribed-from-comments'
+								)
+							: Liferay.Language.get(
+									'you-have-successfully-subscribed-to-comments'
+								),
+						type: 'success',
+					});
 				}
 			}}
 			size="sm"

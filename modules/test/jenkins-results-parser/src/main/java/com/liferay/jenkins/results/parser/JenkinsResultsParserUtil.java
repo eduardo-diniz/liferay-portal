@@ -1261,10 +1261,6 @@ public class JenkinsResultsParserUtil {
 	}
 
 	public static String getBuildDirPath() {
-		StringBuilder sb = new StringBuilder();
-
-		sb.append("/opt/dev/projects/github/.tmp/jenkins/");
-
 		String topLevelBuildURL = System.getenv("TOP_LEVEL_BUILD_URL");
 
 		if (topLevelBuildURL != null) {
@@ -1297,9 +1293,18 @@ public class JenkinsResultsParserUtil {
 	public static String getBuildDirPath(
 		String buildNumber, String jobName, String masterHostname) {
 
+		Properties buildProperties = null;
+
+		try {
+			buildProperties = getBuildProperties();
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException(ioException);
+		}
+
 		StringBuilder sb = new StringBuilder();
 
-		sb.append("/opt/dev/projects/github/.tmp/jenkins/");
+		sb.append(buildProperties.getProperty("jenkins.tmp.dir"));
 
 		if (!isCINode() || isNullOrEmpty(buildNumber) ||
 			isNullOrEmpty(jobName) || isNullOrEmpty(masterHostname)) {

@@ -1310,73 +1310,14 @@ public class PageTemplateResourceTest extends BasePageTemplateResourceTestCase {
 		WidgetPageSpecification widgetPageSpecification =
 			(WidgetPageSpecification)pageSpecifications[0];
 
-		widgetPageSpecification.setSettings(
-			SettingsTestUtil.getSettings(serviceContext));
-
-		_testPatchSiteSiteByExternalReferenceCodePageTemplateWidgetPageTemplateWithPageSpecifications(
-			pageTemplate.getExternalReferenceCode(), pageTemplateResource,
-			widgetPageSpecification);
-
-		SettingsTestUtil.getColorSchemeNameSettings(
-			widgetPageSpecification.getSettings());
-
-		_testPatchSiteSiteByExternalReferenceCodePageTemplateWidgetPageTemplateWithPageSpecifications(
-			pageTemplate.getExternalReferenceCode(), pageTemplateResource,
-			widgetPageSpecification);
-
-		SettingsTestUtil.getCssSettings(widgetPageSpecification.getSettings());
-
-		_testPatchSiteSiteByExternalReferenceCodePageTemplateWidgetPageTemplateWithPageSpecifications(
-			pageTemplate.getExternalReferenceCode(), pageTemplateResource,
-			widgetPageSpecification);
-
-		SettingsTestUtil.getJavaScriptSettings(
-			widgetPageSpecification.getSettings());
-
-		_testPatchSiteSiteByExternalReferenceCodePageTemplateWidgetPageTemplateWithPageSpecifications(
-			pageTemplate.getExternalReferenceCode(), pageTemplateResource,
-			widgetPageSpecification);
-
-		SettingsTestUtil.getMasterPageItemExternalReferenceSettings(
+		SettingsTestUtil.modifySettings(
 			serviceContext, widgetPageSpecification.getSettings());
 
-		_testPatchSiteSiteByExternalReferenceCodePageTemplateWidgetPageTemplateWithPageSpecifications(
-			pageTemplate.getExternalReferenceCode(), pageTemplateResource,
-			widgetPageSpecification);
-
-		SettingsTestUtil.getStyleBookItemExternalReferenceSettings(
-			serviceContext, widgetPageSpecification.getSettings());
-
-		_testPatchSiteSiteByExternalReferenceCodePageTemplateWidgetPageTemplateWithPageSpecifications(
-			pageTemplate.getExternalReferenceCode(), pageTemplateResource,
-			widgetPageSpecification);
-
-		SettingsTestUtil.getThemeNameSettings(
-			widgetPageSpecification.getSettings());
-
-		_testPatchSiteSiteByExternalReferenceCodePageTemplateWidgetPageTemplateWithPageSpecifications(
-			pageTemplate.getExternalReferenceCode(), pageTemplateResource,
-			widgetPageSpecification);
-
-		SettingsTestUtil.getThemeSettingsSettings(
-			widgetPageSpecification.getSettings());
-
-		_testPatchSiteSiteByExternalReferenceCodePageTemplateWidgetPageTemplateWithPageSpecifications(
-			pageTemplate.getExternalReferenceCode(), pageTemplateResource,
-			widgetPageSpecification);
-	}
-
-	private void
-			_testPatchSiteSiteByExternalReferenceCodePageTemplateWidgetPageTemplateWithPageSpecifications(
-				String externalReferenceCode,
-				PageTemplateResource pageTemplateResource,
-				WidgetPageSpecification widgetPageSpecification)
-		throws Exception {
-
-		PageTemplate pageTemplate =
+		pageTemplate =
 			pageTemplateResource.
 				patchSiteSiteByExternalReferenceCodePageTemplate(
-					testGroup.getExternalReferenceCode(), externalReferenceCode,
+					testGroup.getExternalReferenceCode(),
+					pageTemplate.getExternalReferenceCode(),
 					new WidgetPageTemplate() {
 						{
 							setPageSpecifications(
@@ -1392,7 +1333,7 @@ public class PageTemplateResourceTest extends BasePageTemplateResourceTestCase {
 						}
 					});
 
-		LayoutPageTemplateEntry layoutPageTemplateEntry =
+		layoutPageTemplateEntry =
 			_layoutPageTemplateEntryLocalService.
 				getLayoutPageTemplateEntryByExternalReferenceCode(
 					pageTemplate.getExternalReferenceCode(),
@@ -1404,6 +1345,10 @@ public class PageTemplateResourceTest extends BasePageTemplateResourceTestCase {
 
 		_assertWidgetPageSpecifications(
 			pageTemplate.getPageSpecifications(), widgetPageSpecification);
+
+		_layoutPageTemplateEntryLocalService.deleteLayoutPageTemplateEntry(
+			layoutPageTemplateEntry.getExternalReferenceCode(),
+			testGroup.getGroupId());
 	}
 
 	private void _testPatchSiteSiteByExternalReferenceCodePageTemplateWithPageSpecifications()

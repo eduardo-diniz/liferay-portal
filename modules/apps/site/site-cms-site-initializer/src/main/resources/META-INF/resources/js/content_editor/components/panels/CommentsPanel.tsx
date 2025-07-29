@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import ClayButton from '@clayui/button';
+import ClayButton, {ClayButtonWithIcon} from '@clayui/button';
+import {ClayDropDownWithItems} from '@clayui/drop-down';
 import ClayIcon from '@clayui/icon';
-import List from '@clayui/list';
 import Sticker from '@clayui/sticker';
 import classNames from 'classnames';
 import {
@@ -14,20 +14,178 @@ import {
 	TEditor,
 } from 'frontend-editor-ckeditor-web';
 import {openToast} from 'frontend-js-components-web';
+import {Ratings} from 'ratings-taglib';
 import React, {useRef, useState} from 'react';
 
 import CommentService, {Comment} from '../services/CommentService';
 
+type Status = 'default' | 'edit' | 'reply';
+
 export default function CommentsPanel({
 	addCommentURL,
 	comments: initialComments,
+	deleteCommentURL,
+	editCommentURL,
 	editorConfig,
 }: {
 	addCommentURL: string;
 	comments: Comment[];
+	deleteCommentURL: string;
+	editCommentURL: string;
 	editorConfig: LiferayEditorConfig;
 }) {
 	const [comments, setComments] = useState<Comment[]>(initialComments);
+
+	const deleteComment = async (
+		commentId: string,
+		parentCommentId?: string
+	) => {
+		const {error} = await CommentService.deleteComment({
+			commentId,
+			url: deleteCommentURL,
+		});
+
+		if (error) {
+			openToast({
+				message: error,
+				type: 'danger',
+			});
+
+			return;
+		}
+
+		const filterComments = (comments: Comment[]) =>
+			comments.filter((comment) => comment.commentId !== commentId);
+
+		setComments((comments) => {
+			if (parentCommentId) {
+				return comments.map((comment) =>
+					comment.commentId === parentCommentId
+						? {
+								...comment,
+								children: filterComments(comment.children),
+							}
+						: comment
+				);
+			}
+			else {
+				const deletedComment = comments.find(
+					(comment) => comment.commentId === commentId
+				)!;
+
+				return [
+					...filterComments(comments),
+					...deletedComment.children,
+				];
+			}
+		});
+
+		openToast({
+			message: Liferay.Language.get('your-comment-has-been-deleted'),
+			type: 'success',
+		});
+	};
+
+	const saveComment = async ({
+		commentId = null,
+		content,
+		editor,
+		parentCommentId = null,
+		status = 'default',
+	}: {
+		commentId?: string | null;
+		content: string;
+		editor: TEditor;
+		parentCommentId?: string | null;
+		status?: Status;
+	}) => {
+		let errorMessage = null;
+		let sucessMessage = Liferay.Language.get(
+			'your-comment-has-been-posted'
+		);
+
+		if (status !== 'edit') {
+			const {data, error} = await CommentService.addComment({
+				content,
+				parentCommentId,
+				url: addCommentURL,
+			});
+
+			if (data) {
+				setComments((comments) =>
+					parentCommentId
+						? comments.map((comment) =>
+								comment.commentId === parentCommentId
+									? {
+											...comment,
+											children: [
+												...(comment?.children || []),
+												data,
+											],
+										}
+									: comment
+							)
+						: [...comments, data]
+				);
+			}
+			else if (error) {
+				errorMessage = error;
+			}
+		}
+		else if (commentId) {
+			const {data, error} = await CommentService.editComment({
+				commentId,
+				content,
+				url: editCommentURL,
+			});
+
+			if (data) {
+				const updateComments = (comments: Comment[]) =>
+					comments.map((comment) =>
+						comment.commentId === commentId
+							? {
+									...data,
+									children: comment.children,
+								}
+							: comment
+					);
+
+				setComments((comments) =>
+					parentCommentId
+						? comments.map((comment) =>
+								comment.commentId === parentCommentId
+									? {
+											...comment,
+											children: updateComments(
+												comment.children
+											),
+										}
+									: comment
+							)
+						: updateComments(comments)
+				);
+
+				sucessMessage = Liferay.Language.get(
+					'your-comment-has-been-edited'
+				);
+			}
+			else if (error) {
+				errorMessage = error;
+			}
+		}
+
+		if (errorMessage) {
+			openToast({
+				message: errorMessage,
+				type: 'danger',
+			});
+		}
+		else {
+			openToast({message: sucessMessage, type: 'success'});
+
+			editor.setData('');
+		}
+	};
 
 	return (
 		<>
@@ -35,155 +193,231 @@ export default function CommentsPanel({
 				<label>{Liferay.Language.get('add-comment')}</label>
 
 				<CommentEditor
-					addCommentURL={addCommentURL}
 					editorConfig={editorConfig}
-					onAddComment={(comment) =>
-						setComments((comments) => [...comments, comment])
-					}
+					onSave={(content, editor) => saveComment({content, editor})}
 				/>
 			</div>
 
 			{comments.length ? (
-				<List>
+				<ul className="p-0">
 					{comments.map((comment) => (
 						<CommentNode
-							addCommentURL={addCommentURL}
 							comment={comment}
 							editorConfig={editorConfig}
 							key={comment.commentId}
-							onAddComment={(
-								childComment: Comment,
-								parentId: string
-							) => {
-								setComments((comments) =>
-									comments.map((comment) =>
-										comment.commentId === parentId
-											? {
-													...comment,
-													children: [
-														...(comment?.children ||
-															[]),
-														childComment,
-													],
-												}
-											: comment
-									)
-								);
-							}}
+							onDeleteComment={deleteComment}
+							onSaveComment={saveComment}
 						/>
 					))}
-				</List>
+				</ul>
 			) : null}
 		</>
 	);
 }
 
 function CommentNode({
-	addCommentURL,
 	comment,
 	editorConfig,
-	onAddComment,
+	onDeleteComment,
+	onSaveComment,
+	parentCommentId,
 }: {
-	addCommentURL?: string;
 	comment: Comment;
-	editorConfig?: LiferayEditorConfig;
-	onAddComment?: (comment: Comment, parentId: string) => void;
+	editorConfig: LiferayEditorConfig;
+	onDeleteComment: (
+		commentId: string,
+		parentCommentId?: string
+	) => Promise<void>;
+	onSaveComment: ({
+		commentId,
+		content,
+		editor,
+		parentCommentId,
+		status,
+	}: {
+		commentId?: string;
+		content: string;
+		editor: TEditor;
+		parentCommentId?: string;
+		status: Status;
+	}) => Promise<void>;
+	parentCommentId?: string;
 }) {
-	const [showEditor, setShowEditor] = useState<boolean>(false);
+	const [status, setStatus] = useState<Status>('default');
 
 	return (
 		<>
-			<List.Item
-				className={classNames('mb-0 flex-wrap', {
-					'border-0 py-2': !comment.rootComment,
-					'border-left-0 border-right-0 border-top-0 py-4':
-						comment.rootComment,
+			<li
+				className={classNames('list-unstyled pl-3', {
+					'border-bottom pr-3 py-3': comment.rootComment,
 				})}
-				flex
 			>
-				<article className="d-flex flex-wrap">
-					<List.ItemField>
-						<Sticker shape="user-icon">
-							{comment.author.portraitURL ? (
-								<Sticker.Image
-									alt=""
-									src={comment.author.portraitURL}
+				<article>
+					<div className="autofit-padded autofit-row mb-1 pt-2">
+						<div className="autofit-col pl-0">
+							<Sticker shape="user-icon">
+								{comment.author.portraitURL ? (
+									<Sticker.Image
+										alt=""
+										src={comment.author.portraitURL}
+									/>
+								) : (
+									<ClayIcon symbol="user" />
+								)}
+							</Sticker>
+						</div>
+
+						<header className="autofit-col autofit-col-expand">
+							<span className="list-group-title">
+								{comment.author.fullName}
+							</span>
+
+							<time className="list-group-text text-3">
+								{comment.dateDescription}
+							</time>
+						</header>
+
+						<ClayDropDownWithItems
+							items={[
+								{
+									label: Liferay.Language.get('edit'),
+									onClick: () => setStatus('edit'),
+									symbolLeft: 'pencil',
+								},
+								{
+									label: Liferay.Language.get('delete'),
+									onClick: () =>
+										onDeleteComment(
+											comment.commentId,
+											parentCommentId
+										),
+									symbolLeft: 'trash',
+								},
+							]}
+							menuWidth="shrink"
+							trigger={
+								<ClayButtonWithIcon
+									borderless
+									displayType="secondary"
+									monospaced
+									size="xs"
+									symbol="ellipsis-v"
+									title={Liferay.Language.get('actions')}
 								/>
-							) : (
-								<ClayIcon symbol="user" />
-							)}
-						</Sticker>
-					</List.ItemField>
+							}
+						/>
+					</div>
 
-					<header className="autofit-col autofit-col-expand">
-						<span className="list-group-title">
-							{comment.author.fullName}
-						</span>
+					{status === 'edit' ? (
+						<CommentEditor
+							editorConfig={editorConfig!}
+							initialData={comment.body}
+							onCancel={() => setStatus('default')}
+							onSave={async (content, editor) => {
+								await onSaveComment({
+									commentId: comment.commentId,
+									content,
+									editor,
+									parentCommentId,
+									status,
+								});
 
-						<time className="list-group-text text-3">
-							{comment.dateDescription}
-						</time>
-					</header>
-
-					<List.ItemField
-						className="mt-2 text-3 w-100"
-						dangerouslySetInnerHTML={{__html: comment.body}}
-					/>
+								setStatus('default');
+							}}
+							status={status}
+						/>
+					) : (
+						<div
+							className="text-3"
+							dangerouslySetInnerHTML={{__html: comment.body}}
+						/>
+					)}
 
 					{comment.children?.length ? (
-						<List className="border-left border-secondary mb-3 ml-2 pl-1 rounded-0">
+						<ul className="border-left border-secondary pl-0">
 							{comment.children.map((child: Comment) => (
 								<CommentNode
 									comment={child}
+									editorConfig={editorConfig}
 									key={child.commentId}
+									onDeleteComment={onDeleteComment}
+									onSaveComment={onSaveComment}
+									parentCommentId={comment.commentId}
 								/>
 							))}
-						</List>
+						</ul>
 					) : null}
 
-					{showEditor ? (
+					{status === 'reply' ? (
 						<CommentEditor
-							addCommentURL={addCommentURL!}
-							editorConfig={editorConfig!}
-							onAddComment={(childComment) => {
-								onAddComment?.(childComment, comment.commentId);
-								setShowEditor(false);
+							editorConfig={editorConfig}
+							onCancel={() => setStatus('default')}
+							onSave={async (content, editor) => {
+								await onSaveComment({
+									commentId: comment.commentId,
+									content,
+									editor,
+									parentCommentId: comment.commentId,
+									status,
+								});
+
+								setStatus('default');
 							}}
-							onCancel={() => setShowEditor(false)}
 							parentCommentId={comment.commentId}
+							status={status}
 						/>
 					) : (
-						<div className="w-100">
+						<div
+							className={classNames('d-flex ratings', {
+								'mt-3': comment.children,
+								'pb-2': !comment.rootComment,
+							})}
+						>
 							{comment.rootComment ? (
 								<ClayButton
 									borderless
 									displayType="secondary"
-									onClick={() => setShowEditor(true)}
+									onClick={() => setStatus('reply')}
 									size="xs"
 								>
 									{Liferay.Language.get('reply')}
 								</ClayButton>
 							) : null}
+
+							<Ratings
+								className={comment.className}
+								classPK={comment.commentId}
+								enabled
+								initialNegativeVotes={comment.negativeVotes}
+								initialPositiveVotes={comment.positiveVotes}
+								signedIn
+								size="xs"
+								thumbDown={comment.negativeVotes > 0}
+								thumbUp={comment.positiveVotes > 0}
+								type="thumbs"
+							/>
 						</div>
 					)}
 				</article>
-			</List.Item>
+			</li>
 		</>
 	);
 }
 
 function CommentEditor({
-	addCommentURL,
 	editorConfig,
-	onAddComment,
+	initialData = '',
 	onCancel,
+	onSave,
 	parentCommentId = null,
+	status = 'default',
 }: {
-	addCommentURL: string;
 	editorConfig: LiferayEditorConfig;
-	onAddComment: (comment: Comment, parentId?: string) => void;
+	initialData?: string;
 	onCancel?: () => void;
+	onSave: (content: string, editor: TEditor, status: Status) => Promise<void>;
 	parentCommentId?: string | null;
+	status?: Status;
 }) {
 	const [content, setContent] = useState<string>();
 	const [disabled, setDisabled] = useState<boolean>(false);
@@ -192,11 +426,10 @@ function CommentEditor({
 	return (
 		<>
 			<CKEditor5BalloonEditor
-				className={classNames('form-control form-control-sm', {
-					'mx-2': parentCommentId,
-				})}
+				className="form-control form-control-sm"
 				config={{
 					...editorConfig,
+					initialData,
 					label: Liferay.Language.get('add-comment'),
 					placeholder: Liferay.Language.get('type-your-comment-here'),
 				}}
@@ -222,30 +455,7 @@ function CommentEditor({
 
 						setDisabled(true);
 
-						try {
-							const comment = await CommentService.addComment({
-								content,
-								parentCommentId,
-								url: addCommentURL,
-							});
-
-							onAddComment(comment);
-
-							openToast({
-								message: Liferay.Language.get(
-									'your-comment-has-been-posted'
-								),
-								type: 'success',
-							});
-
-							editorRef.current?.setData('');
-						}
-						catch (error) {
-							openToast({
-								message: (error as Error).message,
-								type: 'danger',
-							});
-						}
+						await onSave(content, editorRef.current!, status);
 
 						setDisabled(false);
 					}}

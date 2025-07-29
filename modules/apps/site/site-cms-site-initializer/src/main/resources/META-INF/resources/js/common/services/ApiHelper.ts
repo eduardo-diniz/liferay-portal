@@ -22,7 +22,7 @@ const UNEXPECTED_ERROR_MESSAGE = Liferay.Language.get(
 	'an-unexpected-error-occurred'
 );
 
-type RequestResult<T> =
+export type RequestResult<T> =
 	| {
 			data: null;
 			error: string;
@@ -77,7 +77,15 @@ async function handleRequest<T>(
 			};
 		}
 
-		const data: T = await response.json();
+		const data: T | {error: string} = await response.json();
+
+		if (data && typeof data === 'object' && 'error' in data) {
+			return {
+				data: null,
+				error: data.error || UNEXPECTED_ERROR_MESSAGE,
+				status: null,
+			};
+		}
 
 		return {
 			data,
@@ -123,8 +131,8 @@ async function put<T>(url: string, data?: Record<string, any>) {
 	);
 }
 
-async function postFormData(formData: FormData, url: string) {
-	return handleRequest(() =>
+async function postFormData<T>(formData: FormData, url: string) {
+	return handleRequest<T>(() =>
 		fetch(url, {
 			body: formData,
 			method: 'POST',

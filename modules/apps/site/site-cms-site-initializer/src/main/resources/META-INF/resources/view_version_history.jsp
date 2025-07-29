@@ -15,11 +15,12 @@ ViewVersionHistoryDisplayContext viewVersionHistoryDisplayContext = (ViewVersion
 	<div>
 		<react:component
 			module="{Toolbar} from site-cms-site-initializer"
-			props="<%= viewVersionHistoryDisplayContext.getToolbarReactData() %>"
+			props="<%= viewVersionHistoryDisplayContext.getProps() %>"
 		/>
 	</div>
 
 	<frontend-data-set:headless-display
+		additionalProps="<%= viewVersionHistoryDisplayContext.getProps() %>"
 		apiURL="<%= viewVersionHistoryDisplayContext.getAPIURL() %>"
 		fdsActionDropdownItems="<%= viewVersionHistoryDisplayContext.getFDSActionDropdownItems() %>"
 		formName="fm"

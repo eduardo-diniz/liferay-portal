@@ -139,14 +139,14 @@ public class PortalInstancesTest {
 				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
 					CompanyConstants.SYSTEM)) {
 
-			_assertGetCompanyId(mockHttpServletRequest);
+			_assertGetCompanyId(true, mockHttpServletRequest);
 		}
 
 		try (SafeCloseable safeCloseable =
 				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
 					RandomTestUtil.randomLong())) {
 
-			_assertGetCompanyId(mockHttpServletRequest);
+			_assertGetCompanyId(false, mockHttpServletRequest);
 		}
 	}
 
@@ -187,7 +187,7 @@ public class PortalInstancesTest {
 	}
 
 	private void _assertGetCompanyId(
-		MockHttpServletRequest mockHttpServletRequest) {
+		boolean equals, MockHttpServletRequest mockHttpServletRequest) {
 
 		// PortalInstances#getCompanyId must be invoked before
 		// CompanyThreadLocal#getCompanyId
@@ -196,8 +196,16 @@ public class PortalInstancesTest {
 			_company.getCompanyId(),
 			PortalInstances.getCompanyId(mockHttpServletRequest));
 
-		Assert.assertEquals(
-			_company.getCompanyId(), (long)CompanyThreadLocal.getCompanyId());
+		if (equals) {
+			Assert.assertEquals(
+				_company.getCompanyId(),
+				(long)CompanyThreadLocal.getCompanyId());
+		}
+		else {
+			Assert.assertNotEquals(
+				_company.getCompanyId(),
+				(long)CompanyThreadLocal.getCompanyId());
+		}
 	}
 
 	private void _testGetCompanyId(String hostname, LayoutSet layoutSet) {
@@ -207,7 +215,7 @@ public class PortalInstancesTest {
 		mockHttpServletRequest.addHeader("Host", hostname);
 		mockHttpServletRequest.setServerName(hostname);
 
-		_assertGetCompanyId(mockHttpServletRequest);
+		_assertGetCompanyId(true, mockHttpServletRequest);
 
 		Assert.assertEquals(
 			_company.getCompanyId(),

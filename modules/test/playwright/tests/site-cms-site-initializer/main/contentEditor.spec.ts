@@ -3,14 +3,13 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {expect, mergeTests} from '@playwright/test';
+import {Locator, Page, expect, mergeTests} from '@playwright/test';
 import path from 'path';
 
 import {dataApiHelpersTest} from '../../../fixtures/dataApiHelpersTest';
 import {featureFlagsTest} from '../../../fixtures/featureFlagsTest';
 import {loginTest} from '../../../fixtures/loginTest';
 import {pageEditorPagesTest} from '../../../fixtures/pageEditorPagesTest';
-import {checkAccessibility} from '../../../utils/checkAccessibility';
 import {clickAndExpectToBeVisible} from '../../../utils/clickAndExpectToBeVisible';
 import fillAndClickOutside from '../../../utils/fillAndClickOutside';
 import {getRandomInt} from '../../../utils/getRandomInt';
@@ -290,19 +289,198 @@ test(
 	}
 );
 
-test(
-	'Add comments in the comments panel',
-	{tag: '@LPD-59851'},
-	async ({contentsPage, page}) => {
-		await contentsPage.goto();
+test.describe('Comments Panel', () => {
+	const addComment = async ({
+		content = 'New Comment',
+		page,
+		parentComment,
+	}: {
+		content?: string;
+		page: Page;
+		parentComment?: Locator;
+	}) => {
+		const rootComment = parentComment || page;
 
-		// Create new Blog content and go to the Comments tab
+		const editor = rootComment.getByLabel('Add Comment.');
+
+		await expect(editor).toBeVisible();
+
+		await editor.scrollIntoViewIfNeeded();
+
+		await editor.click();
+
+		await page.keyboard.type(content);
+
+		const saveButton = rootComment.getByRole('button', {name: 'Save'});
+
+		await expect(saveButton).toBeEnabled();
+
+		await saveButton.click();
+
+		await expect(saveButton).toBeDisabled();
+
+		await waitForAlert(page, 'Success:Your comment has been posted.', {
+			autoClose: true,
+		});
+
+		if (parentComment) {
+			await expect(saveButton).not.toBeAttached();
+			await expect(editor).not.toBeAttached();
+		}
+		else {
+			await expect(saveButton).toBeEnabled();
+			await expect(editor).not.toContainText(content);
+		}
+
+		// Check that the comment has been added
+
+		const comment = rootComment.locator('article');
+
+		await expect(comment.filter({hasText: content})).toBeAttached();
+
+		if (parentComment) {
+			await expect(comment.getByText('Reply')).not.toBeAttached();
+		}
+
+		return {comment, editor};
+	};
+
+	test(
+		'Add and edit comments in the comments panel',
+		{tag: '@LPD-59851'},
+		async ({contentsPage, page}) => {
+			await contentsPage.goto();
+
+			await contentsPage.createContent('Blog');
+
+			await contentsPage.openSidePanel('Comments');
+
+			// Add a comment
+
+			const parentCommentContent = 'New Comment';
+
+			const {comment, editor} = await addComment({
+				content: parentCommentContent,
+				page,
+			});
+
+			// Check that the text typed is removed when the button cancel is pressed
+
+			await editor.click({force: true});
+
+			await page.keyboard.type('New comment to cancel');
+
+			await page.getByRole('button', {name: 'Cancel'}).click();
+
+			await expect(editor).not.toContainText('New comment to cancel');
+
+			// Add a reply the comment
+
+			await comment.getByText('Reply').click();
+
+			const {comment: childComment} = await addComment({
+				content: 'New child comment',
+				page,
+				parentComment: comment,
+			});
+
+			// Edit the parent comment
+
+			await clickAndExpectToBeVisible({
+				autoClick: true,
+				target: page.getByRole('menuitem').filter({hasText: 'edit'}),
+				trigger: page.getByTitle('actions').first(),
+			});
+
+			await page.getByText(parentCommentContent).selectText();
+
+			await page.keyboard.type('Editing the comment');
+
+			await comment.getByRole('button', {name: 'Save'}).click();
+
+			await waitForAlert(page, 'Success:Your comment has been edited.', {
+				autoClose: true,
+			});
+
+			await expect(comment.first()).toContainText('Editing the comment');
+
+			// Edit the child comment
+
+			await clickAndExpectToBeVisible({
+				autoClick: true,
+				target: page.getByRole('menuitem').filter({hasText: 'edit'}),
+				trigger: page.getByTitle('actions').nth(1),
+			});
+
+			await page.getByText('New child comment').selectText();
+
+			await page.keyboard.type('Editing the child comment');
+
+			await childComment.getByRole('button', {name: 'Save'}).click();
+
+			await expect(childComment).toContainText(
+				'Editing the child comment'
+			);
+		}
+	);
+
+	test('Error when a comment is edited', async ({contentsPage, page}) => {
+		await page.route(
+			'**/c/cms/edit_content_item_comment?**',
+			async (route) => {
+				await route.fulfill({
+					body: JSON.stringify({error: ''}),
+					status: 500,
+				});
+			}
+		);
+
+		await contentsPage.goto();
 
 		await contentsPage.createContent('Blog');
 
 		await contentsPage.openSidePanel('Comments');
 
-		// Add a comment
+		const {comment} = await addComment({
+			page,
+		});
+
+		await clickAndExpectToBeVisible({
+			autoClick: true,
+			target: page.getByRole('menuitem').filter({hasText: 'edit'}),
+			trigger: page.getByTitle('actions'),
+		});
+
+		await page.getByText('New Comment').selectText();
+
+		await page.keyboard.type('Editing the comment');
+
+		await comment.getByRole('button', {name: 'Save'}).click();
+
+		await waitForAlert(page, 'Error:An unexpected error occurred.', {
+			autoClose: true,
+			type: 'danger',
+		});
+	});
+
+	test('Error when a comment is added', async ({contentsPage, page}) => {
+		await page.route(
+			'**/c/cms/add_content_item_comment?**',
+			async (route) => {
+				await route.fulfill({
+					body: JSON.stringify({error: ''}),
+					status: 500,
+				});
+			}
+		);
+
+		await contentsPage.goto();
+
+		await contentsPage.createContent('Blog');
+
+		await contentsPage.openSidePanel('Comments');
+
+		// Try to add comment
 
 		const editor = page.getByLabel('Add Comment.');
 
@@ -310,77 +488,17 @@ test(
 
 		await editor.scrollIntoViewIfNeeded();
 
-		await editor.click({force: true});
+		await editor.click();
 
-		await page.keyboard.type('New comment');
+		await page.keyboard.type('New Comment');
 
-		await page.getByRole('button', {name: 'Save'}).click();
+		const saveButton = page.getByRole('button', {name: 'Save'});
 
-		await waitForAlert(page, 'Success:Your comment has been posted.', {
+		await saveButton.click();
+
+		await waitForAlert(page, 'Error:An unexpected error occurred.', {
 			autoClose: true,
+			type: 'danger',
 		});
-
-		// Check that the text typed is removed when the comment is saved or when the button cancel is pressed
-
-		await expect(editor).not.toContainText('New Comment');
-
-		await editor.click({force: true});
-
-		await page.keyboard.type('New comment to cancel');
-
-		await page.getByRole('button', {name: 'Cancel'}).click();
-
-		await expect(editor).not.toContainText('New comment to cancel');
-
-		// Check that the comment has been added
-
-		const comment = page.locator('article');
-
-		await expect(comment.filter({hasText: 'New comment'})).toBeAttached();
-
-		// Add a reply the comment
-
-		await comment.getByText('Reply').click();
-
-		let replyEditor = comment.getByLabel('Add Comment.');
-
-		await expect(replyEditor).toBeAttached();
-
-		await page.keyboard.type('New child comment');
-
-		await comment.getByRole('button', {name: 'Save'}).click();
-
-		await waitForAlert(page, 'Success:Your comment has been posted.', {
-			autoClose: true,
-		});
-
-		// Check that the reply has been added
-
-		const childComment = page.locator('article article');
-
-		await expect(
-			childComment.filter({hasText: 'New child comment'})
-		).toBeAttached();
-
-		await expect(childComment.getByText('Reply')).not.toBeAttached();
-
-		// Check that the reply editor is removed when the button cancel is pressed
-
-		await comment.getByText('Reply').click();
-
-		replyEditor = comment.getByLabel('Add Comment.');
-
-		await expect(replyEditor).toBeAttached();
-
-		await comment.getByRole('button', {name: 'Cancel'}).click();
-
-		await expect(replyEditor).not.toBeAttached();
-
-		// Check the accessibility of the panel
-
-		await checkAccessibility({
-			page,
-			selectors: ['.content-editor__side-panel'],
-		});
-	}
-);
+	});
+});

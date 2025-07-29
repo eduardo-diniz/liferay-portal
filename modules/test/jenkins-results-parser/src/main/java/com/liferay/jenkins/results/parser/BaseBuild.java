@@ -306,7 +306,16 @@ public abstract class BaseBuild implements Build {
 			sb.append("C:");
 		}
 
-		sb.append("/opt/dev/projects/github/.tmp/jenkins/");
+		Properties buildProperties = null;
+
+		try {
+			buildProperties = JenkinsResultsParserUtil.getBuildProperties();
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException(ioException);
+		}
+
+		sb.append(buildProperties.getProperty("jenkins.tmp.dir"));
 
 		JenkinsMaster jenkinsMaster = getJenkinsMaster();
 
@@ -723,11 +732,6 @@ public abstract class BaseBuild implements Build {
 		_gitHubMessageElement = messageElement;
 
 		return _gitHubMessageElement;
-	}
-
-	@Override
-	public Element getGitHubMessageUpstreamJobFailureElement() {
-		return upstreamJobFailureMessageElement;
 	}
 
 	@Override
@@ -1574,31 +1578,6 @@ public abstract class BaseBuild implements Build {
 
 	@Override
 	public boolean isUniqueFailure() {
-		if (!isFailing()) {
-			return false;
-		}
-
-		List<TestResult> testResults = new ArrayList<>();
-
-		testResults.addAll(getTestResults("FAILED"));
-		testResults.addAll(getTestResults("REGRESSION"));
-
-		List<TestResult> passedTestResults = getTestResults("PASSED");
-
-		if (passedTestResults.size() == 1) {
-			testResults.addAll(passedTestResults);
-		}
-
-		if (testResults.isEmpty()) {
-			return true;
-		}
-
-		for (TestResult testResult : testResults) {
-			if (testResult.isUniqueFailure()) {
-				return true;
-			}
-		}
-
 		return false;
 	}
 
@@ -3095,7 +3074,6 @@ public abstract class BaseBuild implements Build {
 	protected String gitRepositoryName;
 	protected Long invokedTime;
 	protected Long startTime;
-	protected Element upstreamJobFailureMessageElement;
 
 	private void _archive(String content, boolean required, String urlSuffix) {
 		boolean readyToArchive = true;

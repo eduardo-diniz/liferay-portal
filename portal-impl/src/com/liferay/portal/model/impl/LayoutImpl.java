@@ -788,9 +788,9 @@ public class LayoutImpl extends LayoutBaseImpl {
 					getLayoutSetPrototypeByUuidAndCompanyId(
 						layoutSet.getLayoutSetPrototypeUuid(), getCompanyId());
 
-			return LayoutLocalServiceUtil.fetchLayoutByUuidAndGroupId(
-				getSourcePrototypeLayoutUuid(), layoutSetPrototype.getGroupId(),
-				true);
+			return LayoutLocalServiceUtil.fetchLayoutByExternalReferenceCode(
+				getLayoutSetPrototypeLayoutERC(),
+				layoutSetPrototype.getGroupId());
 		}
 		catch (Exception exception) {
 			_log.error(
@@ -879,6 +879,19 @@ public class LayoutImpl extends LayoutBaseImpl {
 		}
 
 		return group;
+	}
+
+	@Override
+	public String getSourcePrototypeLayoutUuid() {
+		if (Validator.isNull(_sourcePrototypeLayoutUuid)) {
+			Layout layout = getLayoutSetPrototypeLayout();
+
+			if (layout != null) {
+				_sourcePrototypeLayoutUuid = layout.getUuid();
+			}
+		}
+
+		return _sourcePrototypeLayoutUuid;
 	}
 
 	@Override
@@ -1903,6 +1916,7 @@ public class LayoutImpl extends LayoutBaseImpl {
 	private LayoutSet _layoutSet;
 	private transient LayoutType _layoutType;
 	private Layout _masterLayout;
+	private String _sourcePrototypeLayoutUuid;
 	private Theme _theme;
 	private UnicodeProperties _typeSettingsUnicodeProperties;
 

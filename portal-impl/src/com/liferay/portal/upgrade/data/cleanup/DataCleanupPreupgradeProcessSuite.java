@@ -88,6 +88,7 @@ public class DataCleanupPreupgradeProcessSuite {
 
 			//
 
-			new DDMStructureDataCleanupPreupgradeProcess());
+			new DDMStructureDataCleanupPreupgradeProcess(),
+			new DLFileEntryDataCleanupPreupgradeProcess());
 
 }

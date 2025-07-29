@@ -24,7 +24,6 @@ import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
 import com.liferay.layout.test.util.ContentLayoutTestUtil;
 import com.liferay.layout.utility.page.model.LayoutUtilityPageEntry;
-import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.function.UnsafeRunnable;
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.function.transform.TransformUtil;
@@ -678,6 +677,7 @@ public class PageSpecificationResourceTest
 						layout.getExternalReferenceCode());
 
 		_modifyPageExperiences(contentPageSpecification.getPageExperiences());
+
 		SettingsTestUtil.modifySettings(
 			serviceContext, contentPageSpecification.getSettings());
 
@@ -1053,10 +1053,13 @@ public class PageSpecificationResourceTest
 					testGroup.getExternalReferenceCode(),
 					layout.getExternalReferenceCode());
 
-		_testPatchSiteSiteByExternalReferenceCodePageSpecificationWithSettings(
-			pageSpecification, serviceContext,
-			settings -> PageSpecificationsTestUtil.getWidgetPageSpecification(
-				null, settings, null));
+		SettingsTestUtil.modifySettings(
+			serviceContext, pageSpecification.getSettings());
+
+		_testPatchSiteSiteByExternalReferenceCodePageSpecification(
+			pageSpecification,
+			() -> PageSpecificationsTestUtil.getWidgetPageSpecification(
+				null, pageSpecification.getSettings(), null));
 
 		pageSpecification.setStatus(PageSpecification.Status.DRAFT);
 
@@ -1132,9 +1135,13 @@ public class PageSpecificationResourceTest
 							}
 						}));
 
-		_testPatchSiteSiteByExternalReferenceCodePageSpecificationWithSettings(
-			contentPageSpecification, serviceContext,
-			settings -> _getContentPageSpecification(settings));
+		SettingsTestUtil.modifySettings(
+			serviceContext, contentPageSpecification.getSettings());
+
+		_testPatchSiteSiteByExternalReferenceCodePageSpecification(
+			contentPageSpecification,
+			() -> _getContentPageSpecification(
+				contentPageSpecification.getSettings()));
 
 		contentPageSpecification.setStatus(PageSpecification.Status.APPROVED);
 
@@ -1148,60 +1155,12 @@ public class PageSpecificationResourceTest
 						contentPageSpecification));
 	}
 
-	private void
-			_testPatchSiteSiteByExternalReferenceCodePageSpecificationWithSettings(
-				PageSpecification pageSpecification,
-				ServiceContext serviceContext,
-				UnsafeFunction<Settings, PageSpecification, Exception>
-					unsafeFunction)
-		throws Exception {
-
-		Settings settings = pageSpecification.getSettings();
-
-		_testPatchSiteSiteByExternalReferenceCodePageSpecification(
-			pageSpecification,
-			() -> unsafeFunction.apply(
-				SettingsTestUtil.getColorSchemeNameSettings(settings)));
-
-		_testPatchSiteSiteByExternalReferenceCodePageSpecification(
-			pageSpecification,
-			() -> unsafeFunction.apply(
-				SettingsTestUtil.getCssSettings(settings)));
-
-		_testPatchSiteSiteByExternalReferenceCodePageSpecification(
-			pageSpecification,
-			() -> unsafeFunction.apply(
-				SettingsTestUtil.getJavaScriptSettings(settings)));
-
-		_testPatchSiteSiteByExternalReferenceCodePageSpecification(
-			pageSpecification,
-			() -> unsafeFunction.apply(
-				SettingsTestUtil.getMasterPageItemExternalReferenceSettings(
-					serviceContext, settings)));
-
-		_testPatchSiteSiteByExternalReferenceCodePageSpecification(
-			pageSpecification,
-			() -> unsafeFunction.apply(
-				SettingsTestUtil.getStyleBookItemExternalReferenceSettings(
-					serviceContext, settings)));
-
-		_testPatchSiteSiteByExternalReferenceCodePageSpecification(
-			pageSpecification,
-			() -> unsafeFunction.apply(
-				SettingsTestUtil.getThemeNameSettings(settings)));
-
-		_testPatchSiteSiteByExternalReferenceCodePageSpecification(
-			pageSpecification,
-			() -> unsafeFunction.apply(
-				SettingsTestUtil.getThemeSettingsSettings(settings)));
-	}
-
 	private void _testPutSiteSiteByExternalReferenceCodePageSpecification(
 			Layout layout, String pageSpecificationExternalReferenceCode,
 			ServiceContext serviceContext)
 		throws Exception {
 
-		layout = _updateLayout(layout, serviceContext);
+		_updateLayout(layout, serviceContext);
 
 		PageSpecification pageSpecification =
 			pageSpecificationResource.
