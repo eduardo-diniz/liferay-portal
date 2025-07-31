@@ -32,6 +32,7 @@ type ExtendSSATrialModalProps = {
 	onClose: () => void;
 	order: PlacedOrder;
 	ssaTrialExtendMutate: KeyedMutator<any>;
+	orderMutate: KeyedMutator<any>;
 };
 
 const ExtendSSATrialModal: React.FC<ExtendSSATrialModalProps> = ({
@@ -40,6 +41,7 @@ const ExtendSSATrialModal: React.FC<ExtendSSATrialModalProps> = ({
 	onClose,
 	order,
 	ssaTrialExtendMutate,
+	orderMutate,
 }) => {
 	const [duration, setDuration] = useState<number | undefined>(undefined);
 	const [reason, setReason] = useState<string>('');
@@ -105,6 +107,32 @@ const ExtendSSATrialModal: React.FC<ExtendSSATrialModalProps> = ({
 				{ revalidate: false }
 			);
 
+			orderMutate(
+				(order: any) => {
+				  if (!order) return;
+			  
+				  const updatedOrder = {
+					...order,
+					items: order.items.map((item: any) => {
+						if (item.id !== order.id) return item;
+
+						return {
+						...item,
+						customFields: {
+						  ...item.customFields,
+						  [OrderCustomFields.END_DATE]: new Date(
+							new Date(item.customFields?.[OrderCustomFields.END_DATE]).getTime() + form.duration * 24 * 60 * 60 * 1000
+						  ).toISOString(),
+						},
+					  };
+					}),
+				  };
+			  
+				  return updatedOrder;
+				},
+				{ revalidate: false }
+			);		  
+			
 			Liferay.Util.openToast({
 				message: i18n.translate('success'),
 				type: 'success',

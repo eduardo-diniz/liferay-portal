@@ -22,9 +22,10 @@ import { KeyedMutator } from 'swr';
 type TrialActionsProps = {
 	placedOrder: PlacedOrder;
 	ssaTrialExtendMutate: KeyedMutator<any>;
+	orderMutate: KeyedMutator<any>;
 };
 
-function TrialActions({ placedOrder, ssaTrialExtendMutate }: TrialActionsProps) {
+function TrialActions({ placedOrder, ssaTrialExtendMutate, orderMutate }: TrialActionsProps) {
 	const { marketplaceUserAccount } = useMarketplaceContext();
 	const modalContext = useModalContext();
 	const { selectedAccount, ssaTrialExtend } =
@@ -107,6 +108,7 @@ function TrialActions({ placedOrder, ssaTrialExtendMutate }: TrialActionsProps) 
 									onClose={modalContext.onClose}
 									order={placedOrder}
 									ssaTrialExtendMutate={ssaTrialExtendMutate}
+									orderMutate={orderMutate}
 								/>
 							),
 							header: `Extend ${placedOrder.id} Trial`,
@@ -256,7 +258,7 @@ function TrialActions({ placedOrder, ssaTrialExtendMutate }: TrialActionsProps) 
 					onClick={() => {
 						window.open(
 							`https://${placedOrder?.customFields?.[
-							'trial-virtualhost'
+							'trial-virtual-host'
 							] as string
 							}`
 						);

@@ -7,15 +7,15 @@ import ClayButton from '@clayui/button';
 import DropDown from '@clayui/drop-down';
 import ClayIcon from '@clayui/icon';
 import DOMPurify from 'dompurify';
-import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
+import {Link, useNavigate, useOutletContext, useParams} from 'react-router-dom';
 
-import { DetailedCard } from '../../../../components/DetailedCard/DetailedCard';
-import { PageRenderer } from '../../../../components/Page';
-import QATable, { Orientation } from '../../../../components/QATable';
-import { OrderCustomFields } from '../../../../enums/Order';
+import {DetailedCard} from '../../../../components/DetailedCard/DetailedCard';
+import {PageRenderer} from '../../../../components/Page';
+import QATable, {Orientation} from '../../../../components/QATable';
+import {OrderCustomFields, OrderStatus} from '../../../../enums/Order';
 import useGetProductByOrderId from '../../../../hooks/useGetProductByOrderId';
 import i18n from '../../../../i18n';
-import { formatDate } from '../../../../utils/date';
+import {formatDate} from '../../../../utils/date';
 import OrderDetailsHeader from '../../../CustomerDashboard/components/OrderDetailsHeader';
 import ExtensionStatus from '../../components/ExtensionStatus/ExtensionStatus';
 import TrialStatus from '../../components/TrialStatus/TrialStatus';
@@ -23,18 +23,21 @@ import TrialActions from './TrialActions';
 
 const TrialDetails = () => {
 	const navigate = useNavigate();
-	const { orderId } = useParams();
-	const { ssaTrialExtend, ssaTrialExtendMutate, } = useOutletContext<any>();
-	const { data, error, isLoading, isValidating } = useGetProductByOrderId(orderId as string);
+	const {orderId} = useParams();
+	const {ssaTrialExtend, ssaTrialExtendMutate, orderMutate} = useOutletContext<any>();
+	const {data, error, isLoading, isValidating} = useGetProductByOrderId(
+		orderId as string
+	);
 
-	const placedOrder = (data?.placedOrder) as PlacedOrder;
+	const placedOrder = data?.placedOrder as PlacedOrder;
 	const description = data?.product.description || '';
 	const placedOrderItems = placedOrder?.placedOrderItems ?? [];
 	const productCreatorAccountName = data?.product?.catalogName || '';
 
-	const placedOrderCustomFields = placedOrder?.customFields && JSON.parse(placedOrder?.customFields[OrderCustomFields.TRIAL_SETTINGS])
+	const placedOrderCustomFields =
+		placedOrder?.customFields &&
+		JSON.parse(placedOrder?.customFields[OrderCustomFields.TRIAL_SETTINGS]);
 	const projectId = placedOrderCustomFields?.projectId || '';
-
 
 	return (
 		<PageRenderer
@@ -77,7 +80,11 @@ const TrialDetails = () => {
 					}
 				>
 					{data?.placedOrder && (
-						<TrialActions placedOrder={data?.placedOrder} ssaTrialExtendMutate={ssaTrialExtendMutate} />
+						<TrialActions
+							placedOrder={data?.placedOrder}
+							ssaTrialExtendMutate={ssaTrialExtendMutate}
+							orderMutate={orderMutate}
+						/>
 					)}
 				</DropDown>
 			</div>
@@ -110,9 +117,7 @@ const TrialDetails = () => {
 											),
 										},
 										{
-											title: i18n.translate(
-												'created-by'
-											),
+											title: i18n.translate('created-by'),
 											value: (
 												<div className="mb-3">
 													{placedOrder?.author}
@@ -143,9 +148,7 @@ const TrialDetails = () => {
 								<QATable
 									items={[
 										{
-											title: i18n.translate(
-												'order-id'
-											),
+											title: i18n.translate('order-id'),
 											value: (
 												<div className="mb-3">
 													{placedOrder?.id}
@@ -153,9 +156,7 @@ const TrialDetails = () => {
 											),
 										},
 										{
-											title: i18n.translate(
-												'order-date'
-											),
+											title: i18n.translate('order-date'),
 											value: (
 												<div>
 													{placedOrder?.createDate &&
@@ -192,8 +193,7 @@ const TrialDetails = () => {
 											),
 											value: (
 												<div className="mb-3">
-													{placedOrder
-														?.customFields[
+													{placedOrder?.customFields[
 														'trial-start-date'
 													] &&
 														formatDate(
@@ -241,18 +241,23 @@ const TrialDetails = () => {
 											title: i18n.translate(
 												'extension-status'
 											),
-											value: ssaTrialExtend && (
-												<div className="my-3">
-													<ExtensionStatus
-														extensionStatus={
-															ssaTrialExtend
-																?.items[0]
-																?.dueStatus
-																?.key
-														}
-													/>
-												</div>
-											),
+											value: (() => {
+												return (
+													<div className="my-3">
+														<ExtensionStatus
+															extensionStatus={
+																placedOrder?.orderStatusInfo?.label === OrderStatus.COMPLETED
+																	? "extension-expired"
+																	: ssaTrialExtend?.items?.find(
+																		({ projectId }: { projectId: string }) =>
+																			projectId === placedOrderCustomFields?.projectId
+																	)?.dueStatus?.key
+															}
+														/>
+
+													</div>
+												);
+											})(),
 										},
 									]}
 									orientation={Orientation.VERTICAL}
@@ -268,9 +273,7 @@ const TrialDetails = () => {
 								<p
 									className="app-review-section-body-description-paragraph mt-3"
 									dangerouslySetInnerHTML={{
-										__html: DOMPurify.sanitize(
-											description
-										),
+										__html: DOMPurify.sanitize(description),
 									}}
 								/>
 							</span>

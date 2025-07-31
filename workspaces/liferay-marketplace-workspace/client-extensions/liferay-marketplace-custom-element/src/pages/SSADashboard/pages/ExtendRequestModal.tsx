@@ -97,10 +97,10 @@ const ExtendRequestModal: React.FC<ExtendSSATrialModalProps> = ({
 
 						<Details title={i18n.translate('expiration-date')}>
 							<span className="extend-request-info">
-								{trialSettings[OrderCustomFields.END_DATE]
+								{order.customFields[OrderCustomFields.END_DATE]
 									? format(
 										new Date(
-											trialSettings[
+											order.customFields[
 											OrderCustomFields.END_DATE
 											]
 										),
@@ -169,7 +169,7 @@ const ExtendRequestModal: React.FC<ExtendSSATrialModalProps> = ({
 							<span className="extend-request-info">
 								{format(
 									addDays(
-										new Date(order.createDate),
+										new Date(order.customFields[OrderCustomFields.END_DATE]),
 										trialExtend.duration
 									),
 									'dd MMM, yyyy'
