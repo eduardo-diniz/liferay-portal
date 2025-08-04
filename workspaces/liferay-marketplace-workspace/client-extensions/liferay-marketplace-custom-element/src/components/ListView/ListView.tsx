@@ -3,31 +3,32 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import { ClayPaginationBarWithBasicItems } from '@clayui/pagination-bar';
+import {ClayPaginationBarWithBasicItems} from '@clayui/pagination-bar';
 import React, {
 	ComponentProps,
 	ReactNode,
 	useCallback,
 	useContext,
+	useEffect,
 	useMemo,
 } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { KeyedMutator } from 'swr';
+import {useSearchParams} from 'react-router-dom';
+import {KeyedMutator} from 'swr';
 
 import CreateFilters from '../../core/CreateFilters';
-import { useFetch } from '../../hooks/useFetch';
+import {useFetch} from '../../hooks/useFetch';
 import i18n from '../../i18n';
 import {
 	FilterSchema as FilterSchemaType,
 	filterSchema as filterSchemas,
 } from '../../schema/filters';
-import { PAGINATION, SortDirection } from '../../utils/constants';
+import {PAGINATION, SortDirection} from '../../utils/constants';
 import EmptyState from '../EmptyState';
 import Loading from '../Loading';
 import ManagementToolbar, {
 	ManagementToolbarProps,
 } from './components/ManagementToolbar';
-import Table, { TableProps } from './components/Table';
+import Table, {TableProps} from './components/Table';
 import ListViewContextProvider, {
 	AppActions,
 	InitialState as ListViewContextState,
@@ -50,7 +51,7 @@ export type ListViewProps<T extends Record<string, any>> = {
 		options: ChildrenOptions
 	) => ReactNode;
 
-	defaultFilters?: { filter: string };
+	defaultFilters?: {filter: string};
 
 	emptyStateProps?: ComponentProps<typeof EmptyState>;
 
@@ -77,9 +78,9 @@ export type ListViewProps<T extends Record<string, any>> = {
 
 	/**
 	 * The options for the pagination.
-	*
-	* @default {displayType: true}
-	*/
+	 *
+	 * @default {displayType: true}
+	 */
 	paginationOptions?: {
 		displayType: boolean;
 	};
@@ -100,9 +101,14 @@ export type ListViewProps<T extends Record<string, any>> = {
 	 * @default undefined
 	 */
 	transformData?: (response: APIResponse<T>) => APIResponse<T>;
+	onDataLoad?: (data: {
+		items: T[];
+		mutate: KeyedMutator<APIResponse<T>>;
+	}) => void;
 };
 
 const ListView = <T extends Record<string, any>>({
+	onDataLoad,
 	children,
 	defaultFilters,
 	emptyStateProps,
@@ -110,18 +116,18 @@ const ListView = <T extends Record<string, any>>({
 		visible: managementToolbarVisible = false,
 		...managementToolbarProps
 	} = {},
-	paginationOptions = { displayType: true },
+	paginationOptions = {displayType: true},
 	resource,
 	tableProps,
 	transformData = (item) => item,
-	refreshInterval
+	refreshInterval,
 }: ListViewProps<T>) => {
 	const [listViewContext, dispatch] = useContext(ListViewContext);
 
 	const updateUrlParams = useUpdateUrlParams();
 	const [searchParams] = useSearchParams();
 
-	const { filters, keywords, sort } = listViewContext;
+	const {filters, keywords, sort} = listViewContext;
 	const filterSchemaName = managementToolbarProps?.filterSchema ?? '';
 
 	const filterSchema = (filterSchemas as any)[
@@ -143,7 +149,7 @@ const ListView = <T extends Record<string, any>>({
 	const filter = useMemo(() => {
 		const baseFilter = CreateFilters.createFilter(filterVariables) || '';
 
-		return { filter: baseFilter };
+		return {filter: baseFilter};
 	}, [filterVariables]);
 
 	const buildSort = (sort: Sort) =>
@@ -152,7 +158,7 @@ const ListView = <T extends Record<string, any>>({
 	const onSort = useCallback(
 		(key: string, direction: SortDirection) => {
 			dispatch({
-				payload: { direction, key },
+				payload: {direction, key},
 				type: ListViewTypes.SET_SORT,
 			});
 		},
@@ -186,9 +192,19 @@ const ListView = <T extends Record<string, any>>({
 		isValidating,
 		loading,
 		mutate,
-	} = useFetch(resource, {
-		params: getURLSearchParams(),
-	}, refreshInterval);
+	} = useFetch(
+		resource,
+		{
+			params: getURLSearchParams(),
+		},
+		refreshInterval
+	);
+
+	useEffect(() => {
+		if (response?.items && onDataLoad) {
+			onDataLoad({items: response.items, mutate});
+		}
+	}, [response?.items]);
 
 	const {
 		actions = {},
@@ -196,7 +212,7 @@ const ListView = <T extends Record<string, any>>({
 		page = 1,
 		pageSize,
 		totalCount = 0,
-	} = transformData(response || { items: [] });
+	} = transformData(response || {items: []});
 
 	if (loading || (isValidating && searchParams.get('filter'))) {
 		return <Loading />;
@@ -216,14 +232,14 @@ const ListView = <T extends Record<string, any>>({
 				selectPerPageItems: i18n.translate('x-items'),
 			}}
 			onDeltaChange={(delta) => {
-				updateUrlParams({ pageSize: delta });
+				updateUrlParams({pageSize: delta});
 
-				dispatch({ payload: delta, type: ListViewTypes.SET_PAGE_SIZE });
+				dispatch({payload: delta, type: ListViewTypes.SET_PAGE_SIZE});
 			}}
 			onPageChange={(page) => {
-				updateUrlParams({ page });
+				updateUrlParams({page});
 
-				dispatch({ payload: page, type: ListViewTypes.SET_PAGE });
+				dispatch({payload: page, type: ListViewTypes.SET_PAGE});
 			}}
 			totalItems={totalCount}
 		/>
@@ -257,7 +273,6 @@ const ListView = <T extends Record<string, any>>({
 					/>
 
 					{paginationOptions.displayType && Pagination}
-
 					{children &&
 						children(response!, {
 							dispatch,
