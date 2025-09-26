@@ -22,6 +22,7 @@ import {PaymentMethodType} from '../../../../types';
 import LicenseTermsCheckbox from '../../License/LicenseTermsCheckbox';
 
 import './index.scss';
+import marketplaceOAuth2 from '../../../../../../services/oauth/Marketplace';
 
 const PaymentMethods = {
 	[PaymentMethodType.TRIAL]: {

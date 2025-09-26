@@ -27,6 +27,8 @@ import useAccounts from './hooks/useAccounts';
 import ProductPurchaseService from './services/ProductPurchase';
 import ProductPurchaseApp from './services/ProductPurchaseApp';
 import {productPurchaseStore} from './store/AppPurchaseStore';
+import marketplaceOAuth2 from '../../services/oauth/Marketplace';
+import taxCalculateOAuth2 from '../../services/oauth/TaxCalculate';
 
 type ProductPurchaseOutletProps = {
 	product: DeliveryProduct;
@@ -120,6 +122,10 @@ const ProductPurchaseOutlet: React.FC<ProductPurchaseOutletProps> = ({
 			const order = await _productPurchase.createOrder(cart, cartOptions);
 
 			const link = await _productPurchase.getNextStepsLink(order);
+
+			await marketplaceOAuth2.taxCalculate(cart.id);
+
+			console.log(link);
 
 			if (link.startsWith('http')) {
 				return sendRedirect(link);

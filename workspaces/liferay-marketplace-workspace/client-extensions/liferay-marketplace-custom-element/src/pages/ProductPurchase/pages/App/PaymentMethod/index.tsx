@@ -22,6 +22,8 @@ import BillingAddress from './BillingAddress/BillingAddress';
 import {PaymentTypeSelector} from './PaymentTypeSelector';
 import TaxIdDisplay from './TaxIdDisplay';
 import {TrialMethod} from './TrialMethod/TrialMethod';
+import marketplaceOAuth2 from '../../../../../services/oauth/Marketplace';
+import HeadlessCommerceDeliveryCart from '../../../../../services/rest/HeadlessCommerceDeliveryCart';
 
 const PaymentMethodFlows = {
 	[PaymentMethodType.TRIAL]: {
@@ -103,10 +105,11 @@ export default function PaymentMethod() {
 			});
 		}
 
-		const updatedCart = await productPurchaseCart.updateCart(
-			productPurchaseCart.cart.id,
-			{billingAddress: payment.billingAddress}
-		);
+		await productPurchaseCart.updateCart(productPurchaseCart.cart.id, {
+			billingAddress: payment.billingAddress,
+		});
+
+		await marketplaceOAuth2.taxCalculate(productPurchaseCart.cart.id);
 
 		if (payment.taxId && !selectedAccount.taxId) {
 			await HeadlessAdminUser.updateAccount(selectedAccount.id, {
@@ -114,7 +117,12 @@ export default function PaymentMethod() {
 			});
 		}
 
-		cartStore.send({cart: updatedCart, type: 'setCart'});
+		cartStore.send({
+			cart: await HeadlessCommerceDeliveryCart.getCart(
+				productPurchaseCart.cart.id
+			),
+			type: 'setCart',
+		});
 
 		nextStep();
 	};

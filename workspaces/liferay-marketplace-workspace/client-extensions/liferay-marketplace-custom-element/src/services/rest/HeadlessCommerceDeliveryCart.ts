@@ -49,6 +49,12 @@ export default class HeadlessCommerceDeliveryCart {
 		return response.text();
 	}
 
+	static async getCart(id: number) {
+		return fetcher<Cart>(
+			`/o/headless-commerce-delivery-cart/v1.0/carts/${id}`
+		);
+	}
+
 	static async updateCart(id: number | string, data: Partial<Cart>) {
 		return fetcher.patch(
 			`/o/headless-commerce-delivery-cart/v1.0/carts/${id}`,

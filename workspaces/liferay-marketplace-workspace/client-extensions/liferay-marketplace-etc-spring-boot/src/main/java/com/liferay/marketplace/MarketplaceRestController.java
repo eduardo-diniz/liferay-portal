@@ -2,7 +2,6 @@
  * SPDX-FileCopyrightText: (c) 2024 Liferay, Inc. https://liferay.com
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
-
 package com.liferay.marketplace;
 
 import com.liferay.client.extension.util.spring.boot3.BaseRestController;
@@ -25,12 +24,14 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.math.BigDecimal;
 
 import java.net.URL;
 
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 import java.util.Map;
 import java.util.Objects;
@@ -49,6 +50,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -63,290 +65,360 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 @RestController
 public class MarketplaceRestController extends BaseRestController {
 
-	@GetMapping("orders/export")
-	public ResponseEntity<StreamingResponseBody> getOrdersExport(
-			@RequestParam(defaultValue = "", name = "filters", required = false)
-				String filterString)
-		throws Exception {
+    @GetMapping("orders/export")
+    public ResponseEntity<StreamingResponseBody> getOrdersExport(
+            @RequestParam(defaultValue = "", name = "filters", required = false) String filterString)
+            throws Exception {
 
-		StreamingResponseBody streamingResponseBody = outputStream -> {
-			try (CSVPrinter csvPrinter = new CSVPrinter(
-					new BufferedWriter(new OutputStreamWriter(outputStream)),
-					CSVFormat.DEFAULT.builder(
-					).setHeader(
-						"Account ERC", "Account Name", "Create Date",
-						"Creator Email", "Order ID", "Order Type",
-						"Product Name", "Total"
-					).build())) {
+        StreamingResponseBody streamingResponseBody = outputStream -> {
+            try (CSVPrinter csvPrinter = new CSVPrinter(
+                    new BufferedWriter(new OutputStreamWriter(outputStream)),
+                    CSVFormat.DEFAULT.builder().setHeader(
+                            "Account ERC", "Account Name", "Create Date",
+                            "Creator Email", "Order ID", "Order Type",
+                            "Product Name", "Total"
+                    ).build())) {
 
-				OrderResource orderResource =
-					_marketplaceService.getOrderResource();
+                OrderResource orderResource
+                        = _marketplaceService.getOrderResource();
 
-				for (int i = 1;; i++) {
-					Page<Order> page = orderResource.getOrdersPage(
-						"", filterString, Pagination.of(i, 200), "");
+                for (int i = 1;; i++) {
+                    Page<Order> page = orderResource.getOrdersPage(
+                            "", filterString, Pagination.of(i, 200), "");
 
-					for (Order order : page.getItems()) {
-						String orderItemName = "";
+                    for (Order order : page.getItems()) {
+                        String orderItemName = "";
 
-						for (OrderItem orderItem : order.getOrderItems()) {
-							orderItemName = orderItem.getName(
-							).get(
-								"en_US"
-							);
+                        for (OrderItem orderItem : order.getOrderItems()) {
+                            orderItemName = orderItem.getName().get(
+                                    "en_US"
+                            );
 
-							break;
-						}
+                            break;
+                        }
 
-						com.liferay.headless.commerce.admin.order.client.dto.
-							v1_0.Account account = order.getAccount();
+                        com.liferay.headless.commerce.admin.order.client.dto.v1_0.Account account = order.getAccount();
 
-						csvPrinter.printRecord(
-							account.getExternalReferenceCode(),
-							account.getName(), order.getCreateDate(),
-							order.getCreatorEmailAddress(), order.getId(),
-							order.getOrderTypeExternalReferenceCode(),
-							orderItemName, order.getTotalFormatted());
-					}
+                        csvPrinter.printRecord(
+                                account.getExternalReferenceCode(),
+                                account.getName(), order.getCreateDate(),
+                                order.getCreatorEmailAddress(), order.getId(),
+                                order.getOrderTypeExternalReferenceCode(),
+                                orderItemName, order.getTotalFormatted());
+                    }
 
-					if (i >= page.getLastPage()) {
-						break;
-					}
-				}
+                    if (i >= page.getLastPage()) {
+                        break;
+                    }
+                }
 
-				csvPrinter.flush();
-			}
-			catch (Exception exception) {
-				throw new IOException(exception);
-			}
-		};
+                csvPrinter.flush();
+            } catch (Exception exception) {
+                throw new IOException(exception);
+            }
+        };
 
-		return ResponseEntity.ok(
-		).header(
-			HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=orders.csv"
-		).contentType(
-			MediaType.TEXT_PLAIN
-		).body(
-			streamingResponseBody
-		);
-	}
+        return ResponseEntity.ok().header(
+                HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=orders.csv"
+        ).contentType(
+                MediaType.TEXT_PLAIN
+        ).body(
+                streamingResponseBody
+        );
+    }
 
-	@PostMapping("product/purchase")
-	public void postProductPurchase(
-			@AuthenticationPrincipal Jwt jwt, @RequestBody String json)
-		throws Exception {
+    @GetMapping("/orders")
+    public String get() {
+        return "READY";
+    }
 
-		if (_log.isInfoEnabled()) {
-			_log.info("POST product purchase " + json);
-		}
+    @PostMapping("/tax-calculate/{orderId}")
+    public void postTaxCalculate(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable long orderId) throws Exception {
 
-		JSONObject jsonObject = new JSONObject(json);
+        if (_log.isInfoEnabled()) {
+            _log.info("POST tax calculate for orderId: " + orderId);
+        }
 
-		JSONObject commerceOrderJSONObject = jsonObject.getJSONObject(
-			"commerceOrder");
+        Order order = _marketplaceService.getOrder(orderId);
 
-		int paymentStatus = commerceOrderJSONObject.getInt("paymentStatus");
+        AccountResource accountResource = _marketplaceService.getAccountResource();
+        Account account = accountResource.getAccount(order.getAccountId());
 
-		if ((paymentStatus !=
-				MarketplaceConstants.ORDER_PAYMENT_STATUS_COMPLETED) &&
-			(paymentStatus !=
-				MarketplaceConstants.ORDER_PAYMENT_STATUS_NOT_REQUIRED)) {
+        String accountType = account.getTypeAsString();
+        String regionISO = order.getBillingAddress() != null
+                ? order.getBillingAddress().getCountryISOCode()
+                : "";
 
-			if (_log.isInfoEnabled()) {
-				_log.info(
-					"Skipping POST product purchase for order " +
-						commerceOrderJSONObject.getLong("id") +
-							" because payment status is not completed");
-			}
+        BigDecimal taxRate = BigDecimal.ZERO;
+        BigDecimal originalTotal = BigDecimal.valueOf(order.getSubtotalAmount());
+        BigDecimal taxAmount = BigDecimal.ZERO;
+        BigDecimal totalWithTax = originalTotal.add(taxAmount);
 
-			return;
-		}
+        if ("personal".equals(accountType) && "IE".equals(regionISO)) {
+            taxRate = BigDecimal.valueOf(0.23);
+            taxAmount = originalTotal.multiply(taxRate);
+            totalWithTax = originalTotal.add(taxAmount);
+        }
 
-		Order order = _marketplaceService.getOrder(
-			commerceOrderJSONObject.getLong("id"));
+        List<String> europeISOCodeRegions = List.of(
+                "AT",
+                "BE",
+                "BG",
+                "HR",
+                "CY",
+                "CZ",
+                "DK",
+                "EE",
+                "FI",
+                "FR",
+                "DE",
+                "GR",
+                "HU",
+                "IE",
+                "IT",
+                "LV",
+                "LT",
+                "LU",
+                "MT",
+                "NL",
+                "PL",
+                "PT",
+                "RO",
+                "SK",
+                "SI",
+                "ES",
+                "SE"
+        );
 
-		_marketplaceService.updateOrder(
-			null, order.getId(), MarketplaceConstants.ORDER_STATUS_PROCESSING);
+        if ("business".equals(accountType) && europeISOCodeRegions.contains(regionISO)) {
+            taxRate = BigDecimal.valueOf(0.23);
+            taxAmount = originalTotal.multiply(taxRate);
+            totalWithTax = originalTotal.add(taxAmount);
+        }
 
-		Page<OrderItem> orderItemPage =
-			_marketplaceService.getOrderItemResource(
-			).getOrderIdOrderItemsPage(
-				order.getId(), Pagination.of(1, 10)
-			);
+        Order orderWithTax = new Order();
+        orderWithTax.setTaxAmount(taxAmount);
+        orderWithTax.setTotal(totalWithTax);
 
-		if (Objects.equals(
-				order.getOrderTypeExternalReferenceCode(),
-				"CLIENT_EXTENSION") ||
-			Objects.equals(
-				order.getOrderTypeExternalReferenceCode(), "CLOUDAPP")) {
+        OrderResource orderResource = _marketplaceService.getOrderResource();
 
-			_setUpCloudProductPurchase(order, orderItemPage);
-		}
+        System.out.println("No tax amount");
+        orderResource.patchOrder(orderId, orderWithTax);
 
-		if (Objects.equals(
-				order.getOrderTypeExternalReferenceCode(), "COMPOSITE_APP") ||
-			Objects.equals(
-				order.getOrderTypeExternalReferenceCode(),
-				"LOW_CODE_CONFIGURATION") ||
-			Objects.equals(
-				order.getOrderTypeExternalReferenceCode(), "OTHER")) {
+    }
 
-			_marketplaceService.updateOrder(
-				null, order.getId(),
-				MarketplaceConstants.ORDER_STATUS_COMPLETED);
-		}
+    @PostMapping("product/purchase")
+    public void postProductPurchase(
+            @AuthenticationPrincipal Jwt jwt, @RequestBody String json)
+            throws Exception {
 
-		if (Objects.equals(
-				order.getOrderTypeExternalReferenceCode(), "DXPAPP")) {
+        if (_log.isInfoEnabled()) {
+            _log.info("POST product purchase " + json);
+        }
 
-			_setUpDxpProductPurchase(jwt, order, orderItemPage);
-		}
-	}
+        JSONObject jsonObject = new JSONObject(json);
 
-	@PostMapping("product/submit")
-	public void postProductSubmit(
-			@AuthenticationPrincipal Jwt jwt, @RequestBody String json)
-		throws Exception {
+        JSONObject commerceOrderJSONObject = jsonObject.getJSONObject(
+                "commerceOrder");
 
-		if (_log.isInfoEnabled()) {
-			_log.info("POST product submit " + json);
-		}
+        int paymentStatus = commerceOrderJSONObject.getInt("paymentStatus");
 
-		JSONObject jsonObject = new JSONObject(json);
+        if ((paymentStatus
+                != MarketplaceConstants.ORDER_PAYMENT_STATUS_COMPLETED)
+                && (paymentStatus
+                != MarketplaceConstants.ORDER_PAYMENT_STATUS_NOT_REQUIRED)) {
 
-		JSONObject modelCPDefinitionJSONObject = jsonObject.getJSONObject(
-			"modelCPDefinition");
+            if (_log.isInfoEnabled()) {
+                _log.info(
+                        "Skipping POST product purchase for order "
+                        + commerceOrderJSONObject.getLong("id")
+                        + " because payment status is not completed");
+            }
 
-		Product product = _marketplaceService.getProduct(
-			modelCPDefinitionJSONObject.getLong("CProductId"));
+            return;
+        }
 
-		_marketplaceService.postNotificationQueueEntry(
-			"marketplace-admin@liferay.com",
-			"MARKETPLACE-PRODUCT-SUBMIT-TEMPLATE",
-			new HashMapBuilder<String, Object>().put(
-				"[%CPDEFINITION_NAME%]",
-				product.getName(
-				).get(
-					modelCPDefinitionJSONObject.getString("defaultLanguageId")
-				)
-			).put(
-				"[%CPDEFINITION_THUMBNAIL%]",
-				new URL(
-					"http://" + lxcDXPMainDomain + product.getThumbnail()
-				).toString()
-			).put(
-				"[%CPDEFINITION_DEVELOPER_NAME%]",
-				_marketplaceService.getCatalog(
-					product.getCatalogId()
-				).getName()
-			).put(
-				"[%CPDEFINITION_URL%]",
-				new URL(
-					StringBundler.concat(
-						lxcDXPServerProtocol, "://", lxcDXPMainDomain,
-						"/web/marketplace/administrator-dashboard#/apps/",
-						modelCPDefinitionJSONObject.getLong("CProductId"))
-				).toString()
-			).put(
-				"[%CPDEFINITION_CREATEDATE%]",
-				ZonedDateTime.ofInstant(
-					product.getCreateDate(
-					).toInstant(),
-					ZoneOffset.UTC
-				).format(
-					DateTimeFormatter.ofPattern("MMMM d, yyyy")
-				)
-			).put(
-				"[%CPDEFINITION_ID%]",
-				String.valueOf(
-					modelCPDefinitionJSONObject.getLong("CPDefinitionId"))
-			).build());
-	}
+        Order order = _marketplaceService.getOrder(
+                commerceOrderJSONObject.getLong("id"));
 
-	private void _setUpCloudProductPurchase(
-			Order order, Page<OrderItem> orderItemPage)
-		throws Exception {
+        _marketplaceService.updateOrder(
+                null, order.getId(), MarketplaceConstants.ORDER_STATUS_PROCESSING);
 
-		Map<String, String> customFields =
-			(Map<String, String>)order.getCustomFields();
+        Page<OrderItem> orderItemPage
+                = _marketplaceService.getOrderItemResource().getOrderIdOrderItemsPage(
+                        order.getId(), Pagination.of(1, 10)
+                );
 
-		customFields.put(
-			"cloud-provisioning",
-			MarketplaceUtil.createCloudProvisioningJSONArray(
-				orderItemPage
-			).toString());
+        if (Objects.equals(
+                order.getOrderTypeExternalReferenceCode(),
+                "CLIENT_EXTENSION")
+                || Objects.equals(
+                        order.getOrderTypeExternalReferenceCode(), "CLOUDAPP")) {
 
-		_marketplaceService.updateOrder(
-			customFields, order.getId(),
-			MarketplaceConstants.ORDER_STATUS_COMPLETED);
-	}
+            _setUpCloudProductPurchase(order, orderItemPage);
+        }
 
-	private void _setUpDxpProductPurchase(
-			Jwt jwt, Order order, Page<OrderItem> orderItemPage)
-		throws Exception {
+        if (Objects.equals(
+                order.getOrderTypeExternalReferenceCode(), "COMPOSITE_APP")
+                || Objects.equals(
+                        order.getOrderTypeExternalReferenceCode(),
+                        "LOW_CODE_CONFIGURATION")
+                || Objects.equals(
+                        order.getOrderTypeExternalReferenceCode(), "OTHER")) {
 
-		SkuResource skuResource = _marketplaceService.getSkuResource();
+            _marketplaceService.updateOrder(
+                    null, order.getId(),
+                    MarketplaceConstants.ORDER_STATUS_COMPLETED);
+        }
 
-		Map<String, String> productSpecificationsMap =
-			_marketplaceService.getProductSpecificationsMap(
-				skuResource.getSku(
-					orderItemPage.fetchFirstItem(
-					).getSkuId()
-				).getProductId());
+        if (Objects.equals(
+                order.getOrderTypeExternalReferenceCode(), "DXPAPP")) {
 
-		if (Objects.equals(
-				productSpecificationsMap.get("price-model"), "Free")) {
+            _setUpDxpProductPurchase(jwt, order, orderItemPage);
+        }
+    }
 
-			_marketplaceService.updateOrder(
-				null, order.getId(),
-				MarketplaceConstants.ORDER_STATUS_COMPLETED);
+    @PostMapping("product/submit")
+    public void postProductSubmit(
+            @AuthenticationPrincipal Jwt jwt, @RequestBody String json)
+            throws Exception {
 
-			return;
-		}
+        if (_log.isInfoEnabled()) {
+            _log.info("POST product submit " + json);
+        }
 
-		AccountResource accountResource =
-			_marketplaceService.getAccountResource();
+        JSONObject jsonObject = new JSONObject(json);
 
-		Account account = accountResource.getAccount(order.getAccountId());
+        JSONObject modelCPDefinitionJSONObject = jsonObject.getJSONObject(
+                "modelCPDefinition");
 
-		if (!account.getExternalReferenceCode(
-			).startsWith(
-				"KOR-"
-			)) {
+        Product product = _marketplaceService.getProduct(
+                modelCPDefinitionJSONObject.getLong("CProductId"));
 
-			account.setExternalReferenceCode(
-				() -> _koroneikiService.postKoroneikiAccount(
-					account, jwt
-				).getKey());
+        _marketplaceService.postNotificationQueueEntry(
+                "marketplace-admin@liferay.com",
+                "MARKETPLACE-PRODUCT-SUBMIT-TEMPLATE",
+                new HashMapBuilder<String, Object>().put(
+                        "[%CPDEFINITION_NAME%]",
+                        product.getName().get(
+                                modelCPDefinitionJSONObject.getString("defaultLanguageId")
+                        )
+                ).put(
+                        "[%CPDEFINITION_THUMBNAIL%]",
+                        new URL(
+                                "http://" + lxcDXPMainDomain + product.getThumbnail()
+                        ).toString()
+                ).put(
+                        "[%CPDEFINITION_DEVELOPER_NAME%]",
+                        _marketplaceService.getCatalog(
+                                product.getCatalogId()
+                        ).getName()
+                ).put(
+                        "[%CPDEFINITION_URL%]",
+                        new URL(
+                                StringBundler.concat(
+                                        lxcDXPServerProtocol, "://", lxcDXPMainDomain,
+                                        "/web/marketplace/administrator-dashboard#/apps/",
+                                        modelCPDefinitionJSONObject.getLong("CProductId"))
+                        ).toString()
+                ).put(
+                        "[%CPDEFINITION_CREATEDATE%]",
+                        ZonedDateTime.ofInstant(
+                                product.getCreateDate().toInstant(),
+                                ZoneOffset.UTC
+                        ).format(
+                                DateTimeFormatter.ofPattern("MMMM d, yyyy")
+                        )
+                ).put(
+                        "[%CPDEFINITION_ID%]",
+                        String.valueOf(
+                                modelCPDefinitionJSONObject.getLong("CPDefinitionId"))
+                ).build());
+    }
 
-			accountResource.patchAccount(account.getId(), account);
-		}
+    private void _setUpCloudProductPurchase(
+            Order order, Page<OrderItem> orderItemPage)
+            throws Exception {
 
-		try {
-			for (OrderItem orderItem : orderItemPage.getItems()) {
-				_koroneikiService.postAccountAccountKeyProductPurchase(
-					account, jwt,
-					_marketplaceService.getSkuOptionValue(
-						"dxp-license-usage-type", orderItem.getOptions()),
-					orderItem, productSpecificationsMap);
-			}
+        Map<String, String> customFields
+                = (Map<String, String>) order.getCustomFields();
 
-			_marketplaceService.updateOrder(
-				null, order.getId(),
-				MarketplaceConstants.ORDER_STATUS_COMPLETED);
-		}
-		catch (Exception exception) {
-			_log.error("Unable to create account product purchase", exception);
-		}
-	}
+        customFields.put(
+                "cloud-provisioning",
+                MarketplaceUtil.createCloudProvisioningJSONArray(
+                        orderItemPage
+                ).toString());
 
-	private static final Log _log = LogFactory.getLog(
-		MarketplaceRestController.class);
+        _marketplaceService.updateOrder(
+                customFields, order.getId(),
+                MarketplaceConstants.ORDER_STATUS_COMPLETED);
+    }
 
-	@Autowired
-	private KoroneikiService _koroneikiService;
+    private void _setUpDxpProductPurchase(
+            Jwt jwt, Order order, Page<OrderItem> orderItemPage)
+            throws Exception {
 
-	@Autowired
-	private MarketplaceService _marketplaceService;
+        SkuResource skuResource = _marketplaceService.getSkuResource();
+
+        Map<String, String> productSpecificationsMap
+                = _marketplaceService.getProductSpecificationsMap(
+                        skuResource.getSku(
+                                orderItemPage.fetchFirstItem().getSkuId()
+                        ).getProductId());
+
+        if (Objects.equals(
+                productSpecificationsMap.get("price-model"), "Free")) {
+
+            _marketplaceService.updateOrder(
+                    null, order.getId(),
+                    MarketplaceConstants.ORDER_STATUS_COMPLETED);
+
+            return;
+        }
+
+        AccountResource accountResource
+                = _marketplaceService.getAccountResource();
+
+        Account account = accountResource.getAccount(order.getAccountId());
+
+        if (!account.getExternalReferenceCode().startsWith(
+                "KOR-"
+        )) {
+
+            account.setExternalReferenceCode(
+                    () -> _koroneikiService.postKoroneikiAccount(
+                            account, jwt
+                    ).getKey());
+
+            accountResource.patchAccount(account.getId(), account);
+        }
+
+        try {
+            for (OrderItem orderItem : orderItemPage.getItems()) {
+                _koroneikiService.postAccountAccountKeyProductPurchase(
+                        account, jwt,
+                        _marketplaceService.getSkuOptionValue(
+                                "dxp-license-usage-type", orderItem.getOptions()),
+                        orderItem, productSpecificationsMap);
+            }
+
+            _marketplaceService.updateOrder(
+                    null, order.getId(),
+                    MarketplaceConstants.ORDER_STATUS_COMPLETED);
+        } catch (Exception exception) {
+            _log.error("Unable to create account product purchase", exception);
+        }
+    }
+
+    private static final Log _log = LogFactory.getLog(
+            MarketplaceRestController.class);
+
+    @Autowired
+    private KoroneikiService _koroneikiService;
+
+    @Autowired
+    private MarketplaceService _marketplaceService;
 
 }
