@@ -15,7 +15,9 @@ import com.liferay.headless.admin.user.client.resource.v1_0.AccountRoleResource;
 import com.liferay.headless.admin.user.client.resource.v1_0.PostalAddressResource;
 import com.liferay.headless.admin.user.client.resource.v1_0.UserAccountResource;
 import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.Catalog;
+import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.Currency;
 import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.Product;
+import com.liferay.headless.commerce.admin.catalog.client.resource.v1_0.CurrencyResource;
 import com.liferay.headless.commerce.admin.order.client.dto.v1_0.BillingAddress;
 import com.liferay.headless.commerce.admin.order.client.dto.v1_0.Order;
 import com.liferay.headless.commerce.admin.order.client.dto.v1_0.OrderItem;
@@ -448,10 +450,35 @@ public class MarketplaceRestController extends BaseRestController {
 				});
 		}
 
+		CurrencyResource currencyResource =
+			_marketplaceService.getCurrencyResource();
+
+		com.liferay.headless.commerce.admin.catalog.client.pagination.Page
+			<Currency> currenciesPage = currencyResource.getCurrenciesPage(
+				null, "code eq 'EUR'",
+				com.liferay.headless.commerce.admin.catalog.client.pagination.
+					Pagination.of(1, 1),
+				null);
+
+		BigDecimal euroCurrencyRate = BigDecimal.valueOf(0);
+
+		if (currenciesPage != null) {
+			Currency currenciesPageItems = currenciesPage.fetchFirstItem();
+
+			euroCurrencyRate = currenciesPageItems.getRate();
+		}
+
+		BigDecimal finalEuroCurrencyRate = euroCurrencyRate;
+
 		orderResource.patchOrder(
 			orderId,
 			new Order() {
 				{
+					setCustomFields(
+						() -> Map.of(
+							"order-metadata",
+							"{\"exchange-rate\":" + finalEuroCurrencyRate +
+								"}"));
 					setTaxAmount(() -> finalTaxAmount);
 					setTotal(() -> finalTotal);
 				}
@@ -510,6 +537,30 @@ public class MarketplaceRestController extends BaseRestController {
 		Map<String, String> productSpecificationsMap =
 			_marketplaceService.getProductSpecificationsMap(
 				product.getProductId());
+
+		String exchangeRate;
+
+		if ("USD".equalsIgnoreCase(order.getCurrencyCode())) {
+			Map<String, String> customFields =
+				(Map<String, String>)order.getCustomFields();
+
+			String orderMetadataJSON = customFields.getOrDefault(
+				"order-metadata", "{}");
+
+			JSONObject orderMetadataJSONObject = new JSONObject(
+				orderMetadataJSON);
+
+			String exchangeRateValue = orderMetadataJSONObject.optString(
+				"exchange-rate", "N/A");
+
+			double euroExchangeRate = GetterUtil.getDouble(exchangeRateValue);
+
+			exchangeRate =
+				"1 USD = " + String.format("%.5f", euroExchangeRate) + " EUR";
+		}
+		else {
+			exchangeRate = "Not applicable";
+		}
 
 		_marketplaceService.postNotificationQueueEntry(
 			null, "MARKETPLACE-ORDER-PURCHASED-NOTIFICATION",
@@ -584,6 +635,8 @@ public class MarketplaceRestController extends BaseRestController {
 				"[%VAT_FORMATTED%]", order.getTaxAmountFormatted()
 			).put(
 				"[%VAT_NUMBER%]", account.getTaxId()
+			).put(
+				"[%EXCHANGE_RATE%]", exchangeRate
 			).build());
 	}
 
