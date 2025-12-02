@@ -12,12 +12,14 @@ import com.liferay.headless.admin.user.client.resource.v1_0.AccountResource;
 import com.liferay.headless.admin.user.client.resource.v1_0.AccountRoleResource;
 import com.liferay.headless.admin.user.client.resource.v1_0.PostalAddressResource;
 import com.liferay.headless.admin.user.client.resource.v1_0.UserAccountResource;
+import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.AttachmentBase64;
 import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.Catalog;
 import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.CustomField;
 import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.Product;
 import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.ProductSpecification;
 import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.Sku;
 import com.liferay.headless.commerce.admin.catalog.client.pagination.Pagination;
+import com.liferay.headless.commerce.admin.catalog.client.resource.v1_0.AttachmentResource;
 import com.liferay.headless.commerce.admin.catalog.client.resource.v1_0.CatalogResource;
 import com.liferay.headless.commerce.admin.catalog.client.resource.v1_0.CurrencyResource;
 import com.liferay.headless.commerce.admin.catalog.client.resource.v1_0.ProductResource;
@@ -41,6 +43,10 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.net.URL;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -53,8 +59,17 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.ClientResponse;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.util.UriComponentsBuilder;
 
 /**
  * @author Keven Leone
@@ -138,6 +153,17 @@ public class MarketplaceService extends BaseService {
 
 	public AccountRoleResource getAccountRoleResource() throws Exception {
 		return AccountRoleResource.builder(
+		).header(
+			HttpHeaders.AUTHORIZATION,
+			_liferayOAuth2AccessTokenManager.getAuthorization(
+				"liferay-marketplace-etc-spring-boot-oahs")
+		).endpoint(
+			new URL(lxcDXPServerProtocol + "://" + lxcDXPMainDomain)
+		).build();
+	}
+
+	public AttachmentResource getAttachmentResource() throws Exception {
+		return AttachmentResource.builder(
 		).header(
 			HttpHeaders.AUTHORIZATION,
 			_liferayOAuth2AccessTokenManager.getAuthorization(
@@ -297,6 +323,44 @@ public class MarketplaceService extends BaseService {
 		return version;
 	}
 
+	public long getProductVirtualSettingsId(long productId) throws Exception {
+		UriComponentsBuilder uriComponentsBuilder =
+			UriComponentsBuilder.fromPath(
+				"/o/headless-commerce-admin-catalog/v1.0/products/" +
+					productId + "/product-virtual-settings");
+
+		String response = get(
+			_liferayOAuth2AccessTokenManager.getAuthorization(
+				"liferay-marketplace-etc-spring-boot-oahs"),
+			uriComponentsBuilder.build(
+			).toUri());
+
+		JSONObject jsonObject = new JSONObject(response);
+
+		return jsonObject.getLong("id");
+	}
+
+	public JSONObject getPublisherAssetsJSONObject(long productId)
+		throws Exception {
+
+		return new JSONObject(
+			get(
+				_liferayOAuth2AccessTokenManager.getAuthorization(
+					"liferay-marketplace-etc-spring-boot-oahs"),
+				UriComponentsBuilder.fromPath(
+					"/o/c/publisherassetses"
+				).queryParam(
+					"filter",
+					"r_productEntryToPublisherAssets_CProductId eq '" +
+						productId + "'"
+				).queryParam(
+					"pageSize", 20
+				).queryParam(
+					"nestedFields", "publisherAssetsToAttachment"
+				).build(
+				).toUri()));
+	}
+
 	public Sku getSku(Long id) throws Exception {
 		SkuResource skuResource = getSkuResource();
 
@@ -329,6 +393,27 @@ public class MarketplaceService extends BaseService {
 			_liferayOAuth2AccessTokenManager.getAuthorization(
 				"liferay-marketplace-etc-spring-boot-oahs")
 		).build();
+	}
+
+	public void postAttachmentAsProcessed(long attachmentId) throws Exception {
+		JSONObject responseJSONObject = new JSONObject(
+			patch(
+				_liferayOAuth2AccessTokenManager.getAuthorization(
+					"liferay-marketplace-etc-spring-boot-oahs"),
+				new JSONObject(
+				).put(
+					"processed", true
+				).toString(),
+				UriComponentsBuilder.fromPath(
+					"/o/c/publisherassetattachments/" + attachmentId
+				).build(
+				).toUri()));
+
+		if (!responseJSONObject.optBoolean("processed", false)) {
+			throw new RuntimeException(
+				"Failed to update processed flag: " +
+					responseJSONObject.toString());
+		}
 	}
 
 	public void postNotificationQueueEntry(
@@ -441,6 +526,98 @@ public class MarketplaceService extends BaseService {
 				StringBundler.concat(
 					"Sent ", externalReferenceCode, " notification to ",
 					emailAddress));
+		}
+	}
+
+	public void postProductAttachment(
+			long productId, Path zipPath, String attachmentFileName)
+		throws Exception {
+
+		byte[] fileBytes = Files.readAllBytes(zipPath);
+
+		String base64 = Base64.getEncoder(
+		).encodeToString(
+			fileBytes
+		);
+
+		AttachmentBase64 attachmentBase64 = new AttachmentBase64();
+
+		attachmentBase64.setAttachment(() -> base64);
+
+		attachmentBase64.setTitle(
+			() -> HashMapBuilder.put(
+				"en_US", attachmentFileName
+			).build());
+
+		attachmentBase64.setContentType(() -> "application/zip");
+
+		AttachmentResource attachmentResource = getAttachmentResource();
+
+		attachmentResource.postProductIdAttachmentByBase64(
+			productId, attachmentBase64);
+	}
+
+	public void postVirtualFileEntry(
+			Path zipPath, long productVirtualSettingsId, String assetVersion,
+			String fileName)
+		throws Exception {
+
+		WebClient webClient = WebClient.builder(
+		).baseUrl(
+			lxcDXPServerProtocol + "://" + lxcDXPMainDomain
+		).defaultHeader(
+			HttpHeaders.AUTHORIZATION,
+			_liferayOAuth2AccessTokenManager.getAuthorization(
+				"liferay-marketplace-etc-spring-boot-oahs")
+		).build();
+
+		JSONObject jsonObject = new JSONObject();
+
+		jsonObject.put("version", assetVersion);
+
+		String virtualLiferayVersionJSON = jsonObject.toString();
+
+		BodyInserters.FormInserter<Object> multipartBody =
+			BodyInserters.fromMultipartData(
+				"productVirtualSettingsFileEntry", virtualLiferayVersionJSON
+			).with(
+				"file",
+				new FileSystemResource(zipPath) {
+
+					@NonNull
+					@Override
+					public String getFilename() {
+						return fileName;
+					}
+
+				}
+			);
+
+		try {
+			webClient.post(
+			).uri(
+				"/o/headless-commerce-admin-catalog/v1.0" +
+					"/product-virtual-settings/{productVirtualSettingsId}" +
+						"/product-virtual-settings-file-entries",
+				productVirtualSettingsId
+			).contentType(
+				MediaType.MULTIPART_FORM_DATA
+			).body(
+				multipartBody
+			).retrieve(
+			).onStatus(
+				HttpStatusCode::is4xxClientError,
+				ClientResponse::createException
+			).onStatus(
+				HttpStatusCode::is5xxServerError,
+				ClientResponse::createException
+			).bodyToMono(
+				String.class
+			).block();
+		}
+		catch (WebClientResponseException webClientResponseException) {
+			throw new RuntimeException(
+				"Failed to upload virtual file " + webClientResponseException);
 		}
 	}
 
