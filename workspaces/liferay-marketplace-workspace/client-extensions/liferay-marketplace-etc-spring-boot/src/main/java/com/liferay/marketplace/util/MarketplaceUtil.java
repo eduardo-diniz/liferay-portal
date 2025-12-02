@@ -8,10 +8,24 @@ package com.liferay.marketplace.util;
 import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.SkuOption;
 import com.liferay.headless.commerce.admin.order.client.dto.v1_0.OrderItem;
 import com.liferay.headless.commerce.admin.order.client.pagination.Page;
+import com.liferay.portal.kernel.util.StringUtil;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+
+import java.util.Enumeration;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -20,6 +34,76 @@ import org.json.JSONObject;
  * @author Keven Leone
  */
 public class MarketplaceUtil {
+
+	public static Path addMarketplaceMetadata(
+			Path originalFilePath, Map<String, Properties> propertiesMap)
+		throws IOException {
+
+		Path filePathWithMarketplaceMetadata = Files.createTempFile(
+			"modified-",
+			getExtensionFile(
+				originalFilePath.getFileName(
+				).toString()));
+
+		try (ZipOutputStream zipOutputStream = new ZipOutputStream(
+				Files.newOutputStream(filePathWithMarketplaceMetadata));
+			ZipFile originalZipFile = new ZipFile(originalFilePath.toFile())) {
+
+			Enumeration<? extends ZipEntry> entriesEnumeration =
+				originalZipFile.entries();
+
+			while (entriesEnumeration.hasMoreElements()) {
+				ZipEntry zipEntry = entriesEnumeration.nextElement();
+
+				zipOutputStream.putNextEntry(new ZipEntry(zipEntry.getName()));
+
+				if (!zipEntry.isDirectory()) {
+					try (InputStream inputStream =
+							originalZipFile.getInputStream(zipEntry)) {
+
+						inputStream.transferTo(zipOutputStream);
+					}
+				}
+
+				zipOutputStream.closeEntry();
+			}
+
+			for (Map.Entry<String, Properties> propertiesEntry :
+					propertiesMap.entrySet()) {
+
+				String entryName = propertiesEntry.getKey();
+
+				if (entryName.lastIndexOf('/') != -1) {
+					String dir = entryName.substring(
+						0, entryName.lastIndexOf('/') + 1);
+
+					ZipEntry dirEntry = new ZipEntry(dir);
+
+					zipOutputStream.putNextEntry(dirEntry);
+
+					zipOutputStream.closeEntry();
+				}
+
+				ZipEntry zipEntry = new ZipEntry(entryName);
+
+				zipOutputStream.putNextEntry(zipEntry);
+
+				ByteArrayOutputStream byteArrayOutputStream =
+					new ByteArrayOutputStream();
+
+				propertiesEntry.getValue(
+				).store(
+					byteArrayOutputStream, "Added automatically by Marketplace"
+				);
+
+				zipOutputStream.write(byteArrayOutputStream.toByteArray());
+
+				zipOutputStream.closeEntry();
+			}
+		}
+
+		return filePathWithMarketplaceMetadata;
+	}
 
 	public static JSONArray createCloudProvisioningJSONArray(
 		Page<OrderItem> orderItemPage) {
@@ -45,6 +129,21 @@ public class MarketplaceUtil {
 		}
 
 		return jsonArray;
+	}
+
+	public static Path createTempFilePath(
+			InputStream inputStream, String suffix)
+		throws Exception {
+
+		Path tempFilePath = Files.createTempFile("tempFile-", suffix);
+
+		try (InputStream newInputStream = inputStream) {
+			Files.copy(
+				newInputStream, tempFilePath,
+				StandardCopyOption.REPLACE_EXISTING);
+		}
+
+		return tempFilePath;
 	}
 
 	public static String createTemporaryDeployment(
@@ -107,6 +206,16 @@ public class MarketplaceUtil {
 		return new JSONObject();
 	}
 
+	public static String getExtensionFile(String fileName) {
+		int dot = fileName.lastIndexOf(".");
+
+		if (dot == -1) {
+			return "";
+		}
+
+		return fileName.substring(dot);
+	}
+
 	public static String getSkuOptionValue(String key, SkuOption[] skuOptions) {
 		for (SkuOption skuOption : skuOptions) {
 			if (!Objects.equals(key, skuOption.getKey())) {
@@ -117,7 +226,7 @@ public class MarketplaceUtil {
 
 			String firstChar = value.substring(0, 1);
 
-			return firstChar.toUpperCase() + value.substring(1);
+			return StringUtil.toUpperCase(firstChar) + value.substring(1);
 		}
 
 		return null;

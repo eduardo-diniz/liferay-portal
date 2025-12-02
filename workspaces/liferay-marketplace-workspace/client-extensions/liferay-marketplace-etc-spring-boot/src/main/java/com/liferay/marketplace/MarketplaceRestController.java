@@ -6,6 +6,7 @@
 package com.liferay.marketplace;
 
 import com.liferay.client.extension.util.spring.boot3.BaseRestController;
+import com.liferay.client.extension.util.spring.boot3.client.LiferayOAuth2AccessTokenManager;
 import com.liferay.headless.admin.user.client.dto.v1_0.Account;
 import com.liferay.headless.admin.user.client.dto.v1_0.AccountRole;
 import com.liferay.headless.admin.user.client.dto.v1_0.PostalAddress;
@@ -35,19 +36,31 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStreamWriter;
 
 import java.math.BigDecimal;
 
+import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Set;
 
 import org.apache.commons.csv.CSVFormat;
@@ -55,6 +68,7 @@ import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -469,6 +483,192 @@ public class MarketplaceRestController extends BaseRestController {
 			});
 	}
 
+	@PostMapping("/process-license")
+	public ResponseEntity<Object> processPublisherAsset(
+		@RequestParam long productId) {
+
+		try {
+			uploadProductVirtualWithMarketplaceMetadata(productId);
+
+			return ResponseEntity.ok("Publisher asset uploaded successfully.");
+		}
+		catch (Exception exception) {
+			String errorMessage = String.format(
+				"Failed to upload publisher asset for product ID %d: %s",
+				productId, exception.getMessage());
+
+			return ResponseEntity.status(
+				HttpStatus.INTERNAL_SERVER_ERROR
+			).body(
+				errorMessage
+			);
+		}
+	}
+
+	public void uploadProductVirtualWithMarketplaceMetadata(long productId)
+		throws Exception {
+
+		List<PublisherAssetLink> publisherAssetLinks = _getPublisherAssetLinks(
+			_marketplaceService.getPublisherAssetsJSONObject(productId));
+
+		if (publisherAssetLinks.isEmpty()) {
+			throw new RuntimeException(
+				"No publisher asset URLs found for productId " + productId);
+		}
+
+		for (PublisherAssetLink publisherAssetLink : publisherAssetLinks) {
+			Map<String, String> productSpecificationsMap =
+				_marketplaceService.getProductSpecificationsMap(productId);
+
+			Product product = _marketplaceService.getProduct(productId);
+
+			Path publisherAssetPath = _getPublisherAssetFilePath(
+				publisherAssetLink.href,
+				MarketplaceUtil.getExtensionFile(publisherAssetLink.fileName));
+
+			Path publisherAssetWithMetadata =
+				MarketplaceUtil.addMarketplaceMetadata(
+					publisherAssetPath,
+					HashMapBuilder.<String, Properties>put(
+						"liferay-marketplace.properties",
+						() -> _createProductProperties(
+							product, publisherAssetLink)
+					).put(
+						"META-INF/marketplace.properties",
+						() -> {
+							if (Objects.equals(
+									productSpecificationsMap.get("price-model"),
+									"Paid")) {
+
+								return _createPaidProductProperties(
+									product, publisherAssetLink);
+							}
+
+							return null;
+						}
+					).build());
+
+			_marketplaceService.postVirtualFileEntry(
+				publisherAssetWithMetadata,
+				_marketplaceService.getProductVirtualSettingsId(productId),
+				publisherAssetLink.version, publisherAssetLink.fileName);
+
+			if (Objects.equals(productSpecificationsMap.get("type"), "cloud")) {
+				_marketplaceService.postProductAttachment(
+					productId, publisherAssetWithMetadata,
+					publisherAssetLink.fileName);
+			}
+
+			_marketplaceService.postAttachmentAsProcessed(
+				publisherAssetLink.attachmentId);
+
+			Files.deleteIfExists(publisherAssetPath);
+			Files.deleteIfExists(publisherAssetWithMetadata);
+		}
+	}
+
+	public static class PublisherAssetLink {
+
+		public PublisherAssetLink(
+			String version, String href, String fileName, long attachmentId) {
+
+			this.version = version;
+			this.href = href;
+			this.fileName = fileName;
+			this.attachmentId = attachmentId;
+		}
+
+		public long attachmentId;
+		public String fileName;
+		public String href;
+		public String version;
+
+	}
+
+	private Properties _createPaidProductProperties(
+		Product product, PublisherAssetLink publisherAssetLink) {
+
+		Properties properties = new Properties();
+
+		properties.setProperty("product-id", String.valueOf(product.getId()));
+		properties.setProperty(
+			"product-name",
+			product.getName(
+			).get(
+				"en_US"
+			));
+		properties.setProperty("license-version", "1.0.0");
+		properties.setProperty("product-version-id", "1");
+
+		properties.setProperty(
+			"publisher-asset-version", publisherAssetLink.version);
+
+		return properties;
+	}
+
+	private Properties _createProductProperties(
+		Product product, PublisherAssetLink publisherAssetLink) {
+
+		Properties properties = new Properties();
+
+		properties.setProperty(
+			"category",
+			product.getCategories(
+			).toString());
+		properties.setProperty(
+			"remote-app-id", String.valueOf(product.getId()));
+		properties.setProperty("context-names", "");
+		properties.setProperty("version", publisherAssetLink.version);
+		properties.setProperty("icon-url", "");
+		properties.setProperty("required", "");
+		properties.setProperty(
+			"title",
+			product.getName(
+			).get(
+				"en_US"
+			));
+		properties.setProperty("bundles", "");
+		properties.setProperty(
+			"description",
+			product.getDescription(
+			).get(
+				"en_US"
+			));
+		properties.setProperty("restart-required", "");
+
+		return properties;
+	}
+
+	private InputStream _downloadPublisherAsset(String publisherAssetURL)
+		throws Exception {
+
+		HttpClient httpClient = HttpClient.newHttpClient();
+
+		HttpRequest httpRequest = HttpRequest.newBuilder(
+		).uri(
+			URI.create(
+				StringBundler.concat(
+					lxcDXPServerProtocol, "://", lxcDXPMainDomain,
+					publisherAssetURL))
+		).header(
+			"Authorization",
+			_liferayOAuth2AccessTokenManager.getAuthorization(
+				"liferay-marketplace-etc-spring-boot-oahs")
+		).GET(
+		).build();
+
+		HttpResponse<InputStream> httpResponse = httpClient.send(
+			httpRequest, HttpResponse.BodyHandlers.ofInputStream());
+
+		if (httpResponse.statusCode() >= HttpURLConnection.HTTP_BAD_REQUEST) {
+			throw new IOException(
+				"Failed to download publisher asset ZIP. HTTP Status: " +
+					httpResponse.statusCode());
+		}
+
+		return httpResponse.body();
+	}
+
 	private Long _getAccountAdministratorRoleId(long accountId)
 		throws Exception {
 
@@ -507,6 +707,55 @@ public class MarketplaceRestController extends BaseRestController {
 		double exchangeRate = orderMetadataJSONObject.getDouble("exchangeRate");
 
 		return "1 USD = " + String.format("%.5f", exchangeRate) + " EUR";
+	}
+
+	private Path _getPublisherAssetFilePath(
+			String publisherAssetURL, String publiserAssetSuffix)
+		throws Exception {
+
+		InputStream inputStream = _downloadPublisherAsset(publisherAssetURL);
+
+		return MarketplaceUtil.createTempFilePath(
+			inputStream, publiserAssetSuffix);
+	}
+
+	private List<PublisherAssetLink> _getPublisherAssetLinks(
+		JSONObject responseJSONObject) {
+
+		JSONArray itemsJSONArray = responseJSONObject.getJSONArray("items");
+
+		if (itemsJSONArray.isEmpty()) {
+			throw new RuntimeException("No publisher assets found in response");
+		}
+
+		List<PublisherAssetLink> publisherAssetLinks = new ArrayList<>();
+
+		for (int i = 0; i < itemsJSONArray.length(); i++) {
+			JSONObject itemJSONObject = itemsJSONArray.getJSONObject(i);
+
+			JSONArray attachmentsJSONArray = itemJSONObject.getJSONArray(
+				"publisherAssetsToAttachment");
+
+			for (int j = 0; j < attachmentsJSONArray.length(); j++) {
+				JSONObject attachmentJSONObject =
+					attachmentsJSONArray.getJSONObject(j);
+
+				JSONObject sourceCodeJSONObject =
+					attachmentJSONObject.getJSONObject("sourceCode");
+
+				JSONObject linkJSONObject = sourceCodeJSONObject.getJSONObject(
+					"link");
+
+				publisherAssetLinks.add(
+					new PublisherAssetLink(
+						itemJSONObject.optString("version", ""),
+						linkJSONObject.getString("href"),
+						sourceCodeJSONObject.getString("name"),
+						attachmentJSONObject.getLong("id")));
+			}
+		}
+
+		return publisherAssetLinks;
 	}
 
 	private void _sendOrderPurchasedNotification(Order order) throws Exception {
@@ -787,6 +1036,9 @@ public class MarketplaceRestController extends BaseRestController {
 
 	@Autowired
 	private KoroneikiService _koroneikiService;
+
+	@Autowired
+	private LiferayOAuth2AccessTokenManager _liferayOAuth2AccessTokenManager;
 
 	@Autowired
 	private MarketplaceService _marketplaceService;
