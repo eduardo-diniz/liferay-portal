@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import Alert from '@clayui/alert';
 import {filesize} from 'filesize';
 import {ReactNode, createContext, useContext, useReducer} from 'react';
 import {useParams} from 'react-router-dom';
@@ -27,7 +28,6 @@ import HeadlessCommerceAdminCatalogImpl from '../services/rest/HeadlessCommerceA
 import HeadlessDelivery from '../services/rest/HeadlessDelivery';
 import HeadlessPublisherAsset from '../services/rest/HeadlessPublisherAsset';
 import {useMarketplaceContext} from './MarketplaceContext';
-import Alert from '@clayui/alert';
 
 export type LicensePrice = {key: number; value: number};
 export type LicenseType = 'Perpetual' | 'Subscription';
@@ -732,7 +732,7 @@ export default function NewAppContextProvider({
 							'product-versioning-new-primary-key'
 						)
 							? 'r_productEntryToPublisherAssets_CProductId'
-							: 'r_productEntryToPublisherAssets_CProductId',
+							: 'r_productEntryToPublisherAssets_CPDefinitionId',
 						productId as string
 					),
 					nestedFields: 'publisherAssetsToAttachment',
@@ -745,12 +745,12 @@ export default function NewAppContextProvider({
 						const packageFiles = await Promise.all(
 							publisherAsset.publisherAssetsToAttachment.map(
 								async (file: {
+									processed: boolean;
 									sourceCode: {
 										id: number;
 										link: {href: string};
 										name: string;
 									};
-									processed:boolean;
 								}) => {
 									const sourceFileDocument =
 										await HeadlessDelivery.getDocument(
@@ -761,10 +761,10 @@ export default function NewAppContextProvider({
 										error: false,
 										fileName: file.sourceCode.name,
 										id: file.sourceCode.id,
+										processed: file.processed,
 										readableSize: filesize(
 											sourceFileDocument.sizeInBytes
 										),
-										processed: file.processed,
 										src: file.sourceCode.link.href,
 									};
 								}
@@ -793,10 +793,11 @@ export default function NewAppContextProvider({
 		return <Loading />;
 	}
 
-	const hasUnprocessedFile = state.build.liferayPackages.some(liferayPackage =>
-		liferayPackage?.file?.some((file: any) => file.processed === false)
+	const hasUnprocessedFile = state.build.liferayPackages.some(
+		(liferayPackage) =>
+			liferayPackage?.file?.some((file: any) => file.processed === false)
 	);
-	  
+
 	return (
 		<NewAppContext.Provider
 			value={[
@@ -820,10 +821,10 @@ export default function NewAppContextProvider({
 				</Loading.FullScreen>
 			)}
 			{hasUnprocessedFile && (
-			<Alert displayType="warning">
-				There are publisher assets that have not been processed yet
-			</Alert>
-		)}
+				<Alert displayType="warning">
+					There are publisher assets that have not been processed yet
+				</Alert>
+			)}
 			{children}
 		</NewAppContext.Provider>
 	);

@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import Badge from '@clayui/badge';
 import ClayIcon from '@clayui/icon';
 
 import i18n from '../../../../../i18n';
 import {ProductTypeOptions} from '../../../pages/NewAppFlow/constants/productTypes';
 import {AppReviewProps} from '../AppReview';
 import AppReviewSection from '../AppReviewSection';
-import Badge from '@clayui/badge';
 
 const FileContent = ({
 	liferayPackage,
@@ -109,14 +109,19 @@ const Build = ({
 																	packageFile?.readableSize
 																}
 															</small>
-															<span className='ml-3'>
+															<span className="ml-3">
 																{packageFile.processed ? (
-																	<Badge displayType="success" label="Processed" />
+																	<Badge
+																		displayType="success"
+																		label="Processed"
+																	/>
 																) : (
-																	<Badge displayType="warning" label="Unprocessed" />
+																	<Badge
+																		displayType="warning"
+																		label="Unprocessed"
+																	/>
 																)}
 															</span>
-																
 														</div>
 													);
 												}
