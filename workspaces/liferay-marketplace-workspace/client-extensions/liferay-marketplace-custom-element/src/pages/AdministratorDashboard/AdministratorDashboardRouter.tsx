@@ -8,7 +8,7 @@ import {Align} from '@clayui/drop-down';
 import {Route, Routes, useParams} from 'react-router-dom';
 
 import DropDown from '../../components/DropDown';
-import NewAppContextProvider from '../../context/NewAppContext';
+import NewAppContextProvider, { useNewAppContext } from '../../context/NewAppContext';
 import SolutionContextProvider from '../../context/SolutionContext';
 import withProviders from '../../hoc/withProviders';
 import {Liferay} from '../../liferay/liferay';
@@ -25,9 +25,12 @@ import Solutions from './pages/Solutions';
 import Trial from './pages/Trial';
 
 import './index.scss';
+import marketplaceOAuth2 from '../../services/oauth/Marketplace';
 
 const AppWithActions = () => {
 	const {productId} = useParams();
+	const [state] = useNewAppContext();
+
 
 	return (
 		<App
@@ -56,11 +59,35 @@ const AppWithActions = () => {
 										});
 									}),
 						},
-					]}
-					item={null}
-					position={Align.BottomCenter}
-					trigger={
-						<ClayButton displayType="secondary" size="sm">
+						{
+							disabled: !state.hasUnprocessedFile,
+							name: 'Process Publisher Asset',
+							onClick: () =>
+								marketplaceOAuth2
+							.processPublisherAssetLink(productId as string)
+							.then(() =>
+								Liferay.Util.openToast({
+									message:
+									'Publisher Asset Process Successfully',
+									title: 'Success',
+								})
+							)
+							.catch((error) => {
+								console.error(error);
+								
+								Liferay.Util.openToast({
+									message: 'Publisher Asset Process Failed',
+									title: 'Error',
+									type: 'danger',
+								});
+							})
+						
+						}
+				]}
+				item={null}
+				position={Align.BottomCenter}
+				trigger={
+					<ClayButton displayType="secondary" size="sm">
 							Administrator Actions
 						</ClayButton>
 					}
