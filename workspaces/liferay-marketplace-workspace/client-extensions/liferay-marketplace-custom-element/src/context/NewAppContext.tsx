@@ -27,6 +27,7 @@ import HeadlessCommerceAdminCatalogImpl from '../services/rest/HeadlessCommerceA
 import HeadlessDelivery from '../services/rest/HeadlessDelivery';
 import HeadlessPublisherAsset from '../services/rest/HeadlessPublisherAsset';
 import {useMarketplaceContext} from './MarketplaceContext';
+import Alert from '@clayui/alert';
 
 export type LicensePrice = {key: number; value: number};
 export type LicenseType = 'Perpetual' | 'Subscription';
@@ -95,6 +96,7 @@ export type NewAppInitialState = {
 		};
 	};
 	catalog: Catalog;
+	hasUnprocessedFile?: boolean;
 	licensing: {
 		licenseType: LicenseType;
 		prices: LicensingPrices;
@@ -730,7 +732,7 @@ export default function NewAppContextProvider({
 							'product-versioning-new-primary-key'
 						)
 							? 'r_productEntryToPublisherAssets_CProductId'
-							: 'r_productEntryToPublisherAssets_CPDefinitionId',
+							: 'r_productEntryToPublisherAssets_CProductId',
 						productId as string
 					),
 					nestedFields: 'publisherAssetsToAttachment',
@@ -748,6 +750,7 @@ export default function NewAppContextProvider({
 										link: {href: string};
 										name: string;
 									};
+									processed:boolean;
 								}) => {
 									const sourceFileDocument =
 										await HeadlessDelivery.getDocument(
@@ -761,6 +764,7 @@ export default function NewAppContextProvider({
 										readableSize: filesize(
 											sourceFileDocument.sizeInBytes
 										),
+										processed: file.processed,
 										src: file.sourceCode.link.href,
 									};
 								}
@@ -789,12 +793,17 @@ export default function NewAppContextProvider({
 		return <Loading />;
 	}
 
+	const hasUnprocessedFile = state.build.liferayPackages.some(liferayPackage =>
+		liferayPackage?.file?.some((file: any) => file.processed === false)
+	);
+	  
 	return (
 		<NewAppContext.Provider
 			value={[
 				{
 					...state,
 					catalog: catalog as Catalog,
+					hasUnprocessedFile,
 					loading: isLoadingVocabularies || isLoading,
 					references: {
 						...state.references,
@@ -810,7 +819,11 @@ export default function NewAppContextProvider({
 					being sent to <b>Liferay</b>
 				</Loading.FullScreen>
 			)}
-
+			{hasUnprocessedFile && (
+			<Alert displayType="warning">
+				There are publisher assets that have not been processed yet
+			</Alert>
+		)}
 			{children}
 		</NewAppContext.Provider>
 	);

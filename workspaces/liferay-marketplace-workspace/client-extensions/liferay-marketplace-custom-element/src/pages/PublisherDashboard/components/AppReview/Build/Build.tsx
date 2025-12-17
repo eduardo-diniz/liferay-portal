@@ -9,6 +9,7 @@ import i18n from '../../../../../i18n';
 import {ProductTypeOptions} from '../../../pages/NewAppFlow/constants/productTypes';
 import {AppReviewProps} from '../AppReview';
 import AppReviewSection from '../AppReviewSection';
+import Badge from '@clayui/badge';
 
 const FileContent = ({
 	liferayPackage,
@@ -87,6 +88,7 @@ const Build = ({
 												(packageFile: {
 													fileName?: string;
 													id: string;
+													processed?: boolean;
 													readableSize?: string;
 													src?: string;
 												}) => {
@@ -107,6 +109,14 @@ const Build = ({
 																	packageFile?.readableSize
 																}
 															</small>
+															<span className='ml-3'>
+																{packageFile.processed ? (
+																	<Badge displayType="success" label="Processed" />
+																) : (
+																	<Badge displayType="warning" label="Unprocessed" />
+																)}
+															</span>
+																
 														</div>
 													);
 												}
