@@ -89,6 +89,14 @@ class MarketplaceOAuth2 extends MarketplaceSpringBootOAuth2 {
 
 		return order;
 	}
+
+	async processPublisherAssetLink(productId: string): Promise<void> {
+		await this.post<void>(
+			`/process-publisher-asset-link/${productId}`,
+			{},
+			{earlyReturn: true}
+		);
+	}
 }
 
 const marketplaceOAuth2 = new MarketplaceOAuth2('/marketplace');
