@@ -46,6 +46,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * @author Keven Leone
@@ -148,7 +149,7 @@ public class ProvisioningRestController extends BaseRestController {
 			Pagination.of(page, pageSize), "");
 	}
 
-	@GetMapping("order-license-keys/{orderId}")
+	// @GetMapping("order-license-keys/{orderId}")
 	public com.liferay.osb.provisioning.rest.client.pagination.Page<LicenseKey>
 			getOrderLicenseKeys(
 				@PathVariable("orderId") String orderId,
@@ -160,10 +161,45 @@ public class ProvisioningRestController extends BaseRestController {
 		LicenseKeyResource licenseKeyResource = _getLicenseKeyResource();
 
 		return licenseKeyResource.getLicenseKeysPage(
-			"", "orderId eq '" + orderId + "'",
+			"", "assetReceiptLicenseUuid eq '" + orderId + "'",
 			com.liferay.osb.provisioning.rest.client.pagination.Pagination.of(
 				page, pageSize),
 			"");
+	}
+	
+
+	@GetMapping("order-license-keys/{orderId}")
+	public com.liferay.osb.provisioning.rest.client.pagination.Page<LicenseKey>
+	getOrderLicenseKeys(
+			@PathVariable("orderId") String orderId,
+			@RequestParam(defaultValue = "1") int page,
+			@RequestParam(defaultValue = "20") int pageSize)
+			throws Exception {
+
+		WebClient webClient = WebClient.builder()
+				.baseUrl(String.valueOf(_externalProvisioningHomePageURL))
+				.build();
+
+		String responseJson = webClient.get()
+				.uri(uriBuilder -> uriBuilder
+						.path("/o/provisioning-rest/v1.0/license-keys")
+						.queryParam("search", "")
+						.queryParam("filter", "assetReceiptLicenseUuid eq '" + orderId + "'")
+						.queryParam("page", page)
+						.queryParam("pageSize", pageSize)
+						.queryParam("sort", "")
+						.build())
+				.header(
+						"Authorization",
+						_liferayOAuth2AccessTokenManager.getAuthorization(
+								"external-provisioning"))
+				.retrieve()
+				.bodyToMono(String.class)
+				.block();
+
+		return com.liferay.osb.provisioning.rest.client.pagination.Page.of(
+				responseJson, LicenseKey::toDTO);
+
 	}
 
 	@PostMapping("app-license-keys")
@@ -241,8 +277,24 @@ public class ProvisioningRestController extends BaseRestController {
 
 		LicenseKeyResource licenseKeyResource = _getLicenseKeyResource();
 
-		LicenseKey licenseKey = licenseKeyResource.postLicenseKeyTypeFree(
-			LicenseKey.toDTO(json));
+//		LicenseKey licenseKey = licenseKeyResource.postLicenseKeyTypeFree(
+//			LicenseKey.toDTO(json));
+
+		WebClient webClient = WebClient.builder()
+				.baseUrl(String.valueOf(_externalProvisioningHomePageURL))
+				.build();
+
+		String responseJson = webClient.post()
+				.uri("/o/provisioning-rest/v1.0/license-keys/type/free")
+				.header("Authorization",
+						_liferayOAuth2AccessTokenManager.getAuthorization("external-provisioning"))
+				.contentType(MediaType.APPLICATION_JSON)
+				.bodyValue(json)
+				.retrieve()
+				.bodyToMono(String.class)
+				.block();
+
+		LicenseKey licenseKey = LicenseKey.toDTO(responseJson);
 
 		if (_log.isInfoEnabled()) {
 			_log.info(
