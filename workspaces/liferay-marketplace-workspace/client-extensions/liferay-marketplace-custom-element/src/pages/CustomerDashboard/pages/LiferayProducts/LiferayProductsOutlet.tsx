@@ -48,17 +48,31 @@ const LiferayProductsOutlet = () => (
 			[OrderTypes.CMP, OrderTypes.DXP].includes(
 				props?.placedOrder?.orderTypeExternalReferenceCode as OrderTypes
 			) && (
-				<ClayButton
-					className="mt-6 new-license-button"
-					onClick={() => {
-						Liferay.Util.navigate(
-							`${getSiteURL()}/product-purchase?productId=${props?.product?.productId}#/activation-key-form`
-						);
-					}}
-					outline
-				>
-					{i18n.translate('new-activation-key')}
-				</ClayButton>
+				<div>
+					<ClayButton
+						className="mr-2 mt-6 new-license-button"
+						onClick={() => {
+							Liferay.Util.navigate(
+								`${getSiteURL()}/product-feedback?orderId=${String(props?.placedOrder?.id)}`
+							);
+						}}
+						outline
+					>
+						{i18n.translate('share-beta-feedback')}
+					</ClayButton>
+
+					<ClayButton
+						className="mt-6 new-license-button"
+						onClick={() => {
+							Liferay.Util.navigate(
+								`${getSiteURL()}/product-purchase?productId=${props?.product?.productId}#/activation-key-form`
+							);
+						}}
+						outline
+					>
+						{i18n.translate('new-activation-key')}
+					</ClayButton>
+				</div>
 			)
 		}
 		backTitle={i18n.translate('back-to-my-products')}

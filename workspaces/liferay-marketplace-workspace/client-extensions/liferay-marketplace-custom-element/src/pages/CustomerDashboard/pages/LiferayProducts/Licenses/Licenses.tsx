@@ -24,6 +24,7 @@ import ActivationKeyAlert from './LicenseAlert';
 import LicenseTitleHeader from './LicenseTitleHeader';
 
 import './Licenses.scss';
+import {OrderTypes} from '../../../../../enums/Order';
 
 type OutletContext = ReturnType<typeof useGetProductByOrderId>;
 
@@ -59,7 +60,7 @@ const ActivationKeysTable = ({
 	licenseKeysResponse: APIResponse<LicenseKey>;
 	mutate: KeyedMutator<APIResponse<LicenseKey>>;
 }) => {
-	if (licenseKeysResponse.totalCount === 0) {
+	if (licenseKeysResponse?.totalCount === 0) {
 		return <EmptyState title="No Activation Keys" />;
 	}
 
@@ -143,7 +144,7 @@ const ActivationKeysTable = ({
 					key: 'domains',
 					render: (domains: string) => (
 						<ul className="list-unstyled">
-							{domains.split(',').map((domain) => (
+							{domains?.split(',').map((domain) => (
 								<li
 									className="description-title font-weight-bold mt-2"
 									key={domain}
@@ -212,7 +213,153 @@ const ActivationKeysTable = ({
 			hasKebabButton
 			hasPagination
 			kebabClassName="border-0"
-			rows={licenseKeysResponse.items ?? []}
+			rows={licenseKeysResponse?.items ?? []}
+		/>
+	);
+};
+
+const ActivationKeysCMPTable = ({
+	licenseKeysResponse,
+}: {
+	licenseKeysResponse: APIResponse<LicenseKey>;
+}) => {
+	if (licenseKeysResponse?.totalCount === 0) {
+		return <EmptyState title="No Activation Keys" />;
+	}
+
+	const outletContext = useOutletContext<OutletContext['data']>();
+
+	const keyType =
+		outletContext?.placedOrder?.orderTypeExternalReferenceCode ===
+		OrderTypes.CMP
+			? 'On-Premise'
+			: 'Cloud';
+
+	return (
+		<Table
+			Actions={({row}) => {
+				const expired =
+					!row.expirationDate || isLicenseExpired(row.expirationDate);
+
+				const renewalAvailable = isRenewalAvailable(row);
+
+				const Wrapper = renewalAvailable
+					? ClayTooltipProvider
+					: Fragment;
+
+				return (
+					<Wrapper>
+						<div className="align-items-center d-flex license-actions">
+							<ClayButton
+								className="license-download-btn px-3 rounded"
+								disabled={expired}
+								displayType="secondary"
+								onClick={() => {
+									provisioningOAuth2.downloadLicenseKey(
+										row.id
+									);
+								}}
+							>
+								{i18n.translate('download')}
+							</ClayButton>
+						</div>
+					</Wrapper>
+				);
+			}}
+			columns={[
+				{
+					bodyClass: 'border-0 cursor-pointer text-capitalize',
+					expanded: true,
+					key: 'description',
+					noWrap: true,
+					render: (
+						description,
+						{licenseType}: {licenseType: string}
+					) => (
+						<TitleSubtitleHeader
+							subtitle={description}
+							title={licenseType.toLowerCase()}
+						/>
+					),
+					title: (
+						<TitleSubtitleHeader
+							subtitle="Description"
+							title="Environment"
+						/>
+					),
+				},
+				{
+					bodyClass: 'border-0 cursor-pointer',
+					key: 'hostName',
+					render: (hostName) => (
+						<TitleSubtitleHeader
+							subtitle={hostName || '-'}
+							title={keyType}
+						/>
+					),
+					title: (
+						<TitleSubtitleHeader
+							subtitle="Host Name"
+							title="Key Type"
+						/>
+					),
+				},
+				{
+					bodyClass: 'border-0 cursor-pointer',
+					key: 'startDate',
+					render: (startDate, {expirationDate}) => (
+						<div className="date-cell">
+							<p className="m-0">
+								{format(new Date(startDate), 'MMM dd, yyyy')} -
+							</p>
+
+							<p className="m-0">
+								{expirationDate
+									? format(
+											new Date(expirationDate),
+											'MMM dd, yyyy'
+										)
+									: 'DNE'}
+							</p>
+						</div>
+					),
+					title: (
+						<TitleSubtitleHeader
+							title={
+								<span>
+									Start Date -<br />
+									Exp. Date
+								</span>
+							}
+						/>
+					),
+				},
+				{
+					bodyClass: 'border-0 cursor-pointer',
+					key: 'status',
+					render: (_, {active, expirationDate}) => {
+						const isActive =
+							active &&
+							isBefore(new Date(), new Date(expirationDate));
+
+						const label = isActive ? 'active' : 'expired';
+
+						return (
+							<StatusCell icon="circle" iconClassName={label}>
+								{i18n.translate(label)}
+							</StatusCell>
+						);
+					},
+					title: (
+						<TitleSubtitleHeader title={i18n.translate('status')} />
+					),
+				},
+			]}
+			hasHover
+			hasKebabButton
+			hasPagination
+			kebabClassName="border-0"
+			rows={licenseKeysResponse?.items ?? []}
 		/>
 	);
 };
@@ -223,15 +370,28 @@ export default function ActivationKeys() {
 	const outletContext = useOutletContext<OutletContext['data']>();
 	const searchParams = new URLSearchParams(location.search);
 
+	const isCMP =
+		outletContext?.placedOrder.orderTypeExternalReferenceCode ===
+		OrderTypes.CMP;
+
 	const product = outletContext?.product;
+
+	const swrKey = isCMP
+		? `/order-license-keys/${orderId}`
+		: `/order-app-license-keys/${orderId}`;
+
+	const fetcher = () =>
+		isCMP
+			? provisioningOAuth2.getOrderLicenseKeys(orderId as string)
+			: provisioningOAuth2.getOrderAppLicenseKeys(orderId as string);
 
 	const {
 		data: licenseKeysResponse,
 		isLoading,
 		mutate,
-	} = useSWR(`/order-free-dxp-license-keys/${orderId}`, () =>
-		provisioningOAuth2.getOrderLicenseKeys(orderId as string)
-	);
+	} = useSWR(swrKey, fetcher);
+
+	console.log('License Keys Response', licenseKeysResponse);
 
 	useEffect(() => {
 		breadcrumbStore.send({
@@ -259,12 +419,20 @@ export default function ActivationKeys() {
 			)}
 
 			<div className="licenses mb-9">
-				<ActivationKeysTable
-					licenseKeysResponse={
-						licenseKeysResponse as APIResponse<LicenseKey>
-					}
-					mutate={mutate}
-				/>
+				{isCMP ? (
+					<ActivationKeysCMPTable
+						licenseKeysResponse={
+							licenseKeysResponse as APIResponse<LicenseKey>
+						}
+					/>
+				) : (
+					<ActivationKeysTable
+						licenseKeysResponse={
+							licenseKeysResponse as APIResponse<LicenseKey>
+						}
+						mutate={mutate}
+					/>
+				)}
 			</div>
 		</div>
 	);
