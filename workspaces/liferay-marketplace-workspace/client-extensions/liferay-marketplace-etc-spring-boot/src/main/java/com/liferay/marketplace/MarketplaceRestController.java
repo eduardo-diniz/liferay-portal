@@ -266,9 +266,7 @@ public class MarketplaceRestController extends BaseRestController {
 			Objects.equals(appLicenseKey.getMacAddresses(), null)) {
 
 			throw new ResponseStatusException(
-				HttpStatus.BAD_REQUEST,
-				"Required at least one of: hostName, ipAddresses, " +
-					"macAddresses");
+				HttpStatus.BAD_REQUEST);
 		}
 
 		Order order = _marketplaceService.getOrder(
