@@ -45,42 +45,55 @@ const getTabs = (data: ProductAndOrderPayload): NavbarProps['routes'] => {
 
 const LiferayProductsOutlet = () => (
 	<BaseOutlet
-		actionButtons={(props) =>
-			[OrderTypes.CMP, OrderTypes.DXP].includes(
-				props?.placedOrder?.orderTypeExternalReferenceCode as OrderTypes
-			) && (
-				<div>
-					{props?.placedOrder?.orderTypeExternalReferenceCode ===
-						OrderTypes.CMP && (
+		actionButtons={(props) => {
+			const appBeta =
+				props.marketplaceDeliveryProduct.specificationValues.APP_BETA;
+
+			if (
+				[OrderTypes.CMP, OrderTypes.DXP].includes(
+					props?.placedOrder
+						?.orderTypeExternalReferenceCode as OrderTypes
+				)
+			) {
+				return (
+					<div className="mt-6">
+						{appBeta && (
+							<ClayButton
+								className="mr-2"
+								displayType="secondary"
+								onClick={() => {
+									Liferay.Util.navigate(
+										`${getSiteURL()}/product-feedback?orderId=${String(props?.placedOrder?.id)}`
+									);
+								}}
+								outline
+								size="sm"
+							>
+								{i18n.translate('share-beta-feedback')}
+							</ClayButton>
+						)}
+
 						<ClayButton
-							className="btn-outline-secondary mr-2 mt-6"
+							displayType="primary"
 							onClick={() => {
 								Liferay.Util.navigate(
-									`${getSiteURL()}/product-feedback?orderId=${String(props?.placedOrder?.id)}`
+									`${getSiteURL()}/product-purchase?productId=${props?.product?.productId}#/activation-key-form`
 								);
 							}}
 							outline
+							size={appBeta ? 'sm' : 'regular'}
 						>
-							{i18n.translate('share-beta-feedback')}
+							{i18n.translate('new-activation-key')}
 						</ClayButton>
-					)}
-
-					<ClayButton
-						className="mt-6 new-license-button"
-						onClick={() => {
-							Liferay.Util.navigate(
-								`${getSiteURL()}/product-purchase?productId=${props?.product?.productId}#/activation-key-form`
-							);
-						}}
-						outline
-					>
-						{i18n.translate('new-activation-key')}
-					</ClayButton>
-				</div>
-			)
-		}
+					</div>
+				);
+			}
+		}}
 		backTitle={i18n.translate('back-to-my-products')}
 		backURL="../../products"
+		description={(props) => {
+			return props?.product?.shortDescription;
+		}}
 		routes={getTabs}
 		showActions={false}
 	/>
