@@ -10,7 +10,7 @@ import {useLocation, useParams} from 'react-router-dom';
 import {breadcrumbStore} from '../../../../components/Breadcrumb/BreadcrumbStore';
 import {DetailedCard} from '../../../../components/DetailedCard/DetailedCard';
 import {PageRenderer} from '../../../../components/Page';
-import QATable, { Orientation } from '../../../../components/QATable';
+import QATable, {Orientation} from '../../../../components/QATable';
 import {
 	OrderCustomFields,
 	OrderTypes,
@@ -18,9 +18,9 @@ import {
 } from '../../../../enums/Order';
 import useGetProductByOrderId from '../../../../hooks/useGetProductByOrderId';
 import i18n from '../../../../i18n';
-import LiferayProductsAlerts from './LiferayProductsAlerts';
 import {safeJSONParse} from '../../../../utils/util';
 import ActivationKeyAlert from './Licenses/LicenseAlert';
+import LiferayProductsAlerts from './LiferayProductsAlerts';
 
 const LiferayProduct = () => {
 	const {orderId} = useParams();
@@ -49,7 +49,12 @@ const LiferayProduct = () => {
 		: {};
 
 	const orderAdditionalInformation = placedOrder
-		? safeJSONParse<any>(placedOrder.customFields[OrderCustomFields.ORDER_ADDITIONAL_INFORMATIONS], {})
+		? safeJSONParse<any>(
+				placedOrder.customFields[
+					OrderCustomFields.ORDER_ADDITIONAL_INFORMATIONS
+				],
+				{}
+			)
 		: {};
 
 	const allowedEmailDomains =
@@ -60,7 +65,6 @@ const LiferayProduct = () => {
 
 	return (
 		<PageRenderer className="mt-6" isLoading={isLoading}>
-
 			{searchParams.has('next-steps') && (
 				<ActivationKeyAlert
 					className="license-alert"
@@ -68,15 +72,21 @@ const LiferayProduct = () => {
 					title="Your Beta Access Request is Pending"
 					type="info"
 				>
-					Our team is currently reviewing your request. An administrator will approve your access shortly, and you will receive a notification via email as soon as your account is activated.
+					Our team is currently reviewing your request. An
+					administrator will approve your access shortly, and you will
+					receive a notification via email as soon as your account is
+					activated.
 				</ActivationKeyAlert>
 			)}
 
-			{!isCompletedOrder && placedOrder?.orderTypeExternalReferenceCode !== OrderTypes.AIHUB_BETA && (
-				<LiferayProductsAlerts orderStatusCode={orderStatusCode} />
-			)}
+			{!isCompletedOrder &&
+				placedOrder?.orderTypeExternalReferenceCode !==
+					OrderTypes.AIHUB_BETA && (
+					<LiferayProductsAlerts orderStatusCode={orderStatusCode} />
+				)}
 
-			{placedOrder?.orderTypeExternalReferenceCode === OrderTypes.AIHUB_BETA ? (
+			{placedOrder?.orderTypeExternalReferenceCode ===
+			OrderTypes.AIHUB_BETA ? (
 				<DetailedCard
 					cardIconAltText="Profile Icon"
 					cardTitle={i18n.translate('ai-hub-account-details')}
@@ -84,17 +94,19 @@ const LiferayProduct = () => {
 				>
 					<QATable
 						columns={2}
-						orientation={Orientation.VERTICAL}
 						items={[
 							{
 								title: i18n.translate('ai-hub-account-name'),
 								value: orderAdditionalInformation.fullName,
 							},
 							{
-								title: i18n.translate('ai-administration-email'),
+								title: i18n.translate(
+									'ai-administration-email'
+								),
 								value: orderAdditionalInformation.businessEmail,
 							},
 						]}
+						orientation={Orientation.VERTICAL}
 					/>
 				</DetailedCard>
 			) : (
@@ -154,12 +166,16 @@ const LiferayProduct = () => {
 										?.corpProjectName,
 								},
 								{
-									title: i18n.translate('workspace-owner-email'),
+									title: i18n.translate(
+										'workspace-owner-email'
+									),
 									value: orderMetadata?.provisioning
 										?.ownerEmailAddress,
 								},
 								{
-									title: i18n.translate('data-center-location'),
+									title: i18n.translate(
+										'data-center-location'
+									),
 									value: orderMetadata?.provisioning
 										?.serverLocation,
 								},
@@ -169,11 +185,16 @@ const LiferayProduct = () => {
 										?.serverLocation,
 								},
 								{
-									title: i18n.translate('workspace-friendly-url'),
-									value: orderMetadata?.provisioning?.friendlyURL,
+									title: i18n.translate(
+										'workspace-friendly-url'
+									),
+									value: orderMetadata?.provisioning
+										?.friendlyURL,
 								},
 								{
-									title: i18n.translate('allowed-email-domains'),
+									title: i18n.translate(
+										'allowed-email-domains'
+									),
 									value: allowedEmailDomains?.map(
 										(emailAddress: string) => (
 											<div key={emailAddress}>

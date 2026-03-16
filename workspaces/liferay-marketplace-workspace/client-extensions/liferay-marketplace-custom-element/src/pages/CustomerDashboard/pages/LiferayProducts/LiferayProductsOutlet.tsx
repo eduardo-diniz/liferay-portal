@@ -47,7 +47,8 @@ const LiferayProductsOutlet = () => (
 	<BaseOutlet
 		actionButtons={(props) => {
 			const appBeta =
-				props.marketplaceDeliveryProduct.specificationValues.APP_BETA;
+				props?.marketplaceDeliveryProduct?.specificationValues
+					?.APP_BETA;
 
 			if (
 				[OrderTypes.CMP, OrderTypes.DXP].includes(

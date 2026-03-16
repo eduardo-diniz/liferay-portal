@@ -17,10 +17,10 @@ import {useCustomerDashboardOutletContext} from '../../CustomerDashboardOutlet';
 
 const searchParams = new URLSearchParams({
 	filter: SearchBuilder.in('orderTypeExternalReferenceCode', [
-		OrderTypes.AIHUB_BETA,
 		OrderTypes.ADDONS,
+		OrderTypes.AIHUB_BETA,
 		OrderTypes.CMP,
-		OrderTypes.DXP
+		OrderTypes.DXP,
 	]),
 	nestedFields: 'placedOrderItems',
 	sort: 'createDate:desc',

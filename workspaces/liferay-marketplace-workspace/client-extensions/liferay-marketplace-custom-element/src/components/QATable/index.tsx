@@ -40,7 +40,7 @@ const QATable: React.FC<QATableProps> = ({
 			})}
 		>
 			{items
-				.filter(({ visible = true }) => visible)
+				.filter(({visible = true}) => visible)
 				.map((item, index) => (
 					<React.Fragment key={index}>
 						<tr
@@ -50,7 +50,10 @@ const QATable: React.FC<QATableProps> = ({
 							})}
 							key={index}
 							style={{
-								width: columns > 1 ? `${100 / columns}%` : undefined,
+								width:
+									columns > 1
+										? `${100 / columns}%`
+										: undefined,
 							}}
 						>
 							<th
