@@ -5,23 +5,28 @@
 
 import {format} from 'date-fns';
 import {useEffect} from 'react';
-import {useParams} from 'react-router-dom';
+import {useLocation, useParams} from 'react-router-dom';
 
 import {breadcrumbStore} from '../../../../components/Breadcrumb/BreadcrumbStore';
 import {DetailedCard} from '../../../../components/DetailedCard/DetailedCard';
 import {PageRenderer} from '../../../../components/Page';
-import QATable from '../../../../components/QATable';
+import QATable, { Orientation } from '../../../../components/QATable';
 import {
 	OrderCustomFields,
+	OrderTypes,
 	OrderWorkflowStatusCode,
 } from '../../../../enums/Order';
 import useGetProductByOrderId from '../../../../hooks/useGetProductByOrderId';
 import i18n from '../../../../i18n';
 import LiferayProductsAlerts from './LiferayProductsAlerts';
+import {safeJSONParse} from '../../../../utils/util';
+import ActivationKeyAlert from './Licenses/LicenseAlert';
 
 const LiferayProduct = () => {
 	const {orderId} = useParams();
 	const {data, isLoading} = useGetProductByOrderId(orderId as string);
+	const location = useLocation();
+	const searchParams = new URLSearchParams(location.search);
 
 	const placedOrder = data?.placedOrder;
 	const product = data?.product;
@@ -43,6 +48,10 @@ const LiferayProduct = () => {
 		? JSON.parse(placedOrder.customFields[OrderCustomFields.ORDER_METADATA])
 		: {};
 
+	const orderAdditionalInformation = placedOrder
+		? safeJSONParse<any>(placedOrder.customFields[OrderCustomFields.ORDER_ADDITIONAL_INFORMATIONS], {})
+		: {};
+
 	const allowedEmailDomains =
 		orderMetadata?.provisioning?.allowedEmailDomains || [];
 
@@ -51,110 +60,145 @@ const LiferayProduct = () => {
 
 	return (
 		<PageRenderer className="mt-6" isLoading={isLoading}>
-			{!isCompletedOrder && (
+
+			{searchParams.has('next-steps') && (
+				<ActivationKeyAlert
+					className="license-alert"
+					symbol="check-circle"
+					title="Your Beta Access Request is Pending"
+					type="info"
+				>
+					Our team is currently reviewing your request. An administrator will approve your access shortly, and you will receive a notification via email as soon as your account is activated.
+				</ActivationKeyAlert>
+			)}
+
+			{!isCompletedOrder && placedOrder?.orderTypeExternalReferenceCode !== OrderTypes.AIHUB_BETA && (
 				<LiferayProductsAlerts orderStatusCode={orderStatusCode} />
 			)}
 
-			<div className="app-details-body-container">
+			{placedOrder?.orderTypeExternalReferenceCode === OrderTypes.AIHUB_BETA ? (
 				<DetailedCard
-					cardIconAltText="Details Icon"
-					cardTitle={i18n.translate('details')}
+					cardIconAltText="Profile Icon"
+					cardTitle={i18n.translate('ai-hub-account-details')}
 					clayIcon="order-form-tag"
 				>
 					<QATable
+						columns={2}
+						orientation={Orientation.VERTICAL}
 						items={[
 							{
-								title: i18n.translate('order-id'),
-								value: orderId,
+								title: i18n.translate('ai-hub-account-name'),
+								value: orderAdditionalInformation.fullName,
 							},
 							{
-								title: i18n.translate('order-date'),
-								value: format(
-									new Date(placedOrder?.createDate || ''),
-									'dd MMM, yyyy'
-								),
-							},
-							{
-								title: i18n.translate('account-name'),
-								value: placedOrder?.account,
-							},
-							{
-								title: i18n.translate('customer-project'),
-								value: '',
-							},
-							{
-								title: i18n.translate('purchased-by'),
-								value: placedOrder?.author,
-							},
-							{
-								title: i18n.translate('purchase-number'),
-								value: '',
-							},
-							{
-								title: i18n.translate('subscription-type'),
-								value: placedOrder?.placedOrderItems[0].sku,
+								title: i18n.translate('ai-administration-email'),
+								value: orderAdditionalInformation.businessEmail,
 							},
 						]}
 					/>
 				</DetailedCard>
+			) : (
+				<div className="app-details-body-container">
+					<DetailedCard
+						cardIconAltText="Details Icon"
+						cardTitle={i18n.translate('details')}
+						clayIcon="order-form-tag"
+					>
+						<QATable
+							items={[
+								{
+									title: i18n.translate('order-id'),
+									value: orderId,
+								},
+								{
+									title: i18n.translate('order-date'),
+									value: format(
+										new Date(placedOrder?.createDate || ''),
+										'dd MMM, yyyy'
+									),
+								},
+								{
+									title: i18n.translate('account-name'),
+									value: placedOrder?.account,
+								},
+								{
+									title: i18n.translate('customer-project'),
+									value: '',
+								},
+								{
+									title: i18n.translate('purchased-by'),
+									value: placedOrder?.author,
+								},
+								{
+									title: i18n.translate('purchase-number'),
+									value: '',
+								},
+								{
+									title: i18n.translate('subscription-type'),
+									value: placedOrder?.placedOrderItems[0].sku,
+								},
+							]}
+						/>
+					</DetailedCard>
 
-				<DetailedCard
-					cardIconAltText="Summary Icon"
-					cardTitle={i18n.translate('workspace-info')}
-					clayIcon="polls"
-				>
-					<QATable
-						items={[
-							{
-								title: i18n.translate('workspace-name'),
-								value: orderMetadata?.provisioning
-									?.corpProjectName,
-							},
-							{
-								title: i18n.translate('workspace-owner-email'),
-								value: orderMetadata?.provisioning
-									?.ownerEmailAddress,
-							},
-							{
-								title: i18n.translate('data-center-location'),
-								value: orderMetadata?.provisioning
-									?.serverLocation,
-							},
-							{
-								title: i18n.translate('timezone'),
-								value: orderMetadata?.provisioning
-									?.serverLocation,
-							},
-							{
-								title: i18n.translate('workspace-friendly-url'),
-								value: orderMetadata?.provisioning?.friendlyURL,
-							},
-							{
-								title: i18n.translate('allowed-email-domains'),
-								value: allowedEmailDomains?.map(
-									(emailAddress: string) => (
-										<div key={emailAddress}>
-											{emailAddress}
-										</div>
-									)
-								),
-							},
-							{
-								title: i18n.translate(
-									'incident-report-contacts'
-								),
-								value: incidentReportEmailAddresses?.map(
-									(emailAddress: string) => (
-										<div key={emailAddress}>
-											{emailAddress}
-										</div>
-									)
-								),
-							},
-						]}
-					/>
-				</DetailedCard>
-			</div>
+					<DetailedCard
+						cardIconAltText="Summary Icon"
+						cardTitle={i18n.translate('workspace-info')}
+						clayIcon="polls"
+					>
+						<QATable
+							items={[
+								{
+									title: i18n.translate('workspace-name'),
+									value: orderMetadata?.provisioning
+										?.corpProjectName,
+								},
+								{
+									title: i18n.translate('workspace-owner-email'),
+									value: orderMetadata?.provisioning
+										?.ownerEmailAddress,
+								},
+								{
+									title: i18n.translate('data-center-location'),
+									value: orderMetadata?.provisioning
+										?.serverLocation,
+								},
+								{
+									title: i18n.translate('timezone'),
+									value: orderMetadata?.provisioning
+										?.serverLocation,
+								},
+								{
+									title: i18n.translate('workspace-friendly-url'),
+									value: orderMetadata?.provisioning?.friendlyURL,
+								},
+								{
+									title: i18n.translate('allowed-email-domains'),
+									value: allowedEmailDomains?.map(
+										(emailAddress: string) => (
+											<div key={emailAddress}>
+												{emailAddress}
+											</div>
+										)
+									),
+								},
+								{
+									title: i18n.translate(
+										'incident-report-contacts'
+									),
+									value: incidentReportEmailAddresses?.map(
+										(emailAddress: string) => (
+											<div key={emailAddress}>
+												{emailAddress}
+											</div>
+										)
+									),
+								},
+							]}
+						/>
+					</DetailedCard>
+				</div>
+			)}
 		</PageRenderer>
 	);
 };

@@ -36,6 +36,9 @@ export default {
 	'address-name': 'Address Name',
 	'administrator-dashboard': 'Administrator Dashboard',
 	'agreements': 'Agreements',
+	'ai-administration-email': 'AI Administration Email',
+	'ai-hub-account-details': 'AI Hub Account Details',
+	'ai-hub-account-name': 'AI Hub Account Name',
 	'all-orders': 'All Orders',
 	'all-progress-and-information-related-to-the-creation-of-the-app-will-be-lost-do-you-still-want-to-exit':
 		'All progress and information related to the creation of the app will be lost. Do you still want to exit?',
@@ -65,7 +68,7 @@ export default {
 		'App Installation and Uninstallation Guide',
 	'app-installation-and-uninstallation-guide-url':
 		'App Installation and Uninstallation Guide URL',
-	'app-installation-guide-url': 'App Installation Guide URL',
+	'app-installation-guideai-url': 'App Installation Guide URL',
 	'app-name': 'App Name',
 	'app-provisioning': 'App Provisioning',
 	'app-storefront-images': 'App Storefront Images',

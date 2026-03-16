@@ -223,11 +223,11 @@ const ActivationKeysCMPTable = ({
 }: {
 	licenseKeysResponse: APIResponse<LicenseKey>;
 }) => {
+	const outletContext = useOutletContext<OutletContext['data']>();
+
 	if (licenseKeysResponse?.totalCount === 0) {
 		return <EmptyState title="No Activation Keys" />;
 	}
-
-	const outletContext = useOutletContext<OutletContext['data']>();
 
 	const keyType =
 		outletContext?.placedOrder?.orderTypeExternalReferenceCode ===
@@ -390,8 +390,6 @@ export default function ActivationKeys() {
 		isLoading,
 		mutate,
 	} = useSWR(swrKey, fetcher);
-
-	console.log('License Keys Response', licenseKeysResponse);
 
 	useEffect(() => {
 		breadcrumbStore.send({

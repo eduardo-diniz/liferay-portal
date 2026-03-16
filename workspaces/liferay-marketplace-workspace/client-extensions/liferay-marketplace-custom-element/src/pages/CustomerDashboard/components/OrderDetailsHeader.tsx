@@ -8,6 +8,8 @@ import React from 'react';
 import OrderDetailsStatusDescription from './OrderDetailsStatusDescription';
 
 import './OrderDetailsHeader.scss';
+import ClayBadge from '@clayui/badge';
+import {OrderTypes} from '../../../enums/Order';
 
 type OrderDetailsProps = {
 	className?: string;
@@ -42,6 +44,13 @@ const OrderDetailsHeader: React.FC<OrderDetailsProps> = ({
 			<div className="d-flex flex-column justify-content-between ml-4">
 				<div className="align-items-center d-flex justify-content-start">
 					<h2 className="m-0 text-weight-bold">{name}</h2>
+					{(order?.orderTypeExternalReferenceCode === OrderTypes.AIHUB_BETA || 
+						order?.orderTypeExternalReferenceCode === OrderTypes.CMP) && (
+						<ClayBadge
+							className="ml-2 text-uppercase badge-product-type"
+							label={order?.orderTypeExternalReferenceCode === OrderTypes.AIHUB_BETA ? 'Private Beta' : 'Beta'}
+						/>
+					)}
 					{version && <p className="ml-2 my-0">v{version}</p>}
 				</div>
 

@@ -22,12 +22,13 @@ const getTabs = (data: ProductAndOrderPayload): NavbarProps['routes'] => {
 
 	const isCMP = orderTypeExternalReferenceCode === OrderTypes.CMP;
 	const isDXP = orderTypeExternalReferenceCode === OrderTypes.DXP;
+	const isAIHUB = orderTypeExternalReferenceCode === OrderTypes.AIHUB_BETA;
 
 	return [
 		{
 			name: i18n.translate('details'),
 			path: '',
-			visible: !(isCMP || isDXP),
+			visible: !(isCMP || isDXP || isAIHUB),
 		},
 		{
 			name: i18n.translate('activation-keys'),
@@ -49,17 +50,20 @@ const LiferayProductsOutlet = () => (
 				props?.placedOrder?.orderTypeExternalReferenceCode as OrderTypes
 			) && (
 				<div>
-					<ClayButton
-						className="mr-2 mt-6 new-license-button"
-						onClick={() => {
-							Liferay.Util.navigate(
-								`${getSiteURL()}/product-feedback?orderId=${String(props?.placedOrder?.id)}`
-							);
-						}}
-						outline
-					>
-						{i18n.translate('share-beta-feedback')}
-					</ClayButton>
+					{props?.placedOrder?.orderTypeExternalReferenceCode ===
+						OrderTypes.CMP && (
+						<ClayButton
+							className="btn-outline-secondary mr-2 mt-6"
+							onClick={() => {
+								Liferay.Util.navigate(
+									`${getSiteURL()}/product-feedback?orderId=${String(props?.placedOrder?.id)}`
+								);
+							}}
+							outline
+						>
+							{i18n.translate('share-beta-feedback')}
+						</ClayButton>
+					)}
 
 					<ClayButton
 						className="mt-6 new-license-button"
@@ -77,7 +81,6 @@ const LiferayProductsOutlet = () => (
 		}
 		backTitle={i18n.translate('back-to-my-products')}
 		backURL="../../products"
-		description="Manage your service by downloading software bundles, retrieving specific activation keys, and renewing your free plan directly when it nears expiration at no additional cost."
 		routes={getTabs}
 		showActions={false}
 	/>

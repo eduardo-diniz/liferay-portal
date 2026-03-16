@@ -23,18 +23,24 @@ type QAItem = {
 };
 
 type QATableProps = {
+	columns?: number;
 	items: QAItem[];
 	orientation?: keyof typeof Orientation;
 };
 
 const QATable: React.FC<QATableProps> = ({
+	columns = 1,
 	items,
 	orientation = Orientation.HORIZONTAL,
 }) => (
 	<table className="qa-table">
-		<tbody>
+		<tbody
+			className={classNames({
+				'd-flex flex-wrap': columns > 1,
+			})}
+		>
 			{items
-				.filter(({visible = true}) => visible)
+				.filter(({ visible = true }) => visible)
 				.map((item, index) => (
 					<React.Fragment key={index}>
 						<tr
@@ -43,6 +49,9 @@ const QATable: React.FC<QATableProps> = ({
 									orientation === Orientation.VERTICAL,
 							})}
 							key={index}
+							style={{
+								width: columns > 1 ? `${100 / columns}%` : undefined,
+							}}
 						>
 							<th
 								className={classNames('tr-qa-table__header', {
