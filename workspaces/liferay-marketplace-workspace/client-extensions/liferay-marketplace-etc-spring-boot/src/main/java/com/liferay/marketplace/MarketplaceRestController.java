@@ -14,7 +14,6 @@ import com.liferay.headless.admin.user.client.resource.v1_0.AccountResource;
 import com.liferay.headless.admin.user.client.resource.v1_0.AccountRoleResource;
 import com.liferay.headless.admin.user.client.resource.v1_0.PostalAddressResource;
 import com.liferay.headless.admin.user.client.resource.v1_0.UserAccountResource;
-import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.Catalog;
 import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.Currency;
 import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.Product;
 import com.liferay.headless.commerce.admin.catalog.client.resource.v1_0.CurrencyResource;
@@ -75,6 +74,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -446,7 +448,7 @@ public class MarketplaceRestController extends BaseRestController {
 	}
 
 	@PostMapping("product-feedback-notification")
-	private void _processProductFeedbackNotification(
+	private void _postProductFeedbackNotification(
 			@AuthenticationPrincipal Jwt jwt, @RequestBody String json)
 		throws Exception {
 
@@ -458,14 +460,7 @@ public class MarketplaceRestController extends BaseRestController {
 
 		JSONObject jsonObject = new JSONObject(json);
 
-		if (!jsonObject.has("modelDTOProduct")) {
-			return;
-		}
-
-		String objectActionTriggerKey = jsonObject.getString(
-			"objectActionTriggerKey");
-
-		if (!Objects.equals(objectActionTriggerKey, "onAfterAdd")) {
+		if (!jsonObject.has("modelCPDefinition")) {
 			return;
 		}
 
@@ -490,11 +485,7 @@ public class MarketplaceRestController extends BaseRestController {
 				"[%ENVIROMENT%]", "liferay"
 			).put(
 				"[%CATALOG_NAME%]",
-				() -> {
-					Catalog catalog = product.getCatalog();
-
-					return catalog.getName();
-				}
+				product.getCatalog().getName()
 			).put(
 				"[%ORDER_ID%]", String.valueOf(product.getId())
 			).put(

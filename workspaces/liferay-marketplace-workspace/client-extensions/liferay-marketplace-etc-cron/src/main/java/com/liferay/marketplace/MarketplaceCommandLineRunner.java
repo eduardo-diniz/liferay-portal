@@ -31,6 +31,7 @@ import com.liferay.headless.commerce.admin.order.client.resource.v1_0.OrderResou
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.function.UnsafeRunnable;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.net.URL;
@@ -80,7 +81,7 @@ public class MarketplaceCommandLineRunner
 
 		_invoke(this::_processPendingOrders, "Pending Orders");
 
-		_invoke(this::_processProductFeedback, "Product Feedback");
+		_invoke(this::_postProductFeedbackNotification, "Product Feedback");
 
 		_invoke(
 			this::_processProjectsUsingMarketplaceApps,
@@ -734,7 +735,7 @@ public class MarketplaceCommandLineRunner
 		}
 	}
 
-	private void _processProductFeedback() throws Exception {
+	private void _postProductFeedbackNotification() throws Exception {
 		ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
 
 		int windowSizeHours = 6;
@@ -753,12 +754,16 @@ public class MarketplaceCommandLineRunner
 
 		DateTimeFormatter formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
-		String filter = String.format(
-			"orderTypeExternalReferenceCode eq '%s' and createDate ge %s and " +
-				"createDate lt %s",
-			"CMP_BETA",
-			formatter.format(currentWindowStart.minusHours(windowSizeHours)),
-			formatter.format(currentWindowStart));
+		String filter = StringBundler.concat(
+				"orderTypeExternalReferenceCode eq 'CMP_BETA' and createDate ge ",
+				formatter.format(
+						currentWindowStart.minusDays(
+								7
+						).minusHours(
+								windowSizeHours
+						)),
+				" and createDate lt ",
+				formatter.format(currentWindowStart.minusDays(7)));
 
 		Page<Order> page = _getOrdersPage(filter, -1, -1);
 
@@ -959,7 +964,7 @@ public class MarketplaceCommandLineRunner
 	}
 
 	private void _sendProductFeedback(Long skuId) throws Exception {
-		JSONObject bodyJSONObject = new JSONObject(
+		JSONObject jsonObject = new JSONObject(
 		).put(
 			"modelCPDefinition",
 			new JSONObject(
@@ -968,16 +973,12 @@ public class MarketplaceCommandLineRunner
 			).put(
 				"skuId", skuId
 			)
-		).put(
-			"modelDTOProduct", true
-		).put(
-			"objectActionTriggerKey", "onAfterAdd"
 		);
 
 		post(
 			_liferayOAuth2AccessTokenManager.getAuthorization(
 				_liferayOAuthApplicationExternalReferenceCodes),
-			bodyJSONObject.toString(),
+			jsonObject.toString(),
 			UriComponentsBuilder.fromUriString(
 				_liferayMarketplaceEtcSpringBootURL +
 					"/marketplace/product-feedback-notification"
