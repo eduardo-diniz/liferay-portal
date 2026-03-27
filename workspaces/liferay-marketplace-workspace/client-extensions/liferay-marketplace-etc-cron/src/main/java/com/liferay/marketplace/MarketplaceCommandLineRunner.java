@@ -479,6 +479,71 @@ public class MarketplaceCommandLineRunner
 			).toUri());
 	}
 
+	private void _postProductFeedbackNotification() throws Exception {
+		ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
+
+		int windowSizeHours = 6;
+
+		int windowIndex = now.getHour() / windowSizeHours;
+
+		ZonedDateTime currentWindowStart = now.withHour(
+			windowIndex * windowSizeHours
+		).withMinute(
+			0
+		).withSecond(
+			0
+		).withNano(
+			0
+		);
+
+		DateTimeFormatter formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+
+		String filter = StringBundler.concat(
+				"orderTypeExternalReferenceCode eq 'CMP_BETA' and createDate ge ",
+				formatter.format(
+						currentWindowStart.minusDays(
+								7
+						).minusHours(
+								windowSizeHours
+						)),
+				" and createDate lt ",
+				formatter.format(currentWindowStart.minusDays(7)));
+
+		Page<Order> page = _getOrdersPage(filter, -1, -1);
+
+		if (page.getTotalCount() == 0) {
+			if (_log.isInfoEnabled()) {
+				_log.info("There are no product feedback to be sent");
+			}
+
+			return;
+		}
+
+		for (Order order : page.getItems()) {
+			try {
+				OrderItem[] orderItems = order.getOrderItems();
+
+				if (ArrayUtil.isEmpty(orderItems)) {
+					continue;
+				}
+
+				OrderItem orderItem = orderItems[0];
+
+				if (orderItem.getOrderId() == null) {
+					continue;
+				}
+
+				_sendProductFeedback(orderItem.getSkuId(), order.getId(), order.getCreatorEmailAddress());
+			}
+			catch (Exception exception) {
+				_log.error(
+					"Error processing product feedback for order " +
+						order.getId(),
+					exception);
+			}
+		}
+	}
+
 	private void _postTrialExpire(long orderId) throws Exception {
 		post(
 			_liferayOAuth2AccessTokenManager.getAuthorization(
@@ -735,71 +800,6 @@ public class MarketplaceCommandLineRunner
 		}
 	}
 
-	private void _postProductFeedbackNotification() throws Exception {
-		ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
-
-		int windowSizeHours = 6;
-
-		int windowIndex = now.getHour() / windowSizeHours;
-
-		ZonedDateTime currentWindowStart = now.withHour(
-			windowIndex * windowSizeHours
-		).withMinute(
-			0
-		).withSecond(
-			0
-		).withNano(
-			0
-		);
-
-		DateTimeFormatter formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
-
-		String filter = StringBundler.concat(
-				"orderTypeExternalReferenceCode eq 'CMP_BETA' and createDate ge ",
-				formatter.format(
-						currentWindowStart.minusDays(
-								7
-						).minusHours(
-								windowSizeHours
-						)),
-				" and createDate lt ",
-				formatter.format(currentWindowStart.minusDays(7)));
-
-		Page<Order> page = _getOrdersPage(filter, -1, -1);
-
-		if (page.getTotalCount() == 0) {
-			if (_log.isInfoEnabled()) {
-				_log.info("There are no product feedback to be sent");
-			}
-
-			return;
-		}
-
-		for (Order order : page.getItems()) {
-			try {
-				OrderItem[] orderItems = order.getOrderItems();
-
-				if (ArrayUtil.isEmpty(orderItems)) {
-					continue;
-				}
-
-				OrderItem orderItem = orderItems[0];
-
-				if (orderItem.getOrderId() == null) {
-					continue;
-				}
-
-				_sendProductFeedback(orderItem.getSkuId());
-			}
-			catch (Exception exception) {
-				_log.error(
-					"Error processing product feedback for order " +
-						order.getId(),
-					exception);
-			}
-		}
-	}
-
 	private void _processProjectsUsingMarketplaceApps() throws Exception {
 		Map<String, JSONObject> projectsUsingMarketplace = new HashMap<>();
 
@@ -963,22 +963,24 @@ public class MarketplaceCommandLineRunner
 		}
 	}
 
-	private void _sendProductFeedback(Long skuId) throws Exception {
-		JSONObject jsonObject = new JSONObject(
-		).put(
-			"modelCPDefinition",
-			new JSONObject(
-			).put(
-				"defaultLanguageId", "en_US"
-			).put(
-				"skuId", skuId
-			)
-		);
+	private void _sendProductFeedback(Long skuId, Long orderId, String creatorEmailAddress) throws Exception {
 
+		JSONObject jsonObject = new JSONObject(
+				new JSONObject(
+
+				).put(
+								"creatorEmailAddress", creatorEmailAddress
+						)
+						.put(
+						"orderId", orderId
+				).put(
+						"skuId", skuId
+				)
+		);
 		post(
 			_liferayOAuth2AccessTokenManager.getAuthorization(
 				_liferayOAuthApplicationExternalReferenceCodes),
-			jsonObject.toString(),
+				jsonObject.toString(),
 			UriComponentsBuilder.fromUriString(
 				_liferayMarketplaceEtcSpringBootURL +
 					"/marketplace/product-feedback-notification"

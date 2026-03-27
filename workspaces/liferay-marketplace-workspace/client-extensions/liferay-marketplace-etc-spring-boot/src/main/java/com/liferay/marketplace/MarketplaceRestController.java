@@ -70,13 +70,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -454,26 +454,44 @@ public class MarketplaceRestController extends BaseRestController {
 
 		_defaultServiceAccountPermission.check(jwt);
 
-		if (_log.isInfoEnabled()) {
-			_log.info("POST product feedback " + json);
-		}
-
 		JSONObject jsonObject = new JSONObject(json);
 
-		if (!jsonObject.has("modelCPDefinition")) {
-			return;
+		long skuId = jsonObject.getLong("skuId");
+		long orderId = jsonObject.getLong("orderId");
+		String creatorEmailAddress = jsonObject.getString(
+			"creatorEmailAddress");
+
+		String finalOrderId = String.valueOf(orderId);
+		String finalCreatorEmailAddress = creatorEmailAddress;
+
+		if (_log.isInfoEnabled()) {
+			_log.info("POST product feedback " + skuId);
 		}
 
-		JSONObject modelCPDefinitionJSONObject = jsonObject.getJSONObject(
-			"modelCPDefinition");
-
-		Product product = _marketplaceService.getProductBySkuId(
-			modelCPDefinitionJSONObject.getLong("skuId"));
+		Product product = _marketplaceService.getProductBySkuId(skuId);
 
 		_marketplaceService.postNotificationQueueEntry(
 			null, "MARKETPLACE-PRODUCT-FEEDBACK",
-			new HashMapBuilder<String, Object>().put(
+			HashMapBuilder.put(
 				"[%APP_TYPE%]", product.getProductType()
+			).put(
+				"[%CATALOG_NAME%]",
+				product.getCatalog(
+				).getName()
+			).put(
+				"[%COMMERCEORDER_AUTHOR_EMAIL_ADDRESS%]",
+				finalCreatorEmailAddress
+			).put(
+				"[%CPDEFINITION_NAME%]",
+				product.getName(
+				).get(
+					"en-US"
+				)
+			).put(
+				"[%CPDEFINITION_THUMBNAIL%]",
+				new URL(
+					"http://" + lxcDXPMainDomain + product.getThumbnail()
+				).toString()
 			).put(
 				"[%EMAIL_DESCRIPTION%]",
 				StringBundler.concat(
@@ -484,21 +502,7 @@ public class MarketplaceRestController extends BaseRestController {
 			).put(
 				"[%ENVIROMENT%]", "liferay"
 			).put(
-				"[%CATALOG_NAME%]",
-				product.getCatalog().getName()
-			).put(
-				"[%ORDER_ID%]", String.valueOf(product.getId())
-			).put(
-				"[%CPDEFINITION_NAME%]",
-				product.getName(
-				).get(
-					modelCPDefinitionJSONObject.getString("defaultLanguageId")
-				)
-			).put(
-				"[%CPDEFINITION_THUMBNAIL%]",
-				new URL(
-					"http://" + lxcDXPMainDomain + product.getThumbnail()
-				).toString()
+				"[%ORDER_ID%]", finalOrderId
 			).build());
 	}
 
