@@ -14,6 +14,7 @@ import {
 	OrderWorkflowStatusCode,
 } from '../../../../../enums/Order';
 import i18n from '../../../../../i18n';
+import {safeJSONParse} from '../../../../../utils/util';
 import LiferayProductsAlerts from '../LiferayProductsAlerts';
 
 const AnalyticsDetails = () => {
@@ -22,9 +23,10 @@ const AnalyticsDetails = () => {
 	const orderStatusCode = placedOrder?.orderStatusInfo
 		?.code as OrderWorkflowStatusCode;
 
-	const orderMetadata = placedOrder
-		? JSON.parse(placedOrder.customFields[OrderCustomFields.ORDER_METADATA])
-		: {};
+	const orderMetadata = safeJSONParse<any>(
+		placedOrder?.customFields?.[OrderCustomFields.ORDER_METADATA],
+		{}
+	);
 
 	const allowedEmailDomains =
 		orderMetadata?.provisioning?.allowedEmailDomains || [];

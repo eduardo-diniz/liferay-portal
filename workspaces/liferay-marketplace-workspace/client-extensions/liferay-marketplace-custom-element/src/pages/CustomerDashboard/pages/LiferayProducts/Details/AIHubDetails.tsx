@@ -12,6 +12,7 @@ import {
 	OrderWorkflowStatusCode,
 } from '../../../../../enums/Order';
 import i18n from '../../../../../i18n';
+import {safeJSONParse} from '../../../../../utils/util';
 import ActivationKeyAlert from '../Licenses/LicenseAlert';
 
 const AIHubDetails = () => {
@@ -20,9 +21,10 @@ const AIHubDetails = () => {
 	const orderStatusCode = placedOrder?.orderStatusInfo
 		?.code as OrderWorkflowStatusCode;
 
-	const orderMetadata = placedOrder
-		? JSON.parse(placedOrder.customFields[OrderCustomFields.ORDER_METADATA])
-		: {};
+	const orderMetadata = safeJSONParse<any>(
+		placedOrder?.customFields?.[OrderCustomFields.ORDER_METADATA],
+		{}
+	);
 
 	const orderAdditionalInformation = orderMetadata?.aiHubForm || {};
 
